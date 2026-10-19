@@ -1,0 +1,288 @@
+"use client";
+
+import { useState } from "react";
+import { ApiError, api } from "@/lib/api";
+import { formatMoney, load } from "@/lib/storage";
+import { useCartStore } from "@/store/cartStore";
+
+interface FloatingCartProps {
+  currency?: string;
+  tag?: string;
+}
+
+export function FloatingCart({ currency = "ARS", tag }: FloatingCartProps) {
+  const [isOpen, setIsOpen] = useState(false);
+  const [orderNote, setOrderNote] = useState("");
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [errorMsg, setErrorMsg] = useState<string | null>(null);
+  const [successToast, setSuccessToast] = useState<string | null>(null);
+
+  const items = useCartStore((state) => state.items);
+  const updateQuantity = useCartStore((state) => state.updateQuantity);
+  const removeItem = useCartStore((state) => state.removeItem);
+  const clearCart = useCartStore((state) => state.clearCart);
+  const getTotalPrice = useCartStore((state) => state.getTotalPrice);
+  const getTotalItems = useCartStore((state) => state.getTotalItems);
+
+  const totalItems = getTotalItems();
+  const totalPrice = getTotalPrice();
+
+  const handleSendOrder = async () => {
+    if (items.length === 0 || isSubmitting) return;
+
+    setIsSubmitting(true);
+    setErrorMsg(null);
+
+    try {
+      // Clave de idempotencia única para prevenir órdenes duplicadas ante interrupciones de red
+      const idempotencyKey = crypto.randomUUID();
+
+      // Token de respaldo si está almacenado en memoria local
+      const storedToken = tag ? load<string | null>(`bar.token.${tag}`, null) : null;
+
+      const bodyPayload = {
+        items: items.map((item) => ({
+          dishId: item.dishId,
+          quantity: item.quantity,
+          modifierIds: [],
+        })),
+        note: orderNote.trim() || undefined,
+      };
+
+      await api("/orders", {
+        method: "POST",
+        body: bodyPayload,
+        token: storedToken,
+        headers: {
+          "Idempotency-Key": idempotencyKey,
+        },
+      });
+
+      // Éxito: vaciamos carrito, cerramos sheet y mostramos confirmación
+      clearCart();
+      setOrderNote("");
+      setIsOpen(false);
+      setSuccessToast("¡Pedido enviado a cocina! El mozo lo confirmará a la brevedad.");
+      setTimeout(() => setSuccessToast(null), 4500);
+    } catch (err) {
+      if (err instanceof ApiError) {
+        if (err.status === 401) {
+          setErrorMsg("Sesión vencida. Por favor escaneá el QR nuevamente.");
+        } else if (err.status === 402) {
+          setErrorMsg("El establecimiento no tiene el servicio disponible en este momento.");
+        } else {
+          setErrorMsg(err.message || "Error al registrar el pedido.");
+        }
+      } else {
+        setErrorMsg("Falla de conexión al enviar el pedido. Por favor intentá nuevamente.");
+      }
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  // Si no hay ítems y no hay toast visible, no renderiza nada
+  if (totalItems === 0 && !successToast) {
+    return null;
+  }
+
+  return (
+    <>
+      {/* Toast flotante de éxito */}
+      {successToast && (
+        <div className="fixed top-6 right-0 left-0 z-50 mx-auto max-w-sm px-4">
+          <div className="flex items-center gap-3 rounded-2xl border border-ok/40 bg-surface-2 p-4 text-cream shadow-2xl backdrop-blur-xl animate-sheet">
+            <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-ok/20 text-lg text-ok">
+              ✓
+            </span>
+            <div className="text-xs font-medium leading-relaxed">{successToast}</div>
+          </div>
+        </div>
+      )}
+
+      {/* Barra adhesiva inferior si hay ítems en el carrito */}
+      {totalItems > 0 && (
+        <aside className="fixed right-0 bottom-4 left-0 z-40 mx-auto max-w-md px-4">
+          <div className="flex items-center justify-between rounded-2xl border border-line bg-surface/95 p-3.5 shadow-2xl backdrop-blur-xl">
+            <div className="flex items-center gap-3">
+              <div className="relative flex h-10 w-10 items-center justify-center rounded-xl bg-amber/10 text-xl text-amber">
+                🛒
+                <span className="absolute -top-1.5 -right-1.5 flex h-5 w-5 items-center justify-center rounded-full bg-amber text-[10px] font-bold text-amber-ink shadow-sm">
+                  {totalItems}
+                </span>
+              </div>
+              <div>
+                <p className="text-xs font-medium text-muted">Total del pedido</p>
+                <p className="font-display text-base font-semibold text-cream">
+                  {formatMoney(totalPrice, currency)}
+                </p>
+              </div>
+            </div>
+
+            <button
+              type="button"
+              onClick={() => setIsOpen(true)}
+              className="group flex items-center gap-2 rounded-xl bg-gradient-to-r from-amber to-warn px-5 py-2.5 text-xs font-semibold text-amber-ink shadow-md shadow-amber/20 transition-all duration-200 active:scale-95"
+            >
+              <span>Ver orden</span>
+              <span className="transition-transform group-hover:translate-x-1">→</span>
+            </button>
+          </div>
+        </aside>
+      )}
+
+      {/* Bottom Sheet Modal del Carrito */}
+      {isOpen && (
+        <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/75 p-0 sm:p-4 backdrop-blur-md animate-fade-in">
+          <div className="relative flex max-h-[90vh] w-full max-w-md flex-col rounded-t-[32px] sm:rounded-3xl border-t sm:border border-line bg-surface p-6 shadow-2xl animate-sheet">
+            {/* Tirador decorativo móvil */}
+            <div className="mx-auto mb-4 h-1.5 w-12 rounded-full bg-line/80 sm:hidden"></div>
+
+            {/* Encabezado del Sheet */}
+            <div className="flex items-center justify-between pb-4 border-b border-line/60">
+              <div className="flex items-center gap-2.5">
+                <span className="text-xl">📋</span>
+                <h2 className="font-display text-2xl font-medium text-cream">
+                  Tu Pedido
+                </h2>
+                <span className="rounded-full border border-line bg-surface-2 px-2.5 py-0.5 text-xs text-muted">
+                  {totalItems} {totalItems === 1 ? "ítem" : "ítems"}
+                </span>
+              </div>
+              <button
+                type="button"
+                onClick={() => setIsOpen(false)}
+                className="flex h-8 w-8 items-center justify-center rounded-full bg-surface-2 text-muted hover:text-cream transition"
+              >
+                ✕
+              </button>
+            </div>
+
+            {/* Mensaje de error si falla el envío */}
+            {errorMsg && (
+              <div className="mt-4 rounded-xl border border-warn/40 bg-warn/10 p-3 text-xs text-warn">
+                {errorMsg}
+              </div>
+            )}
+
+            {/* Lista deslizable de platos seleccionados */}
+            <div className="mt-4 flex-1 overflow-y-auto space-y-3.5 pr-1 no-scrollbar">
+              {items.map((item) => (
+                <div
+                  key={item.dishId}
+                  className="flex items-center justify-between gap-3 rounded-2xl border border-line/40 bg-surface-2/60 p-3.5"
+                >
+                  <div className="min-w-0 flex-1">
+                    <p className="font-medium text-sm text-cream truncate">
+                      {item.name}
+                    </p>
+                    <p className="mt-0.5 text-xs text-amber font-display">
+                      {formatMoney(item.priceCents * item.quantity, currency)}
+                    </p>
+                  </div>
+
+                  {/* Controles de Cantidad (+ / -) */}
+                  <div className="flex items-center gap-2 rounded-xl border border-line bg-surface p-1">
+                    <button
+                      type="button"
+                      onClick={() => updateQuantity(item.dishId, item.quantity - 1)}
+                      className="flex h-7 w-7 items-center justify-center rounded-lg bg-surface-2 text-sm text-muted hover:text-cream active:scale-95 transition"
+                    >
+                      -
+                    </button>
+                    <span className="w-5 text-center font-display text-sm font-semibold text-cream">
+                      {item.quantity}
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() => updateQuantity(item.dishId, item.quantity + 1)}
+                      className="flex h-7 w-7 items-center justify-center rounded-lg bg-surface-2 text-sm text-muted hover:text-cream active:scale-95 transition"
+                    >
+                      +
+                    </button>
+                  </div>
+
+                  {/* Botón eliminar plato */}
+                  <button
+                    type="button"
+                    onClick={() => removeItem(item.dishId)}
+                    className="p-1.5 text-muted hover:text-warn transition"
+                    title="Eliminar del pedido"
+                  >
+                    🗑️
+                  </button>
+                </div>
+              ))}
+            </div>
+
+            {/* Aclaraciones opcionales para la cocina */}
+            <div className="mt-4">
+              <label
+                htmlFor="order-note"
+                className="block text-[11px] font-medium text-muted uppercase tracking-wider mb-1.5"
+              >
+                Observaciones para cocina (opcional)
+              </label>
+              <textarea
+                id="order-note"
+                rows={2}
+                placeholder="Ej: Sin sal, aderezo aparte..."
+                value={orderNote}
+                onChange={(e) => setOrderNote(e.target.value)}
+                className="w-full rounded-xl border border-line bg-surface-2 p-3 text-xs text-cream placeholder:text-muted/50 outline-none transition focus:border-amber focus:ring-1 focus:ring-amber/30 resize-none"
+              />
+            </div>
+
+            {/* Resumen Final y Botón de Enviar a Cocina */}
+            <div className="mt-5 border-t border-line/60 pt-4">
+              <div className="mb-4 flex items-center justify-between">
+                <span className="text-sm font-medium text-muted">Total a abonar</span>
+                <span className="font-display text-2xl font-semibold text-amber">
+                  {formatMoney(totalPrice, currency)}
+                </span>
+              </div>
+
+              <button
+                type="button"
+                onClick={() => void handleSendOrder()}
+                disabled={isSubmitting || items.length === 0}
+                className="flex w-full items-center justify-center gap-2 rounded-2xl bg-gradient-to-r from-amber to-warn py-4 text-sm font-semibold text-amber-ink shadow-lg shadow-amber/25 transition-all duration-200 active:scale-95 disabled:opacity-40"
+              >
+                {isSubmitting ? (
+                  <span className="flex items-center gap-2">
+                    <svg
+                      className="h-5 w-5 animate-spin text-amber-ink"
+                      xmlns="http://www.w3.org/2000/svg"
+                      fill="none"
+                      viewBox="0 0 24 24"
+                    >
+                      <circle
+                        className="opacity-25"
+                        cx="12"
+                        cy="12"
+                        r="10"
+                        stroke="currentColor"
+                        strokeWidth="4"
+                      ></circle>
+                      <path
+                        className="opacity-75"
+                        fill="currentColor"
+                        d="M4 12a8 8 0 018-8v8z"
+                      ></path>
+                    </svg>
+                    Enviando a cocina...
+                  </span>
+                ) : (
+                  <>
+                    <span>Confirmar y Enviar a Cocina</span>
+                    <span>👨‍🍳</span>
+                  </>
+                )}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+    </>
+  );
+}

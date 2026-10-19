@@ -1,6 +1,6 @@
-import { PrismaClient } from "@prisma/client";
+import { PrismaClient } from "./client/index.js";
 
-export * from "@prisma/client";
+export * from "./client/index.js";
 
 // Una sola instancia por proceso (evita agotar conexiones con hot reload).
 const globalForPrisma = globalThis as unknown as { prisma?: PrismaClient };

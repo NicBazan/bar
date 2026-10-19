@@ -1,4 +1,10 @@
-import { scryptSync, timingSafeEqual } from "node:crypto";
+import { randomBytes, scryptSync, timingSafeEqual } from "node:crypto";
+
+export function hashPassword(plain: string): string {
+  const salt = randomBytes(16).toString("hex");
+  const hash = scryptSync(plain, salt, 64).toString("hex");
+  return `scrypt$${salt}$${hash}`;
+}
 
 // Formato: scrypt$<salt hex>$<hash hex> (ver packages/db/prisma/seed.ts)
 export function verifyPassword(plain: string, stored: string): boolean {

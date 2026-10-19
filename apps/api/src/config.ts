@@ -12,6 +12,7 @@ export const config = {
   port: Number(process.env.PORT ?? 4000),
   // En dev se usa un secreto fijo; en producción es obligatorio
   jwtSecret: new TextEncoder().encode(required("JWT_SECRET", "dev-only-secret-change-me-0123456789")),
+  nfcMasterKey: required("NFC_MASTER_KEY", "00112233445566778899AABBCCDDEEFF"),
   corsOrigins: (process.env.CORS_ORIGINS ?? "http://localhost:3000,http://localhost:3001").split(","),
   guestTokenTtl: "12h",
   staffTokenTtl: "12h",

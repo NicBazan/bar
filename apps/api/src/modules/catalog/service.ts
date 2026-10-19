@@ -5,7 +5,34 @@ import { notFound } from "../../shared/errors.js";
  * Carta "compilada" de una sucursal: menú activo + overrides locales (precio, agotado, oculto).
  * Es la misma estructura que se cachea en CDN y que recibe el Chef IA.
  */
-export async function getVenueMenu(venueId: string) {
+export type VenueMenuCompiled = {
+  venue: { id: string; name: string; currency: string; layout: unknown };
+  version: number;
+  categories: Array<{
+    id: string;
+    name: string;
+    dishes: Array<{
+      id: string;
+      name: string;
+      description: string | null;
+      priceCents: number;
+      available: boolean;
+      allergens: string[];
+      tags: string[];
+      variants: Array<{ id: string; name: string; priceCents: number }>;
+      modifierGroups: Array<{
+        id: string;
+        name: string;
+        minSelect: number;
+        maxSelect: number;
+        modifiers: Array<{ id: string; name: string; priceCents: number }>;
+      }>;
+      assets: Record<string, string>;
+    }>;
+  }>;
+};
+
+export async function getVenueMenu(venueId: string): Promise<VenueMenuCompiled> {
   const venue = await prisma.venue.findUnique({
     where: { id: venueId },
     select: { id: true, name: true, currency: true, layout: true },

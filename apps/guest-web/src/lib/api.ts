@@ -1,39 +1,102 @@
-// Cliente HTTP del comensal. El token de mesa va como Bearer (sirve igual en PWA y App Clip).
-const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:4000";
+// Cliente HTTP del comensal para Server Components y Client Components.
+const rawApiUrl = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:4000/v1";
+export const API_URL = rawApiUrl.endsWith("/v1")
+  ? rawApiUrl
+  : `${rawApiUrl.replace(/\/+$/, "")}/v1`;
 
 export class ApiError extends Error {
-  constructor(
-    public status: number,
-    public code: string,
-    message?: string,
-  ) {
+  public status: number;
+  public code: string;
+  public requiresPin: boolean;
+
+  constructor(status: number, code: string, message?: string) {
     super(message ?? code);
+    this.name = "ApiError";
+    this.status = status;
+    this.code = code;
+    this.requiresPin =
+      code === "PIN_REQUIRED" ||
+      code === "PIN_INVALID" ||
+      (status === 401 && code !== "UNAUTHENTICATED") ||
+      status === 403;
   }
 }
 
-export async function api<T>(
-  path: string,
-  opts: { method?: string; body?: unknown; token?: string | null; headers?: Record<string, string> } = {},
-): Promise<T> {
-  const headers: Record<string, string> = { ...opts.headers };
-  if (opts.body !== undefined) headers["content-type"] = "application/json";
-  if (opts.token) headers.authorization = `Bearer ${opts.token}`;
+export type FetchOptions = {
+  method?: string;
+  body?: unknown;
+  token?: string | null;
+  headers?: Record<string, string>;
+  cache?: RequestCache;
+};
 
-  const res = await fetch(`${API_URL}/v1${path}`, {
+/**
+ * Función fetch universal (Cliente y Servidor).
+ * En el cliente envía automáticamente cookies HttpOnly (credentials: 'include').
+ */
+export async function api<T>(path: string, opts: FetchOptions = {}): Promise<T> {
+  const normalizedPath = path.startsWith("/") ? path : `/${path}`;
+  const url = `${API_URL}${normalizedPath}`;
+
+  const headers: Record<string, string> = {
+    Accept: "application/json",
+    ...opts.headers,
+  };
+
+  if (opts.body !== undefined) {
+    headers["Content-Type"] = "application/json";
+  }
+
+  if (opts.token) {
+    headers["Authorization"] = `Bearer ${opts.token}`;
+  }
+
+  const res = await fetch(url, {
     method: opts.method ?? "GET",
     headers,
     body: opts.body !== undefined ? JSON.stringify(opts.body) : undefined,
-    cache: "no-store",
+    credentials: "include", // Envía automáticamente la cookie bar_guest en el navegador
+    cache: opts.cache ?? "no-store",
   });
+
   const data = await res.json().catch(() => ({}));
-  if (!res.ok) throw new ApiError(res.status, data.error ?? "HTTP_ERROR", data.message);
+
+  if (!res.ok) {
+    const errorCode = data.error ?? data.code ?? `HTTP_${res.status}`;
+    const errorMessage = data.message ?? errorCode;
+    throw new ApiError(res.status, errorCode, errorMessage);
+  }
+
   return data as T;
 }
 
-// ───── Tipos de respuesta (espejo de la API) ─────
+// ───── Modelos de Datos de la API ─────
+
+export type TagInfo = {
+  venue: { id: string; name: string; layout?: unknown };
+  table: { id: string; label: string };
+};
+
+export type JoinSessionResponse = {
+  token: string;
+  physicalPresence?: boolean;
+  session: {
+    id: string;
+    status: "PENDING" | "OPEN" | "BILL_REQUESTED" | "CLOSED";
+    pin: string;
+    venueId: string;
+    table: { id: string; label: string };
+  };
+};
 
 export type Modifier = { id: string; name: string; priceCents: number };
-export type ModifierGroup = { id: string; name: string; minSelect: number; maxSelect: number; modifiers: Modifier[] };
+export type ModifierGroup = {
+  id: string;
+  name: string;
+  minSelect: number;
+  maxSelect: number;
+  modifiers: Modifier[];
+};
 export type Variant = { id: string; name: string; priceCents: number };
 
 export type Dish = {
@@ -54,10 +117,6 @@ export type Menu = {
   version: number;
   categories: Array<{ id: string; name: string; dishes: Dish[] }>;
 };
-
-export type TagInfo = { venue: { id: string; name: string }; table: { id: string; label: string } };
-
-export type SessionStatus = "PENDING" | "OPEN" | "BILL_REQUESTED" | "CLOSED";
 
 export type OrderItem = {
   id: string;
@@ -80,7 +139,7 @@ export type Order = {
 
 export type SessionState = {
   id: string;
-  status: SessionStatus;
+  status: "PENDING" | "OPEN" | "BILL_REQUESTED" | "CLOSED";
   pin: string;
   table: { label: string };
   orders: Order[];

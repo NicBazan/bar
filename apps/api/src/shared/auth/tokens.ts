@@ -7,9 +7,10 @@ export type GuestClaims = {
   vid: string; // venue
   sid: string; // table session
   did: string; // guest device
+  phys?: boolean; // presencia física confirmada por NFC SUN
 };
 
-export type StaffRole = "OWNER" | "MANAGER" | "WAITER" | "KITCHEN" | "CASHIER";
+export type StaffRole = "SUPER_ADMIN" | "OWNER" | "MANAGER" | "WAITER" | "KITCHEN" | "CASHIER";
 
 export type StaffClaims = {
   typ: "staff";

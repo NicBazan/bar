@@ -5,6 +5,7 @@ import Fastify from "fastify";
 import { config } from "./config.js";
 import { catalogRoutes } from "./modules/catalog/routes.js";
 import { kitchenRoutes } from "./modules/kitchen/routes.js";
+import { onboardingRoutes } from "./modules/onboarding/routes.js";
 import { orderingRoutes } from "./modules/ordering/routes.js";
 import { serviceCallRoutes } from "./modules/service-calls/routes.js";
 import { staffRoutes } from "./modules/staff/routes.js";
@@ -22,9 +23,8 @@ export async function buildApp(opts: { logger?: boolean } = {}) {
 
   await app.register(cookie);
   await app.register(cors, {
-    origin: config.corsOrigins,
+    origin: true,
     credentials: true,
-    // Por defecto solo GET/HEAD/POST: el KDS usa PATCH
     methods: ["GET", "HEAD", "POST", "PATCH", "DELETE"],
   });
   // Límite global por IP; las rutas sensibles definen el suyo (ver cada módulo)
@@ -43,6 +43,7 @@ export async function buildApp(opts: { logger?: boolean } = {}) {
   await app.register(
     async (v1) => {
       await v1.register(catalogRoutes);
+      await v1.register(onboardingRoutes);
       await v1.register(tableSessionRoutes);
       await v1.register(orderingRoutes);
       await v1.register(serviceCallRoutes);
