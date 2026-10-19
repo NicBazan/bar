@@ -1,0 +1,38 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "api",
+      "runtimeExecutable": "corepack",
+      "runtimeArgs": [
+        "pnpm",
+        "--filter",
+        "@bar/api",
+        "dev"
+      ],
+      "port": 4000
+    },
+    {
+      "name": "guest-web",
+      "runtimeExecutable": "corepack",
+      "runtimeArgs": [
+        "pnpm",
+        "--filter",
+        "@bar/guest-web",
+        "dev"
+      ],
+      "port": 3000
+    },
+    {
+      "name": "staff-web",
+      "runtimeExecutable": "corepack",
+      "runtimeArgs": [
+        "pnpm",
+        "--filter",
+        "@bar/staff-web",
+        "dev"
+      ],
+      "port": 3001
+    }
+  ]
+}

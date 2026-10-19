@@ -1,0 +1,22 @@
+{
+  "name": "bar",
+  "private": true,
+  "packageManager": "pnpm@10.18.0",
+  "engines": { "node": ">=22" },
+  "scripts": {
+    "dev": "turbo run dev",
+    "build": "turbo run build",
+    "lint": "turbo run lint",
+    "typecheck": "turbo run typecheck",
+    "infra:up": "docker compose -f infra/docker/docker-compose.yml up -d",
+    "infra:down": "docker compose -f infra/docker/docker-compose.yml down",
+    "db:generate": "pnpm --filter @bar/db generate",
+    "db:migrate": "pnpm --filter @bar/db migrate",
+    "db:seed": "pnpm --filter @bar/db seed",
+    "db:studio": "pnpm --filter @bar/db studio"
+  },
+  "devDependencies": {
+    "turbo": "^2.5.0",
+    "typescript": "^5.9.0"
+  }
+}

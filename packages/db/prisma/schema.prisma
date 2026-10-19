@@ -1,0 +1,446 @@
+// Esquema Fase 1: carta + mesas + sesiones + pedidos + llamados + outbox.
+// Multi-tenant: toda tabla de negocio lleva tenantId (RLS se agrega en una migración SQL aparte).
+// Dinero en céntimos enteros. Fechas en UTC.
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ───────────── Tenancy ─────────────
+
+model Tenant {
+  id        String   @id @default(uuid()) @db.Uuid
+  name      String
+  slug      String   @unique
+  createdAt DateTime @default(now())
+
+  venues     Venue[]
+  staffUsers StaffUser[]
+  menus      Menu[]
+}
+
+model Venue {
+  id        String   @id @default(uuid()) @db.Uuid
+  tenantId  String   @db.Uuid
+  name      String
+  slug      String
+  timezone  String   @default("America/Argentina/Buenos_Aires")
+  currency  String   @default("ARS") @db.Char(3)
+  // Secuencia monotónica para catch-up de tiempo real (GET /state?since=seq)
+  eventSeq  BigInt   @default(0)
+  layout    Json?    // tema: { mode: "classic" | "reels" | "list", colors, fonts }
+  createdAt DateTime @default(now())
+
+  tenant          Tenant           @relation(fields: [tenantId], references: [id])
+  areas           Area[]
+  tables          DiningTable[]
+  venueMenus      VenueMenu[]
+  kitchenStations KitchenStation[]
+  sessions        TableSession[]
+  orders          Order[]
+  serviceCalls    ServiceCall[]
+  staffUsers      StaffUser[]
+
+  @@unique([tenantId, slug])
+}
+
+enum StaffRole {
+  OWNER
+  MANAGER
+  WAITER
+  KITCHEN
+  CASHIER
+}
+
+model StaffUser {
+  id           String    @id @default(uuid()) @db.Uuid
+  tenantId     String    @db.Uuid
+  venueId      String?   @db.Uuid // null = todas las sucursales
+  email        String    @unique
+  name         String
+  passwordHash String
+  role         StaffRole
+  active       Boolean   @default(true)
+  createdAt    DateTime  @default(now())
+
+  tenant Tenant @relation(fields: [tenantId], references: [id])
+  venue  Venue? @relation(fields: [venueId], references: [id])
+
+  approvedSessions TableSession[] @relation("SessionApprovedBy")
+  approvedOrders   Order[]        @relation("OrderApprovedBy")
+}
+
+// ───────────── Salón ─────────────
+
+model Area {
+  id       String @id @default(uuid()) @db.Uuid
+  tenantId String @db.Uuid
+  venueId  String @db.Uuid
+  name     String
+  position Int    @default(0)
+
+  venue  Venue         @relation(fields: [venueId], references: [id])
+  tables DiningTable[]
+}
+
+model DiningTable {
+  id       String  @id @default(uuid()) @db.Uuid
+  tenantId String  @db.Uuid
+  venueId  String  @db.Uuid
+  areaId   String? @db.Uuid
+  label    String // "7", "Barra 2"
+  seats    Int     @default(4)
+  active   Boolean @default(true)
+
+  venue    Venue          @relation(fields: [venueId], references: [id])
+  area     Area?          @relation(fields: [areaId], references: [id])
+  tags     TableTag[]
+  sessions TableSession[]
+
+  @@unique([venueId, label])
+}
+
+enum TagType {
+  QR
+  NFC
+  NFC_SUN // NTAG 424 DNA con CMAC dinámico
+}
+
+model TableTag {
+  // Código público en la URL /t/{code}: base62 aleatorio, no predecible
+  code       String   @id
+  tenantId   String   @db.Uuid
+  tableId    String   @db.Uuid
+  type       TagType  @default(QR)
+  sunCounter Int      @default(0) // último contador SUN aceptado (anti-replay)
+  active     Boolean  @default(true)
+  createdAt  DateTime @default(now())
+
+  table DiningTable @relation(fields: [tableId], references: [id])
+}
+
+// ───────────── Carta ─────────────
+
+model Menu {
+  id        String   @id @default(uuid()) @db.Uuid
+  tenantId  String   @db.Uuid
+  name      String
+  createdAt DateTime @default(now())
+
+  tenant     Tenant      @relation(fields: [tenantId], references: [id])
+  categories Category[]
+  venueMenus VenueMenu[]
+}
+
+model VenueMenu {
+  id       String  @id @default(uuid()) @db.Uuid
+  tenantId String  @db.Uuid
+  venueId  String  @db.Uuid
+  menuId   String  @db.Uuid
+  active   Boolean @default(true)
+  version  Int     @default(1) // invalida caché de CDN y del Chef IA
+
+  venue     Venue          @relation(fields: [venueId], references: [id])
+  menu      Menu           @relation(fields: [menuId], references: [id])
+  overrides DishOverride[]
+
+  @@unique([venueId, menuId])
+}
+
+model Category {
+  id       String  @id @default(uuid()) @db.Uuid
+  tenantId String  @db.Uuid
+  menuId   String  @db.Uuid
+  name     String
+  position Int     @default(0)
+  // Estación de cocina por defecto para los platos de la categoría
+  stationKey String?
+
+  menu   Menu   @relation(fields: [menuId], references: [id])
+  dishes Dish[]
+}
+
+model Dish {
+  id          String   @id @default(uuid()) @db.Uuid
+  tenantId    String   @db.Uuid
+  categoryId  String   @db.Uuid
+  name        String
+  description String?
+  priceCents  Int
+  position    Int      @default(0)
+  allergens   String[] // "gluten", "lactosa", "frutos_secos"...
+  tags        String[] // "vegano", "picante", "sin_tacc"
+  stationKey  String?  // sobreescribe la de la categoría
+  active      Boolean  @default(true)
+  createdAt   DateTime @default(now())
+
+  category       Category        @relation(fields: [categoryId], references: [id])
+  variants       DishVariant[]
+  modifierGroups ModifierGroup[]
+  assets         DishAsset[]
+  overrides      DishOverride[]
+  orderItems     OrderItem[]
+}
+
+model DishVariant {
+  id         String @id @default(uuid()) @db.Uuid
+  tenantId   String @db.Uuid
+  dishId     String @db.Uuid
+  name       String // "Chica", "Grande"
+  priceCents Int
+  position   Int    @default(0)
+
+  dish Dish @relation(fields: [dishId], references: [id], onDelete: Cascade)
+}
+
+model ModifierGroup {
+  id        String @id @default(uuid()) @db.Uuid
+  tenantId  String @db.Uuid
+  dishId    String @db.Uuid
+  name      String // "Punto de cocción", "Extras"
+  minSelect Int    @default(0)
+  maxSelect Int    @default(1)
+
+  dish      Dish       @relation(fields: [dishId], references: [id], onDelete: Cascade)
+  modifiers Modifier[]
+}
+
+model Modifier {
+  id         String @id @default(uuid()) @db.Uuid
+  tenantId   String @db.Uuid
+  groupId    String @db.Uuid
+  name       String
+  priceCents Int    @default(0)
+
+  group ModifierGroup @relation(fields: [groupId], references: [id], onDelete: Cascade)
+}
+
+enum AssetKind {
+  PHOTO
+  POSTER
+  GLB_LOD0
+  GLB_LOD1
+  USDZ
+}
+
+model DishAsset {
+  id        String    @id @default(uuid()) @db.Uuid
+  tenantId  String    @db.Uuid
+  dishId    String    @db.Uuid
+  kind      AssetKind
+  url       String
+  sha256    String?
+  bytes     Int?
+  createdAt DateTime  @default(now())
+
+  dish Dish @relation(fields: [dishId], references: [id], onDelete: Cascade)
+
+  @@unique([dishId, kind])
+}
+
+model DishOverride {
+  id          String  @id @default(uuid()) @db.Uuid
+  tenantId    String  @db.Uuid
+  venueMenuId String  @db.Uuid
+  dishId      String  @db.Uuid
+  priceCents  Int?
+  available   Boolean @default(true) // "agotado" en esta sucursal
+  hidden      Boolean @default(false)
+
+  venueMenu VenueMenu @relation(fields: [venueMenuId], references: [id])
+  dish      Dish      @relation(fields: [dishId], references: [id])
+
+  @@unique([venueMenuId, dishId])
+}
+
+model KitchenStation {
+  id       String @id @default(uuid()) @db.Uuid
+  tenantId String @db.Uuid
+  venueId  String @db.Uuid
+  key      String // "parrilla", "barra", "frios"
+  name     String
+
+  venue Venue       @relation(fields: [venueId], references: [id])
+  items OrderItem[]
+
+  @@unique([venueId, key])
+}
+
+// ───────────── Sesión de mesa ─────────────
+
+enum TableSessionStatus {
+  PENDING // escaneada, falta que el mozo la abra
+  OPEN
+  BILL_REQUESTED
+  CLOSED
+}
+
+model TableSession {
+  id           String             @id @default(uuid()) @db.Uuid
+  tenantId     String             @db.Uuid
+  venueId      String             @db.Uuid
+  tableId      String             @db.Uuid
+  status       TableSessionStatus @default(PENDING)
+  joinPin      String             @db.Char(4) // para que otros comensales se unan
+  approvedById String?            @db.Uuid
+  openedAt     DateTime           @default(now())
+  closedAt     DateTime?
+
+  venue        Venue         @relation(fields: [venueId], references: [id])
+  table        DiningTable   @relation(fields: [tableId], references: [id])
+  approvedBy   StaffUser?    @relation("SessionApprovedBy", fields: [approvedById], references: [id])
+  devices      GuestDevice[]
+  orders       Order[]
+  serviceCalls ServiceCall[]
+
+  @@index([tableId, status])
+}
+
+model GuestDevice {
+  id          String   @id @default(uuid()) @db.Uuid
+  tenantId    String   @db.Uuid
+  sessionId   String   @db.Uuid
+  deviceKey   String // id anónimo del dispositivo (cookie/localStorage)
+  fingerprint String? // hash liviano, solo para correlacionar abuso
+  joinedAt    DateTime @default(now())
+
+  session TableSession @relation(fields: [sessionId], references: [id])
+  orders  Order[]
+
+  @@unique([sessionId, deviceKey])
+}
+
+// ───────────── Pedidos ─────────────
+
+enum OrderStatus {
+  PENDING_APPROVAL
+  APPROVED
+  REJECTED
+  COMPLETED
+  CANCELLED
+}
+
+model Order {
+  id             String      @id @default(uuid()) @db.Uuid
+  tenantId       String      @db.Uuid
+  venueId        String      @db.Uuid
+  sessionId      String      @db.Uuid
+  deviceId       String?     @db.Uuid
+  idempotencyKey String
+  status         OrderStatus @default(PENDING_APPROVAL)
+  note           String?
+  totalCents     Int
+  approvedById   String?     @db.Uuid
+  rejectReason   String?
+  createdAt      DateTime    @default(now())
+  updatedAt      DateTime    @updatedAt
+
+  venue      Venue        @relation(fields: [venueId], references: [id])
+  session    TableSession @relation(fields: [sessionId], references: [id])
+  device     GuestDevice? @relation(fields: [deviceId], references: [id])
+  approvedBy StaffUser?   @relation("OrderApprovedBy", fields: [approvedById], references: [id])
+  items      OrderItem[]
+
+  @@unique([sessionId, idempotencyKey])
+  @@index([venueId, status])
+}
+
+enum OrderItemStatus {
+  PENDING_APPROVAL
+  APPROVED
+  FIRED
+  IN_PROGRESS
+  READY
+  SERVED
+  REJECTED
+  VOIDED
+}
+
+model OrderItem {
+  id             String          @id @default(uuid()) @db.Uuid
+  tenantId       String          @db.Uuid
+  orderId        String          @db.Uuid
+  dishId         String          @db.Uuid
+  stationId      String?         @db.Uuid
+  // Snapshot: si mañana cambia el precio, el pedido no cambia
+  nameSnapshot   String
+  variantName    String?
+  modifiers      Json            @default("[]") // [{ name, priceCents }]
+  unitPriceCents Int
+  quantity       Int             @default(1)
+  note           String?
+  status         OrderItemStatus @default(PENDING_APPROVAL)
+  voidReason     String?
+  updatedAt      DateTime        @updatedAt
+
+  order   Order           @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  dish    Dish            @relation(fields: [dishId], references: [id])
+  station KitchenStation? @relation(fields: [stationId], references: [id])
+
+  @@index([stationId, status])
+}
+
+// ───────────── Llamados ─────────────
+
+enum ServiceCallType {
+  WAITER
+  BILL
+}
+
+enum ServiceCallStatus {
+  OPEN
+  ACKNOWLEDGED
+  RESOLVED
+}
+
+model ServiceCall {
+  id         String            @id @default(uuid()) @db.Uuid
+  tenantId   String            @db.Uuid
+  venueId    String            @db.Uuid
+  sessionId  String            @db.Uuid
+  type       ServiceCallType
+  status     ServiceCallStatus @default(OPEN)
+  createdAt  DateTime          @default(now())
+  resolvedAt DateTime?
+
+  venue   Venue        @relation(fields: [venueId], references: [id])
+  session TableSession @relation(fields: [sessionId], references: [id])
+
+  @@index([venueId, status])
+}
+
+// ───────────── Infraestructura ─────────────
+
+// Transactional outbox: se escribe en la misma TX que el cambio de negocio
+model OutboxEvent {
+  id          BigInt    @id @default(autoincrement())
+  tenantId    String    @db.Uuid
+  venueId     String    @db.Uuid
+  venueSeq    BigInt
+  channel     String // "venue:{id}:staff", "table_session:{id}"...
+  type        String // "order.submitted", "order.approved"...
+  payload     Json
+  createdAt   DateTime  @default(now())
+  publishedAt DateTime?
+
+  @@unique([venueId, venueSeq])
+  @@index([publishedAt])
+}
+
+model AuditLog {
+  id        BigInt   @id @default(autoincrement())
+  tenantId  String   @db.Uuid
+  actorId   String?  @db.Uuid
+  action    String
+  entity    String
+  entityId  String
+  data      Json?
+  createdAt DateTime @default(now())
+
+  @@index([tenantId, entity, entityId])
+}

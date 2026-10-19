@@ -1,0 +1,44 @@
+@import "tailwindcss";
+
+@theme {
+  --color-ink: #14110f;
+  --color-surface: #1e1a17;
+  --color-surface-2: #2a2420;
+  --color-line: #3a322c;
+  --color-cream: #f5ede3;
+  --color-muted: #a89a8c;
+  --color-amber: #f0a43a;
+  --color-amber-ink: #2a1a05;
+  --color-ok: #6fcf97;
+  --color-warn: #f2994a;
+  --font-display: "Fraunces", Georgia, serif;
+  --font-sans: "Inter", system-ui, sans-serif;
+}
+
+html,
+body {
+  max-width: 100%;
+  overflow-x: clip; /* lección de taller: evita scroll horizontal en mobile */
+  background: var(--color-ink);
+  color: var(--color-cream);
+  -webkit-tap-highlight-color: transparent;
+}
+
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+.no-scrollbar {
+  scrollbar-width: none;
+}
+
+@keyframes sheet-in {
+  from {
+    transform: translateY(100%);
+  }
+  to {
+    transform: translateY(0);
+  }
+}
+.animate-sheet {
+  animation: sheet-in 0.22s ease-out;
+}
