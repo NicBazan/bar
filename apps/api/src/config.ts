@@ -1,3 +1,5 @@
+import path from "node:path";
+
 const isProd = process.env.NODE_ENV === "production";
 
 function required(name: string, devDefault: string): string {
@@ -16,6 +18,10 @@ export const config = {
   corsOrigins: (process.env.CORS_ORIGINS ?? "http://localhost:3000,http://localhost:3001").split(",").map((o) => o.trim()),
   // Solo en desarrollo: aceptar el front servido desde la red local (probar con el celular por Wi-Fi)
   allowLanOrigins: !isProd && process.env.CORS_ALLOW_LAN !== "false",
+  // Fotos y modelos 3D subidos desde el admin. En producción: disco persistente (o R2 más adelante)
+  uploadsDir: path.resolve(process.env.UPLOADS_DIR ?? "uploads"),
+  // URL pública de la carta, para armar los links/QR de las mesas en el admin
+  publicGuestUrl: (process.env.PUBLIC_GUEST_URL ?? "http://localhost:3000").replace(/\/+$/, ""),
   guestTokenTtl: "12h",
   staffTokenTtl: "12h",
   serviceCallCooldownSec: 60,

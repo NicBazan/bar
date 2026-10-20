@@ -1,12 +1,15 @@
-// Seed de desarrollo: un bar demo con salón, tags QR, carta y staff.
-// Uso: pnpm db:seed  (borra y recrea los datos del tenant "bar-demo")
+// Seed de desarrollo: plataforma (super admin) + un bar demo con salón, QR, carta (con un plato 3D) y staff.
+// Uso: pnpm db:seed  (borra y recrea el tenant "bar-demo"; la plataforma se conserva)
 import { randomBytes, scryptSync } from "node:crypto";
 import { PrismaClient, StaffRole } from "../src/client/index.js";
+import { purgeTenant } from "../src/purge.js";
 
 const prisma = new PrismaClient();
 
-// Contraseña SOLO para desarrollo local, igual para todo el staff demo.
+// Contraseñas SOLO para desarrollo local. En producción el super admin se crea con
+// "pnpm --filter @bar/db create-superadmin <email> <contraseña>" y el demo no se carga.
 const DEV_PASSWORD = "demo1234";
+const DEV_SUPERADMIN_PASSWORD = process.env.SEED_SUPERADMIN_PASSWORD ?? "superadmin1234";
 
 function hashPassword(plain: string): string {
   const salt = randomBytes(16).toString("hex");
@@ -16,18 +19,29 @@ function hashPassword(plain: string): string {
 
 const BASE62 = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz";
 function tagCode(len = 10): string {
-  return Array.from(randomBytes(len), (b) => BASE62[b % 62]).join("");
+  let out = "";
+  while (out.length < len) for (const b of randomBytes(len * 2)) if (b < 248 && out.length < len) out += BASE62[b % 62];
+  return out;
 }
 
 const CARTA: Array<{
   name: string;
   station: string;
-  dishes: Array<{ name: string; description: string; price: number; allergens?: string[]; tags?: string[] }>;
+  dishes: Array<{ name: string; description: string; price: number; allergens?: string[]; tags?: string[]; glb?: string }>;
 }> = [
   {
     name: "Para compartir",
     station: "frios",
     dishes: [
+      {
+        name: "Tostada de palta",
+        description: "Pan de masa madre, palta, limón y semillas. Miralo en 3D y ponelo sobre tu mesa con la cámara.",
+        price: 720000,
+        allergens: ["gluten"],
+        tags: ["vegano"],
+        // Modelo de ejemplo: Avocado de Khronos glTF Sample Assets (CC0). Ver apps/guest-web/public/models/CREDITS.txt
+        glb: "/models/avocado.glb",
+      },
       { name: "Papas bravas", description: "Papas crocantes con salsa brava y alioli.", price: 650000, tags: ["vegetariano"] },
       { name: "Provoleta", description: "Provolone a la parrilla con orégano y tomates confitados.", price: 780000, allergens: ["lactosa"] },
       { name: "Tabla de fiambres", description: "Jamón crudo, salame, quesos y pan de campo.", price: 1450000, allergens: ["gluten", "lactosa"] },
@@ -61,37 +75,26 @@ const CARTA: Array<{
   },
 ];
 
+async function seedPlatform() {
+  // Tenant de la plataforma: dueño del producto. No es un bar (isPlatform) y no se purga.
+  const platform =
+    (await prisma.tenant.findFirst({ where: { isPlatform: true } })) ??
+    (await prisma.tenant.create({ data: { name: "Plataforma", slug: "plataforma", isPlatform: true } }));
+  const email = "superadmin@bar.test";
+  await prisma.staffUser.upsert({
+    where: { email },
+    create: { tenantId: platform.id, email, name: "Super Admin", role: StaffRole.SUPER_ADMIN, passwordHash: hashPassword(DEV_SUPERADMIN_PASSWORD) },
+    update: { tenantId: platform.id, role: StaffRole.SUPER_ADMIN, active: true, passwordHash: hashPassword(DEV_SUPERADMIN_PASSWORD) },
+  });
+  return email;
+}
+
 async function main() {
-  // Limpieza idempotente del tenant demo (orden inverso a las FKs)
+  const superEmail = await seedPlatform();
+
+  // Limpieza idempotente del tenant demo
   const old = await prisma.tenant.findUnique({ where: { slug: "bar-demo" } });
-  if (old) {
-    const t = { tenantId: old.id };
-    await prisma.$transaction([
-      prisma.outboxEvent.deleteMany({ where: t }),
-      prisma.auditLog.deleteMany({ where: t }),
-      prisma.orderItem.deleteMany({ where: t }),
-      prisma.order.deleteMany({ where: t }),
-      prisma.serviceCall.deleteMany({ where: t }),
-      prisma.guestDevice.deleteMany({ where: t }),
-      prisma.tableSession.deleteMany({ where: t }),
-      prisma.tableTag.deleteMany({ where: t }),
-      prisma.diningTable.deleteMany({ where: t }),
-      prisma.area.deleteMany({ where: t }),
-      prisma.dishOverride.deleteMany({ where: t }),
-      prisma.dishAsset.deleteMany({ where: t }),
-      prisma.modifier.deleteMany({ where: t }),
-      prisma.modifierGroup.deleteMany({ where: t }),
-      prisma.dishVariant.deleteMany({ where: t }),
-      prisma.dish.deleteMany({ where: t }),
-      prisma.category.deleteMany({ where: t }),
-      prisma.venueMenu.deleteMany({ where: t }),
-      prisma.menu.deleteMany({ where: t }),
-      prisma.kitchenStation.deleteMany({ where: t }),
-      prisma.staffUser.deleteMany({ where: t }),
-      prisma.venue.deleteMany({ where: t }),
-      prisma.tenant.delete({ where: { id: old.id } }),
-    ]);
-  }
+  if (old) await purgeTenant(prisma, old.id);
 
   // Plan PRO: el bar demo (y los tests e2e) no deben chocar con el límite mensual del plan FREE
   const tenant = await prisma.tenant.create({
@@ -104,7 +107,16 @@ async function main() {
   const tenantId = tenant.id;
 
   const venue = await prisma.venue.create({
-    data: { tenantId, name: "Bar Demo - Palermo", slug: "palermo", layout: { mode: "classic" } },
+    data: {
+      tenantId,
+      name: "Bar Demo - Palermo",
+      slug: "palermo",
+      layout: { mode: "classic" },
+      // Hub en mesa (demo): Wi-Fi de invitados y link de reseñas
+      wifiSsid: "BarDemo-Invitados",
+      wifiPassword: "cervezafria2026",
+      googleReviewUrl: "https://www.google.com/maps/search/?api=1&query=Bar+Demo+Palermo",
+    },
   });
   const venueId = venue.id;
 
@@ -166,6 +178,9 @@ async function main() {
           tags: d.tags ?? [],
         },
       });
+      if (d.glb) {
+        await prisma.dishAsset.create({ data: { tenantId, dishId: dish.id, kind: "GLB_LOD0", url: d.glb } });
+      }
       if (d.name === "Bife de chorizo") {
         const g = await prisma.modifierGroup.create({
           data: { tenantId, dishId: dish.id, name: "Punto de cocción", minSelect: 1, maxSelect: 1 },
@@ -196,6 +211,7 @@ async function main() {
     }
   }
 
+  console.log(`✔ Super admin: ${superEmail} (contraseña dev en prisma/seed.ts)`);
   console.log(`✔ Tenant "${tenant.name}" / ${venue.name}`);
   console.log(`✔ Staff: ${staff.map((s) => s[0]).join(", ")} (contraseña dev en prisma/seed.ts)`);
   console.log("✔ Tags de mesa (URL /t/{code}):");

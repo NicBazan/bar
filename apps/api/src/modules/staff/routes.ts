@@ -1,14 +1,18 @@
+import { randomInt } from "node:crypto";
 import { StaffLoginBody } from "@bar/shared-types";
 import type { FastifyInstance } from "fastify";
 import { z } from "zod";
 import { config } from "../../config.js";
 import { FLOOR_ROLES, STAFF_COOKIE, requireStaff, staffScope } from "../../shared/auth/guards.js";
-import { verifyPassword } from "../../shared/auth/password.js";
+import { hashPassword, verifyPassword } from "../../shared/auth/password.js";
 import { signToken } from "../../shared/auth/tokens.js";
 import { prisma } from "../../shared/db/index.js";
 import { HttpError, conflict, notFound } from "../../shared/errors.js";
 import { channels, emit } from "../../shared/outbox/outbox.js";
 import { assertTenantCanOpenSession, incrementSessionUsage } from "../billing/billing.guard.js";
+
+// Hash con el mismo costo que uno real, para igualar tiempos cuando el email no existe
+const DUMMY_HASH = hashPassword("usuario-inexistente-para-igualar-tiempos");
 
 export async function staffRoutes(app: FastifyInstance) {
   app.post(
@@ -16,9 +20,18 @@ export async function staffRoutes(app: FastifyInstance) {
     { config: { rateLimit: { max: 10, timeWindow: "1 minute" } } },
     async (req, reply) => {
       const { email, password } = StaffLoginBody.parse(req.body);
-      const user = await prisma.staffUser.findUnique({ where: { email: email.toLowerCase() } });
-      if (!user || !user.active || !verifyPassword(password, user.passwordHash)) {
+      const user = await prisma.staffUser.findUnique({
+        where: { email: email.toLowerCase() },
+        include: { tenant: { select: { suspendedAt: true } } },
+      });
+      // Siempre se corre scrypt (con un hash falso si el email no existe): el tiempo de respuesta
+      // no revela qué emails están registrados
+      const passwordOk = verifyPassword(password, user?.passwordHash ?? DUMMY_HASH);
+      if (!user || !user.active || !passwordOk) {
         throw new HttpError(401, "INVALID_CREDENTIALS");
+      }
+      if (user.tenant.suspendedAt) {
+        throw new HttpError(403, "TENANT_SUSPENDED", "Este local está suspendido. Contactá a soporte.");
       }
       const token = await signToken({ typ: "staff", sub: user.id, tid: user.tenantId, vid: user.venueId, role: user.role });
       reply.setCookie(STAFF_COOKIE, token, {
@@ -50,7 +63,7 @@ export async function staffRoutes(app: FastifyInstance) {
 
   app.post("/staff/sessions/:id/:action", async (req) => {
     const staff = await requireStaff(req, FLOOR_ROLES);
-    const { id, action } = z.object({ id: z.uuid(), action: z.enum(["open", "close"]) }).parse(req.params);
+    const { id, action } = z.object({ id: z.uuid(), action: z.enum(["open", "close", "new-pin"]) }).parse(req.params);
 
     return prisma.$transaction(async (tx) => {
       const session = await tx.tableSession.findFirst({ where: { id, ...staffScope(staff) } });
@@ -76,6 +89,23 @@ export async function staffRoutes(app: FastifyInstance) {
       }
 
       if (session.status === "CLOSED") throw conflict("SESSION_ALREADY_CLOSED");
+
+      if (action === "new-pin") {
+        // PIN nuevo y desbloqueo (por intentos fallidos o porque el PIN se filtró)
+        const updated = await tx.tableSession.update({
+          where: { id },
+          data: { joinPin: String(randomInt(0, 10000)).padStart(4, "0"), pinFailures: 0 },
+        });
+        await emit(tx, {
+          tenantId: session.tenantId,
+          venueId: session.venueId,
+          type: "session.pin_changed",
+          channels: [channels.staff(session.venueId), channels.session(id)],
+          payload: { sessionId: id },
+        });
+        return updated;
+      }
+
       const updated = await tx.tableSession.update({ where: { id }, data: { status: "CLOSED", closedAt: new Date() } });
       // Pedidos que nadie confirmó no deben quedar flotando: se cancelan con la mesa
       const stale = await tx.order.findMany({ where: { sessionId: id, status: "PENDING_APPROVAL" }, select: { id: true } });

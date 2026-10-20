@@ -19,6 +19,11 @@ model Tenant {
   name      String
   slug      String   @unique
   createdAt DateTime @default(now())
+  // Tenant de la plataforma (dueña del producto): ahí viven los SUPER_ADMIN, no es un bar
+  isPlatform  Boolean   @default(false)
+  // Suspendido por el super admin: el staff no puede entrar y la carta no abre mesas
+  suspendedAt DateTime?
+  suspendReason String?
 
   venues       Venue[]
   staffUsers   StaffUser[]
@@ -55,6 +60,10 @@ model Venue {
   // Secuencia monotónica para catch-up de tiempo real (GET /state?since=seq)
   eventSeq  BigInt   @default(0)
   layout    Json?    // tema: { mode: "classic" | "reels" | "list", colors, fonts }
+  // Hub en mesa: Wi-Fi de invitados (solo se muestra a mesas abiertas) y link de reseñas
+  wifiSsid        String?
+  wifiPassword    String?
+  googleReviewUrl String?
   createdAt DateTime @default(now())
 
   tenant          Tenant           @relation(fields: [tenantId], references: [id])
@@ -311,6 +320,8 @@ model TableSession {
   tableId      String             @db.Uuid
   status       TableSessionStatus @default(PENDING)
   joinPin      String             @db.Char(4) // para que otros comensales se unan
+  // Intentos de PIN fallidos: al llegar al límite se bloquea el ingreso por PIN (anti fuerza bruta)
+  pinFailures  Int                @default(0)
   approvedById String?            @db.Uuid
   openedAt     DateTime           @default(now())
   closedAt     DateTime?

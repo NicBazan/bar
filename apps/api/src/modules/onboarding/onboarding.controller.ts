@@ -6,6 +6,7 @@ import { STAFF_COOKIE } from "../../shared/auth/guards.js";
 import { hashPassword } from "../../shared/auth/password.js";
 import { signToken } from "../../shared/auth/tokens.js";
 import { prisma } from "../../shared/db/index.js";
+import { generateTagCode } from "../../shared/codes.js";
 import { conflict } from "../../shared/errors.js";
 
 export const RegisterOnboardingBody = z.object({
@@ -17,11 +18,6 @@ export const RegisterOnboardingBody = z.object({
 
 export type RegisterOnboardingBody = z.infer<typeof RegisterOnboardingBody>;
 
-const BASE62 = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz";
-
-function generateTagCode(len = 10): string {
-  return Array.from(randomBytes(len), (b) => BASE62[b % 62]).join("");
-}
 
 function slugify(text: string): string {
   return (
@@ -43,6 +39,18 @@ function slugify(text: string): string {
  */
 export async function registerOnboardingHandler(req: FastifyRequest, reply: FastifyReply) {
   const body = RegisterOnboardingBody.parse(req.body);
+  const result = await provisionTenant(body);
+  return sendProvisioned(reply, result);
+}
+
+/**
+ * Alta completa de un bar: tenant + suscripción + sucursal + dueño + carta vacía + 10 mesas con QR.
+ * La usan el registro self-service y el super admin.
+ */
+export async function provisionTenant(
+  body: RegisterOnboardingBody,
+  opts: { plan?: "FREE" | "PRO"; tableSessionLimit?: number } = {},
+) {
 
   // 1. Validar que el email no esté registrado
   const existingUser = await prisma.staffUser.findUnique({
@@ -67,10 +75,10 @@ export async function registerOnboardingHandler(req: FastifyRequest, reply: Fast
         slug: tenantSlug,
         subscription: {
           create: {
-            plan: "FREE",
+            plan: opts.plan ?? "FREE",
             currentPeriodEnd: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
             tableSessionsThisMonth: 0,
-            tableSessionLimit: 50,
+            tableSessionLimit: opts.tableSessionLimit ?? 50,
           },
         },
       },
@@ -174,7 +182,12 @@ export async function registerOnboardingHandler(req: FastifyRequest, reply: Fast
       tables: createdTables,
     };
   });
+  return result;
+}
 
+type Provisioned = Awaited<ReturnType<typeof provisionTenant>>;
+
+async function sendProvisioned(reply: FastifyReply, result: Provisioned) {
   // 3. Generar token JWT de staff y enviar cookie HttpOnly para inicio de sesión inmediato
   const token = await signToken({
     typ: "staff",

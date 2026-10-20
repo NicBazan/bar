@@ -1,9 +1,9 @@
-import { randomInt } from "node:crypto";
+import { randomInt, timingSafeEqual } from "node:crypto";
 import { JoinSessionBody } from "@bar/shared-types";
 import type { FastifyReply, FastifyRequest } from "fastify";
 import { z } from "zod";
 import { config } from "../../config.js";
-import { GUEST_COOKIE, requireGuest } from "../../shared/auth/guards.js";
+import { GUEST_COOKIE, assertTenantActive, requireGuest } from "../../shared/auth/guards.js";
 import { signToken } from "../../shared/auth/tokens.js";
 import { Prisma, prisma } from "../../shared/db/index.js";
 import { HttpError, forbidden, notFound } from "../../shared/errors.js";
@@ -24,6 +24,40 @@ export const NfcQuery = z.object({
 });
 
 export type NfcQuery = z.infer<typeof NfcQuery>;
+
+/** Intentos de PIN incorrectos permitidos por sesión antes de bloquear el ingreso por PIN */
+export const PIN_MAX_FAILURES = 8;
+
+class WrongPinError extends Error {
+  constructor(public sessionId: string) {
+    super("PIN_INVALID");
+  }
+}
+
+function safeEqual(a: string, b: string): boolean {
+  const x = Buffer.from(a);
+  const y = Buffer.from(b);
+  return x.length === y.length && timingSafeEqual(x, y);
+}
+
+/** Corre el ingreso y, si el PIN fue incorrecto, suma el intento fallido en una escritura aparte */
+async function joinWithPinAccounting<T>(fn: () => Promise<T>): Promise<T> {
+  try {
+    return await withRetryOnUnique(fn);
+  } catch (e) {
+    if (!(e instanceof WrongPinError)) throw e;
+    const s = await prisma.tableSession.update({
+      where: { id: e.sessionId },
+      data: { pinFailures: { increment: 1 } },
+      select: { pinFailures: true },
+    });
+    const left = Math.max(0, PIN_MAX_FAILURES - s.pinFailures);
+    if (left === 0) {
+      throw new HttpError(423, "PIN_LOCKED", "Demasiados intentos. Pedile al mozo que te sume a la mesa.");
+    }
+    throw forbidden("PIN_INVALID", `El PIN ingresado es incorrecto. Te quedan ${left} intento(s).`);
+  }
+}
 
 async function withRetryOnUnique<T>(fn: () => Promise<T>): Promise<T> {
   try {
@@ -91,6 +125,8 @@ export async function joinTableSession(req: FastifyRequest, reply: FastifyReply)
   // 1. Consulta tableTag en Prisma junto a su sesión activa
   const tag = await getTableTagWithActiveSession(code);
   const { table } = tag;
+  // Bar suspendido por la plataforma: la carta muestra "atención en mesa" (402)
+  await assertTenantActive(tag.tenantId);
 
   let isPhysicalPresence = false;
   let parsedCounter = 0;
@@ -112,7 +148,7 @@ export async function joinTableSession(req: FastifyRequest, reply: FastifyReply)
 
   // 3. Transacción atómica: quemar contador SUN, crear/obtener sesión y registrar dispositivo.
   //    El PIN se valida adentro: un dispositivo que ya estaba en la mesa vuelve a entrar sin PIN.
-  const result = await withRetryOnUnique(() =>
+  const result = await joinWithPinAccounting(() =>
     prisma.$transaction(async (tx) => {
       if (isPhysicalPresence) {
         // Anti-replay atómico: solo avanza si el contador es mayor que el último aceptado.
@@ -163,11 +199,15 @@ export async function joinTableSession(req: FastifyRequest, reply: FastifyReply)
         });
 
         if (!alreadyJoined) {
+          if (session.pinFailures >= PIN_MAX_FAILURES) {
+            throw new HttpError(423, "PIN_LOCKED", "Demasiados intentos. Pedile al mozo que te sume a la mesa.");
+          }
           if (!body.pin) {
             throw forbidden("PIN_REQUIRED", "Pedile el PIN a quien abrió la mesa");
           }
-          if (body.pin !== session.joinPin) {
-            throw forbidden("PIN_INVALID", "El PIN ingresado es incorrecto");
+          if (!safeEqual(body.pin, session.joinPin)) {
+            // Se cuenta FUERA de esta transacción (que se revierte al lanzar el error)
+            throw new WrongPinError(session.id);
           }
         }
       }
@@ -228,6 +268,7 @@ export async function getSessionHandler(req: FastifyRequest) {
     where: { id: guest.sid, tenantId: guest.tid },
     include: {
       table: { select: { label: true } },
+      venue: { select: { wifiSsid: true, wifiPassword: true, googleReviewUrl: true } },
       orders: { include: { items: true }, orderBy: { createdAt: "asc" } },
       serviceCalls: { where: { status: { not: "RESOLVED" } } },
     },
@@ -251,5 +292,13 @@ export async function getSessionHandler(req: FastifyRequest) {
     orders: session.orders,
     serviceCalls: session.serviceCalls,
     lastSeq,
+    // Hub en mesa: el Wi-Fi solo se entrega a mesas abiertas (no a quien solo escaneó el QR)
+    hub: {
+      wifi:
+        session.status !== "PENDING" && session.venue.wifiSsid
+          ? { ssid: session.venue.wifiSsid, password: session.venue.wifiPassword ?? "" }
+          : null,
+      googleReviewUrl: session.venue.googleReviewUrl,
+    },
   };
 }

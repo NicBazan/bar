@@ -59,6 +59,8 @@ export type RealtimeEventType =
   | "session.requested"
   | "session.opened"
   | "session.closed"
+  | "session.pin_changed"
+  | "menu.updated"
   | "order.submitted"
   | "order.approved"
   | "order.rejected"
