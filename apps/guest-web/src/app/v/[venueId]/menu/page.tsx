@@ -97,6 +97,19 @@ export default async function VenueMenuPage({ params, searchParams }: MenuPagePr
         </p>
       </header>
 
+      {/* Gamificación: algo para hacer mientras llega la comida */}
+      <Link
+        href={`/v/${venueId}/play/sudoku${tag ? `?tag=${tag}` : ""}`}
+        className="group relative mb-4 flex items-center gap-3 overflow-hidden rounded-2xl border border-amber/40 bg-gradient-to-r from-amber/15 via-surface to-surface p-4 shadow-lg shadow-amber/5 transition active:scale-[0.98]"
+      >
+        <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-amber/15 text-2xl transition-transform group-hover:rotate-6">🕹️</span>
+        <span className="min-w-0 flex-1">
+          <span className="block text-sm font-semibold text-cream">¿Esperando tu comida? Jugá un Sudoku</span>
+          <span className="block text-xs text-muted">Tres niveles · tu partida se guarda si volvés a la carta</span>
+        </span>
+        <span className="text-amber transition-transform group-hover:translate-x-1">→</span>
+      </Link>
+
       {/* Estado en vivo de la mesa: PIN, esperando al mozo, pedidos, llamar al mozo / cuenta */}
       <TableLiveBar tag={tag} currency={menu.venue.currency} />
 
