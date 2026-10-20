@@ -1,0 +1,10 @@
+**/node_modules
+**/.next
+**/.turbo
+**/dist
+**/.env
+**/.env.*
+!**/.env.example
+packages/db/src/client
+.git
+.claude

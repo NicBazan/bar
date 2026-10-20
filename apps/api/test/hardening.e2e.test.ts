@@ -77,6 +77,32 @@ describe("PIN", () => {
   });
 });
 
+describe("Cuota del plan", () => {
+  it("escanear el QR no consume cuota; abrir la mesa sí", async () => {
+    const tenant = await prisma.tenant.findUniqueOrThrow({ where: { slug: "bar-demo" } });
+    const used = async () =>
+      (await prisma.subscription.findUniqueOrThrow({ where: { tenantId: tenant.id } })).tableSessionsThisMonth;
+    const before = await used();
+
+    const scan = await join(otherTag.code, `dev-${randomUUID()}`);
+    expect(scan.json().session.status).toBe("PENDING");
+    expect(await used()).toBe(before);
+
+    const login = await app.inject({
+      method: "POST",
+      url: "/v1/staff/login",
+      payload: { email: "mozo@bardemo.test", password: "demo1234" },
+    });
+    const open = await app.inject({
+      method: "POST",
+      url: `/v1/staff/sessions/${scan.json().session.id}/open`,
+      headers: { authorization: `Bearer ${login.json().token}` },
+    });
+    expect(open.statusCode).toBe(200);
+    expect(await used()).toBe(before + 1);
+  });
+});
+
 describe("NFC SUN", () => {
   const q = `?uid=${NFC.uid}&ctr=${NFC.ctr}&cmac=${NFC.cmac}`;
 

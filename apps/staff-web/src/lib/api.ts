@@ -1,5 +1,6 @@
 // Cliente HTTP del staff. Token Bearer guardado en localStorage del dispositivo del local.
-const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:4000";
+// Por defecto "" → llama a /v1/* en el mismo dominio y next.config.ts lo reenvía a la API
+const API_URL = (process.env.NEXT_PUBLIC_API_URL ?? "").replace(/\/+$/, "");
 const TOKEN_KEY = "bar.staff.token";
 const USER_KEY = "bar.staff.user";
 

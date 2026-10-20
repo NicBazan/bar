@@ -145,8 +145,9 @@ export async function joinTableSession(req: FastifyRequest, reply: FastifyReply)
           },
         });
 
-        // Incremento de consumo mensual en el plan
-        await incrementSessionUsage(tx, tag.tenantId);
+        // La cuota mensual se consume cuando la mesa se ABRE de verdad (NFC acá, o el mozo en
+        // POST /staff/sessions/:id/open). Escaneos de un QR fotografiado que nadie abre no la gastan.
+        if (isPhysicalPresence) await incrementSessionUsage(tx, tag.tenantId);
 
         await emit(tx, {
           tenantId: tag.tenantId,

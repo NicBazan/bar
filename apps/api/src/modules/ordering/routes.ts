@@ -43,6 +43,8 @@ export async function orderingRoutes(app: FastifyInstance) {
       where: {
         ...staffScope(staff),
         status: status ?? { in: ["PENDING_APPROVAL", "APPROVED"] },
+        // El salón solo trabaja con mesas activas: lo de mesas cerradas es historial
+        ...(status ? {} : { session: { status: { not: "CLOSED" } } }),
       },
       include: { items: true, session: { select: { table: { select: { label: true } } } } },
       orderBy: { createdAt: "asc" },

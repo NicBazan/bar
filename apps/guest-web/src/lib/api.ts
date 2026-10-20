@@ -1,8 +1,14 @@
 // Cliente HTTP del comensal para Server Components y Client Components.
-const rawApiUrl = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:4000/v1";
-export const API_URL = rawApiUrl.endsWith("/v1")
-  ? rawApiUrl
-  : `${rawApiUrl.replace(/\/+$/, "")}/v1`;
+// - Navegador: "/v1" relativo; next.config.ts lo reenvía a la API (mismo dominio, sin CORS).
+// - Servidor de Next (Server Components): directo a la API por API_INTERNAL_URL.
+// NEXT_PUBLIC_API_URL sigue disponible para forzar una API externa desde el navegador.
+const withV1 = (url: string) => (url.endsWith("/v1") ? url : `${url.replace(/\/+$/, "")}/v1`);
+export const API_URL =
+  typeof window === "undefined"
+    ? withV1(process.env.API_INTERNAL_URL ?? "http://localhost:4000")
+    : process.env.NEXT_PUBLIC_API_URL
+      ? withV1(process.env.NEXT_PUBLIC_API_URL)
+      : "/v1";
 
 export class ApiError extends Error {
   public status: number;

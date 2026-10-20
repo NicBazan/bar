@@ -103,7 +103,9 @@ export default function WaiterPage() {
                 <p className="text-lg font-semibold">Mesa {s.table.label}</p>
                 <span className="rounded-full bg-amber/20 px-2 py-0.5 text-xs text-amber">quiere abrir</span>
               </div>
-              <p className="mt-1 text-sm text-muted">{s._count.devices} celular(es) · hace {minutesSince(s.openedAt)} min</p>
+              <p className="mt-1 text-sm text-muted">
+                PIN <span className="font-mono font-semibold text-cream">{s.joinPin}</span> · {s._count.devices} celular(es) · hace {minutesSince(s.openedAt)} min
+              </p>
               <div className="mt-3 flex gap-2">
                 <Btn primary onClick={() => act(`/staff/sessions/${s.id}/open`)}>Abrir mesa</Btn>
                 <Btn onClick={() => act(`/staff/sessions/${s.id}/close`)}>Descartar</Btn>

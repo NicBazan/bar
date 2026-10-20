@@ -30,6 +30,15 @@ export function FloatingCart({ currency = "ARS", tag }: FloatingCartProps) {
     if (tag) bindToTable(tag);
   }, [tag, bindToTable]);
 
+  // TableLiveBar avisa si la mesa ya está abierta (hasta que el mozo la abra no se puede enviar)
+  const [sessionOpen, setSessionOpen] = useState<boolean | null>(null);
+  useEffect(() => {
+    const onSession = (e: Event) => setSessionOpen((e as CustomEvent<{ open: boolean }>).detail.open);
+    window.addEventListener("bar:session", onSession);
+    return () => window.removeEventListener("bar:session", onSession);
+  }, []);
+  const waitingForWaiter = sessionOpen === false;
+
   const totalItems = getTotalItems();
   const totalPrice = getTotalPrice();
 
@@ -74,6 +83,7 @@ export function FloatingCart({ currency = "ARS", tag }: FloatingCartProps) {
       // Éxito: vaciamos carrito, cerramos sheet y mostramos confirmación
       remove(pendingKey);
       clearCart();
+      window.dispatchEvent(new Event("bar:order-sent"));
       setOrderNote("");
       setIsOpen(false);
       setSuccessToast("¡Pedido enviado a cocina! El mozo lo confirmará a la brevedad.");
@@ -265,7 +275,7 @@ export function FloatingCart({ currency = "ARS", tag }: FloatingCartProps) {
               <button
                 type="button"
                 onClick={() => void handleSendOrder()}
-                disabled={isSubmitting || items.length === 0}
+                disabled={isSubmitting || items.length === 0 || waitingForWaiter}
                 className="flex w-full items-center justify-center gap-2 rounded-2xl bg-gradient-to-r from-amber to-warn py-4 text-sm font-semibold text-amber-ink shadow-lg shadow-amber/25 transition-all duration-200 active:scale-95 disabled:opacity-40"
               >
                 {isSubmitting ? (
@@ -294,7 +304,7 @@ export function FloatingCart({ currency = "ARS", tag }: FloatingCartProps) {
                   </span>
                 ) : (
                   <>
-                    <span>Confirmar y Enviar a Cocina</span>
+                    <span>{waitingForWaiter ? "Esperando que el mozo abra la mesa…" : "Confirmar y Enviar a Cocina"}</span>
                     <span>👨‍🍳</span>
                   </>
                 )}

@@ -8,6 +8,7 @@ import { signToken } from "../../shared/auth/tokens.js";
 import { prisma } from "../../shared/db/index.js";
 import { HttpError, conflict, notFound } from "../../shared/errors.js";
 import { channels, emit } from "../../shared/outbox/outbox.js";
+import { assertTenantCanOpenSession, incrementSessionUsage } from "../billing/billing.guard.js";
 
 export async function staffRoutes(app: FastifyInstance) {
   app.post(
@@ -57,6 +58,9 @@ export async function staffRoutes(app: FastifyInstance) {
 
       if (action === "open") {
         if (session.status !== "PENDING") throw conflict("SESSION_NOT_PENDING");
+        // Abrir la mesa consume una sesión del plan (402 si el bar FREE llegó al límite del mes)
+        await assertTenantCanOpenSession(tx, session.tenantId);
+        await incrementSessionUsage(tx, session.tenantId);
         const updated = await tx.tableSession.update({
           where: { id },
           data: { status: "OPEN", approvedById: staff.sub },
@@ -73,6 +77,13 @@ export async function staffRoutes(app: FastifyInstance) {
 
       if (session.status === "CLOSED") throw conflict("SESSION_ALREADY_CLOSED");
       const updated = await tx.tableSession.update({ where: { id }, data: { status: "CLOSED", closedAt: new Date() } });
+      // Pedidos que nadie confirmó no deben quedar flotando: se cancelan con la mesa
+      const stale = await tx.order.findMany({ where: { sessionId: id, status: "PENDING_APPROVAL" }, select: { id: true } });
+      if (stale.length > 0) {
+        const ids = stale.map((o) => o.id);
+        await tx.order.updateMany({ where: { id: { in: ids } }, data: { status: "CANCELLED" } });
+        await tx.orderItem.updateMany({ where: { orderId: { in: ids } }, data: { status: "VOIDED", voidReason: "Mesa cerrada" } });
+      }
       // Llamados abiertos se resuelven al cerrar la mesa
       await tx.serviceCall.updateMany({
         where: { sessionId: id, status: { not: "RESOLVED" } },

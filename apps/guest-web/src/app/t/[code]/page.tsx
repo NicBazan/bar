@@ -4,6 +4,8 @@ import { ApiError, api, type TagInfo } from "@/lib/api";
 
 interface TableWelcomePageProps {
   params: Promise<{ code: string }>;
+  // Toque NFC (NTAG 424 SUN): el chip agrega uid, contador y firma a la URL
+  searchParams: Promise<{ uid?: string; ctr?: string; cmac?: string }>;
 }
 
 export async function generateMetadata({ params }: TableWelcomePageProps): Promise<Metadata> {
@@ -21,8 +23,10 @@ export async function generateMetadata({ params }: TableWelcomePageProps): Promi
   }
 }
 
-export default async function TableWelcomePage({ params }: TableWelcomePageProps) {
+export default async function TableWelcomePage({ params, searchParams }: TableWelcomePageProps) {
   const { code } = await params;
+  const { uid, ctr, cmac } = await searchParams;
+  const nfc = uid && ctr && cmac ? { uid, ctr, cmac } : undefined;
 
   let tagInfo: TagInfo | null = null;
   let notFoundError = false;
@@ -95,6 +99,7 @@ export default async function TableWelcomePage({ params }: TableWelcomePageProps
           code={code}
           venueId={venue.id}
           tableLabel={table.label}
+          nfc={nfc}
         />
         <p className="mt-6 text-[11px] tracking-wide text-muted/60">
           Experiencia gastronómica interactiva · Sin descargas

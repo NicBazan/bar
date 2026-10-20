@@ -9,9 +9,10 @@ interface JoinTableButtonProps {
   code: string;
   venueId: string;
   tableLabel: string;
+  nfc?: { uid: string; ctr: string; cmac: string };
 }
 
-export function JoinTableButton({ code, venueId, tableLabel }: JoinTableButtonProps) {
+export function JoinTableButton({ code, venueId, tableLabel, nfc }: JoinTableButtonProps) {
   const router = useRouter();
   const [loading, setLoading] = useState(false);
   const [showPinModal, setShowPinModal] = useState(false);
@@ -20,7 +21,10 @@ export function JoinTableButton({ code, venueId, tableLabel }: JoinTableButtonPr
   const [isMaintenance, setIsMaintenance] = useState(false);
   const [generalError, setGeneralError] = useState<string | null>(null);
 
-  const handleJoin = async (pinToSend?: string) => {
+  // La firma NFC sirve una sola vez: si ya se usó (recarga de la página) se sigue como QR
+  const [nfcUsable, setNfcUsable] = useState(Boolean(nfc));
+
+  const handleJoin = async (pinToSend?: string, useNfc = nfcUsable) => {
     setLoading(true);
     setPinError(null);
     setGeneralError(null);
@@ -34,7 +38,8 @@ export function JoinTableButton({ code, venueId, tableLabel }: JoinTableButtonPr
         bodyPayload.pin = pinToSend;
       }
 
-      const res = await api<JoinSessionResponse>(`/tags/${code}/session`, {
+      const nfcQuery = nfc && useNfc ?`?${new URLSearchParams(nfc).toString()}` : "";
+      const res = await api<JoinSessionResponse>(`/tags/${code}/session${nfcQuery}`, {
         method: "POST",
         body: bodyPayload,
       });
@@ -45,6 +50,12 @@ export function JoinTableButton({ code, venueId, tableLabel }: JoinTableButtonPr
       // Redirección exitosa a la carta
       router.push(`/v/${res.session.venueId || venueId}/menu?tag=${code}`);
     } catch (err) {
+      if (err instanceof ApiError && (err.code === "REPLAY_ATTACK_DETECTED" || err.code === "INVALID_NFC_SIGNATURE") && useNfc) {
+        // Toque NFC viejo o inválido: reintentar como QR (pedirá PIN si la mesa ya está abierta)
+        setNfcUsable(false);
+        return await handleJoin(pinToSend, false);
+      }
+
       if (err instanceof ApiError) {
         // 1. Error 402: Límite Freemium superado por el bar
         if (
@@ -56,14 +67,15 @@ export function JoinTableButton({ code, venueId, tableLabel }: JoinTableButtonPr
           return;
         }
 
-        // 2. Error 401/403: Requiere PIN de la sesión activa
-        if (err.requiresPin || err.code === "PIN_REQUIRED") {
+        // 2. PIN incorrecto (va antes: requiresPin también es true para este caso)
+        if (err.code === "PIN_INVALID") {
+          setPinError("El PIN ingresado es incorrecto. Pedíselo a quien abrió la mesa.");
           setShowPinModal(true);
           return;
         }
 
-        if (err.code === "PIN_INVALID") {
-          setPinError("El PIN ingresado es incorrecto. Pedíselo a quien abrió la mesa.");
+        // 3. Error 401/403: Requiere PIN de la sesión activa
+        if (err.requiresPin || err.code === "PIN_REQUIRED") {
           setShowPinModal(true);
           return;
         }

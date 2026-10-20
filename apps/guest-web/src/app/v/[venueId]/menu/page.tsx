@@ -3,6 +3,7 @@ import Link from "next/link";
 import { DishCard } from "@/components/DishCard";
 import { FloatingCart } from "@/components/FloatingCart";
 import { MenuCategoryNav } from "@/components/MenuCategoryNav";
+import { TableLiveBar } from "@/components/TableLiveBar";
 import { ApiError, api, type Menu } from "@/lib/api";
 
 interface MenuPageProps {
@@ -60,25 +61,8 @@ export default async function VenueMenuPage({ params, searchParams }: MenuPagePr
     );
   }
 
-  // Inyección de modelos 3D de prueba en el primer plato si la API aún no trae URLs reales
-  const categoriesWith3D = menu.categories.map((cat, catIdx) => ({
-    ...cat,
-    dishes: cat.dishes.map((dish, dishIdx) => {
-      const hasReal3D = Boolean(dish.assets?.GLB_LOD0 || dish.assets?.GLB_LOD1);
-      if (!hasReal3D && catIdx === 0 && dishIdx === 0) {
-        return {
-          ...dish,
-          assets: {
-            ...dish.assets,
-            GLB_LOD0: "https://modelviewer.dev/shared-assets/models/Astronaut.glb",
-            USDZ: "https://modelviewer.dev/shared-assets/models/Astronaut.usdz",
-            POSTER: "https://modelviewer.dev/shared-assets/models/Astronaut.webp",
-          },
-        };
-      }
-      return dish;
-    }),
-  }));
+  // Los modelos 3D vienen de la API (DishAsset GLB/USDZ): un plato sin modelo muestra foto o nada
+  const categoriesWith3D = menu.categories;
 
   const navCategories = categoriesWith3D.map((c) => ({
     id: c.id,
@@ -112,6 +96,9 @@ export default async function VenueMenuPage({ params, searchParams }: MenuPagePr
           Tocá un plato con el sello 3D para proyectarlo a escala real sobre tu mesa.
         </p>
       </header>
+
+      {/* Estado en vivo de la mesa: PIN, esperando al mozo, pedidos, llamar al mozo / cuenta */}
+      <TableLiveBar tag={tag} currency={menu.venue.currency} />
 
       {/* Navegación horizontal de categorías sticky */}
       <MenuCategoryNav categories={navCategories} />

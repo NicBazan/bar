@@ -1,0 +1,91 @@
+"use client";
+
+import Link from "next/link";
+import { useEffect, useState } from "react";
+import { OrdersSheet } from "@/features/ordering/OrdersSheet";
+import { useLiveTable } from "@/features/ordering/useLiveTable";
+import { Toasts } from "./Sheet";
+
+/**
+ * Franja de estado de la mesa en la carta: PIN para sumar amigos, aviso de "esperando al mozo",
+ * pedidos con su estado en vivo y botones de llamar al mozo / pedir la cuenta.
+ * Expone el estado de la sesión al carrito vía evento para que no deje enviar con la mesa cerrada.
+ */
+export function TableLiveBar({ tag, currency }: { tag?: string; currency: string }) {
+  const live = useLiveTable(tag);
+  const [showOrders, setShowOrders] = useState(false);
+  const s = live.session;
+  const isOpen = s?.status === "OPEN" || s?.status === "BILL_REQUESTED";
+
+  // Se emite recién cuando llega el estado real (async), así el carrito ya está escuchando
+  const sessionStatus = s?.status;
+  useEffect(() => {
+    if (!sessionStatus) return;
+    window.dispatchEvent(new CustomEvent("bar:session", { detail: { open: isOpen } }));
+  }, [sessionStatus, isOpen]);
+
+  // El carrito avisa cuando envió un pedido: refrescar para que aparezca en "Pedidos"
+  const { refresh } = live;
+  useEffect(() => {
+    const onSent = () => void refresh();
+    window.addEventListener("bar:order-sent", onSent);
+    return () => window.removeEventListener("bar:order-sent", onSent);
+  }, [refresh]);
+
+  if (!tag) return null;
+
+  if (live.status === "no_session" || live.status === "closed") {
+    return (
+      <div className="mb-4 rounded-2xl border border-line bg-surface p-4 text-sm">
+        <p className="text-cream">{live.status === "closed" ? "Esta mesa ya se cerró. ¡Gracias por venir!" : "Estás viendo la carta."}</p>
+        <Link href={`/t/${tag}`} className="mt-2 inline-block font-semibold text-amber">
+          {live.status === "closed" ? "Volver a sentarme →" : "Unirme a la mesa para pedir →"}
+        </Link>
+      </div>
+    );
+  }
+  if (!s) return null;
+
+  const activeOrders = s.orders.filter((o) => o.status === "PENDING_APPROVAL" || o.status === "APPROVED").length;
+
+  return (
+    <>
+      <Toasts items={live.notices} />
+
+      {s.status === "PENDING" ? (
+        <div className="mb-4 rounded-2xl border border-amber/40 bg-amber/10 p-4 text-sm">
+          <p className="font-semibold text-amber">Esperando que el mozo abra la mesa {s.table.label}</p>
+          <p className="mt-1 text-cream/80">Mientras tanto mirá la carta y armá tu pedido.</p>
+          <Pin pin={s.pin} />
+        </div>
+      ) : (
+        <div className="mb-4 rounded-2xl border border-line bg-surface p-3">
+          <div className="grid grid-cols-3 gap-2 text-xs font-medium">
+            <button onClick={() => live.callService("WAITER")} className="rounded-xl bg-surface-2 py-2.5">🙋 Mozo</button>
+            <button onClick={() => live.callService("BILL")} className="rounded-xl bg-surface-2 py-2.5">🧾 Cuenta</button>
+            <button onClick={() => setShowOrders(true)} className="relative rounded-xl bg-surface-2 py-2.5">
+              📋 Pedidos
+              {activeOrders > 0 && (
+                <span className="absolute -top-1 -right-1 grid h-5 w-5 place-items-center rounded-full bg-amber text-[10px] font-bold text-amber-ink">
+                  {activeOrders}
+                </span>
+              )}
+            </button>
+          </div>
+          <Pin pin={s.pin} compact />
+        </div>
+      )}
+
+      {showOrders && <OrdersSheet orders={s.orders} currency={currency} onClose={() => setShowOrders(false)} />}
+    </>
+  );
+}
+
+function Pin({ pin, compact }: { pin: string; compact?: boolean }) {
+  return (
+    <p className={compact ? "mt-2 text-center text-[11px] text-muted" : "mt-3 text-xs text-cream/70"}>
+      ¿Vienen más amigos? Para unirse necesitan el PIN{" "}
+      <span className="rounded bg-surface-2 px-1.5 py-0.5 font-mono font-bold tracking-widest text-cream">{pin}</span>
+    </p>
+  );
+}

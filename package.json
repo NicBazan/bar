@@ -12,6 +12,7 @@
     "infra:down": "docker compose -f infra/docker/docker-compose.yml down",
     "db:generate": "pnpm --filter @bar/db generate",
     "db:migrate": "pnpm --filter @bar/db migrate",
+    "db:deploy": "pnpm --filter @bar/db run migrate:deploy",
     "db:seed": "pnpm --filter @bar/db seed",
     "db:studio": "pnpm --filter @bar/db studio"
   },

@@ -4,7 +4,19 @@ import { useMemo, useState } from "react";
 import { Sheet } from "@/components/Sheet";
 import type { Dish } from "@/lib/api";
 import { formatMoney } from "@/lib/storage";
-import type { CartLine } from "../ordering/useCart";
+/** Lo que el comensal eligió en la hoja del plato */
+export type CartLine = {
+  lineId: string;
+  dishId: string;
+  name: string;
+  variantId?: string;
+  variantName?: string;
+  modifierIds: string[];
+  modifierNames: string[];
+  unitPriceCents: number;
+  quantity: number;
+  note?: string;
+};
 
 /** Detalle del plato: variantes, modificadores (con min/max), cantidad y nota */
 export function DishSheet({ dish, currency, canAdd, onClose, onAdd }: {

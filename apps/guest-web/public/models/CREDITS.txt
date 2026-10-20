@@ -1,0 +1,1 @@
+Avocado.glb: Khronos Group glTF Sample Assets (https://github.com/KhronosGroup/glTF-Sample-Assets/tree/main/Models/Avocado), licencia CC0 1.0 (dominio público). Modelo de ejemplo para la demo de 3D/AR.
