@@ -51,7 +51,7 @@ Cada comando imprime una URL `https://xxxx.trycloudflare.com`. Abrila en el celu
 | `JWT_SECRET` | la genera Render (`generateValue`) |
 | `NFC_MASTER_KEY` | 32 caracteres hex. Generar: `node -e "console.log(require('crypto').randomBytes(16).toString('hex'))"` |
 | `CORS_ORIGINS` | los dominios de Vercel separados por coma (solo si algún cliente llama a la API directo) |
-| `PUBLIC_GUEST_URL` | la URL de la carta en Vercel (ej. `https://bar-carta.vercel.app`): con ella el admin arma los QR |
+| `PUBLIC_GUEST_URL` | la URL de la carta en Vercel (ej. `https://cartabar.vercel.app`): con ella el admin arma los QR |
 | `TRUST_PROXY` | `2` (Vercel + Render). **Nunca** `true`: permitiría inventarse la IP y saltear los límites |
 | `CLOUDINARY_URL` | De Cloudinary (Settings → API Keys). Las fotos y los 3D del admin van ahí, así Render no necesita disco y alcanza el plan free |
 
@@ -68,10 +68,12 @@ Cada comando imprime una URL `https://xxxx.trycloudflare.com`. Abrila en el celu
 
 | Proyecto | Root Directory | Variable |
 | :-- | :-- | :-- |
-| `bar-carta` | `apps/guest-web` | `API_INTERNAL_URL=https://bar-api.onrender.com` |
-| `bar-panel` | `apps/staff-web` | `API_INTERNAL_URL=https://bar-api.onrender.com` |
+| `cartabar` | `apps/guest-web` | `API_INTERNAL_URL=https://bar-api.onrender.com` |
+| `panelbar` | `apps/staff-web` | `API_INTERNAL_URL=https://bar-api.onrender.com` |
 
-Vercel detecta pnpm y el monorepo solo. Después del primer deploy, los QR de las mesas apuntan a `https://bar-carta.vercel.app/t/{code}`.
+El nombre del proyecto define el link (`cartabar` → `https://cartabar.vercel.app`; `carta.vercel.app` ya está tomado). Con dominio propio: Proyecto → Settings → Domains → `carta.tudominio.com` (y `panel.tudominio.com` para el panel); los QR impresos con tu dominio no cambian nunca.
+
+Vercel detecta pnpm y el monorepo solo. Después del primer deploy, los QR de las mesas apuntan a `https://cartabar.vercel.app/t/{code}`.
 
 ---
 
