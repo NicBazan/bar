@@ -3,7 +3,7 @@
 import type { CreateOrderBody } from "@bar/shared-types";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { ApiError, type Menu, type Order, type SessionState, type StateEvents, type TagInfo, api } from "@/lib/api";
-import { getDeviceKey, load, remove, save } from "@/lib/storage";
+import { getDeviceKey, load, remove, save, uuid } from "@/lib/storage";
 
 type Phase = "loading" | "need_pin" | "ready" | "closed" | "error";
 
@@ -145,7 +145,7 @@ export function useTableSession(tag: string) {
       const pendingKey = `bar.pendingOrder.${tag}`;
       const pending = load<{ key: string; body: string } | null>(pendingKey, null);
       const serialized = JSON.stringify(body);
-      const key = pending && pending.body === serialized ? pending.key : crypto.randomUUID();
+      const key = pending && pending.body === serialized ? pending.key : uuid();
       save(pendingKey, { key, body: serialized });
 
       let lastError: unknown;

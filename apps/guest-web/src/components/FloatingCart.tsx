@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { ApiError, api } from "@/lib/api";
-import { formatMoney, load, remove, save } from "@/lib/storage";
+import { formatMoney, load, remove, save, uuid } from "@/lib/storage";
 import { useCartStore } from "@/store/cartStore";
 
 interface FloatingCartProps {
@@ -59,7 +59,7 @@ export function FloatingCart({ currency = "ARS", tag }: FloatingCartProps) {
       const pendingKey = `bar.pendingOrder.${tag ?? "sin-mesa"}`;
       const serialized = JSON.stringify(bodyPayload);
       const pending = load<{ key: string; body: string } | null>(pendingKey, null);
-      const idempotencyKey = pending?.body === serialized ? pending.key : crypto.randomUUID();
+      const idempotencyKey = pending?.body === serialized ? pending.key : uuid();
       save(pendingKey, { key: idempotencyKey, body: serialized });
 
       await api("/orders", {

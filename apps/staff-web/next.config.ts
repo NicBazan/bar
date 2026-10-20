@@ -2,6 +2,8 @@ import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
   transpilePackages: ["@bar/shared-types"],
+  // Permite abrir el panel en dev desde otros dispositivos de la red (tablet de cocina, celular)
+  allowedDevOrigins: ["192.168.100.25", "localhost"],
   async headers() {
     return [
       {

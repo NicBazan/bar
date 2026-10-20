@@ -1,5 +1,6 @@
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
+import { uuid } from "@/lib/storage";
 
 /**
  * Una línea del carrito = plato + opción elegida (variante, modificadores, nota).
@@ -61,7 +62,7 @@ export const useCartStore = create<CartState>()(
             };
           }
           const { quantity: _q, ...rest } = newItem;
-          return { items: [...state.items, { ...rest, lineId: crypto.randomUUID(), quantity: qty }] };
+          return { items: [...state.items, { ...rest, lineId: uuid(), quantity: qty }] };
         });
       },
 

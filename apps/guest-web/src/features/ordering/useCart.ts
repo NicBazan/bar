@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
-import { load, remove, save } from "@/lib/storage";
+import { load, remove, save, uuid } from "@/lib/storage";
 
 export type CartLine = {
   lineId: string;
@@ -35,7 +35,7 @@ export function useCart(tag: string) {
           l.modifierIds.join() === line.modifierIds.join(),
       );
       if (same) return ls.map((l) => (l === same ? { ...l, quantity: Math.min(20, l.quantity + line.quantity) } : l));
-      return [...ls, { ...line, lineId: crypto.randomUUID() }];
+      return [...ls, { ...line, lineId: uuid() }];
     });
   }, []);
 
