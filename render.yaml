@@ -1,48 +1,31 @@
-# Blueprint de Render: API + worker del outbox (mismo Dockerfile).
-# Postgres (Neon) y Redis (Upstash) se crean aparte y se cargan como variables.
+# Blueprint de Render: la API (Docker). Postgres va en Neon y las fotos en Cloudinary.
+# Todo en planes gratis. El worker del outbox (Redis) no hace falta todavía: los front
+# consultan /v1/state. Cuando haya tiempo real con push, se agrega acá (plan pago).
 services:
   - type: web
     name: bar-api
     runtime: docker
     dockerfilePath: infra/docker/api.Dockerfile
     dockerContext: .
-    # free alcanza: las fotos y los 3D van a Cloudinary (sin Cloudinary haría falta disco y plan starter)
     plan: free
     healthCheckPath: /health
     envVars:
       - key: NODE_ENV
         value: production
+      # Neon: usar la conexión DIRECTA (sin "-pooler"), con ?sslmode=require
       - key: DATABASE_URL
-        sync: false
-      - key: REDIS_URL
         sync: false
       - key: JWT_SECRET
         generateValue: true
+      # 32 caracteres hex (ver DEPLOY.md)
       - key: NFC_MASTER_KEY
         sync: false
-      - key: CORS_ORIGINS
-        sync: false
-      # URL pública de la carta (para los QR que arma el admin)
+      # URL de la carta en Vercel (para los QR que arma el admin)
       - key: PUBLIC_GUEST_URL
         sync: false
-      # Vercel + balanceador de Render: 2 saltos de proxy confiables (para el rate limit por IP)
+      # Vercel + balanceador de Render: 2 saltos de proxy confiables (rate limit por IP)
       - key: TRUST_PROXY
         value: "2"
       # Fotos y modelos 3D del admin: cloudinary://API_KEY:API_SECRET@CLOUD_NAME
       - key: CLOUDINARY_URL
-        sync: false
-
-  - type: worker
-    name: bar-outbox-worker
-    runtime: docker
-    dockerfilePath: infra/docker/api.Dockerfile
-    dockerContext: .
-    dockerCommand: /entrypoint.sh worker
-    plan: starter # los workers de Render no tienen plan free
-    envVars:
-      - key: NODE_ENV
-        value: production
-      - key: DATABASE_URL
-        sync: false
-      - key: REDIS_URL
         sync: false
