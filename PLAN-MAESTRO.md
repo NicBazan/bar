@@ -2,7 +2,7 @@
 
 Base de conocimiento del proyecto **bar**: une una carta interactiva 3D/AR con sistema operativo gastronómico (estilo *Menuly*) y un hub en mesa "zero-install" con NFC + QR (estilo *Candour*).
 
-> **Estado (20/10/2026): Fase 1 avanzada.** El flujo de mesa funciona de punta a punta en local (QR → carta → pedido → mozo → cocina → listo), con NFC SUN verificado, carta 3D/AR y deploy preparado (Docker + Render + Vercel). Falta: deploy real, admin de carta y probarlo en un celular fuera de la red de casa. Ver [§11 Estado actual](#11-estado-actual-qué-está-hecho-y-qué-falta).
+> **Estado (21/10/2026): MVP completo andando en local.** Con `INICIAR-MVP.cmd` arranca todo y se abre desde el celular (Wi-Fi o HTTPS). Hay carta 3D/AR, pedidos, mozo, KDS, **admin del bar** (carta, agotados, fotos/3D, mesas y QR, equipo, Wi-Fi, reseñas), **super admin** de la plataforma, Sudoku para la espera y una auditoría de seguridad hecha ([docs/SEGURIDAD.md](docs/SEGURIDAD.md)). Falta el deploy en la nube. Ver [§11](#11-estado-actual-qué-está-hecho-y-qué-falta).
 >
 > Este documento es la fuente de verdad: cada decisión nueva se agrega acá o como ADR en `docs/adr/`. Repo: https://github.com/NicBazan/bar
 
@@ -298,14 +298,17 @@ Leyenda: ✅ hecho · 🟡 a medias · ⬜ pendiente
 - ✅ Visor 3D + botón "Ver en tu mesa" (WebXR / Scene Viewer / Quick Look)
 - ✅ Onboarding self-service y plan FREE con cuota mensual
 - 🟡 Deploy: Dockerfile, `render.yaml` y `DEPLOY.md` listos; falta crear las cuentas y subirlo
-- ⬜ **Admin de carta**: platos, precios, agotados, fotos/3D, mesas y QR imprimibles (hoy todo sale del seed)
+- ✅ **MVP local con un clic** (`INICIAR-MVP.cmd`): build de producción, túneles HTTPS y página con QR
+- ✅ **Admin del bar**: carta (categorías, platos, tamaños, opciones, agotado/oculto, foto y 3D), mesas con QR imprimible y NFC, equipo con roles, Wi-Fi y reseñas
+- ✅ **Super admin**: bares, planes y cuota, suspensión, alta para clientes, contraseña temporal, auditoría
+- ✅ Auditoría de seguridad ([docs/SEGURIDAD.md](docs/SEGURIDAD.md))
 - ⬜ PWA offline (Service Worker con la carta cacheada)
 - ⬜ RLS en Postgres como segunda barrera de aislamiento
 - ⬜ Analítica base (aperturas 3D → pedidos)
 
 ### Fase 2: diferenciación
 - ⬜ Chef IA y layouts Clásico/Reels/Lista en vivo
-- ⬜ Sellos + Wallet, deep link a Google Reviews (sin *review gating*), feedback con fotos y minijuegos
+- 🟡 Hub en mesa: ✅ Wi-Fi para mesas abiertas, ✅ link de reseñas, ✅ Sudoku para la espera · ⬜ sellos + Wallet, feedback con fotos, más juegos
 - ⬜ App Clip v1 (Wi-Fi + push efímera) y pipeline 3D semiautomático
 
 ### Fase 3: sistema operativo del local
@@ -384,35 +387,43 @@ bar/
 
 ### Convenciones
 - **Gestor:** pnpm workspaces + Turborepo. Node 22+. TypeScript `strict`.
-- **Validación:** Zod en `packages/shared-types`, compartido entre los front y la API.
-- **Seguridad heredada de taller y Enterprice:** headers estrictos, `HttpOnly` borrado solo en el servidor, Swagger oculto en producción, uploads sin SVG/HTML, `overflow-x: clip` en mobile, `noindex` en paneles.
+- **Validación:** Zod en la API y en `packages/shared-types`. Ojo con Zod 4: los `.default()` se aplican aunque el campo sea opcional, así que los esquemas de PATCH se escriben sin defaults.
+- **Seguridad:** ver [docs/SEGURIDAD.md](docs/SEGURIDAD.md). Reglas que no se rompen: el `tenantId` sale siempre del token; nunca `trustProxy: true`; los archivos se validan por contenido; nada de URLs que no sean `https://` o archivos propios.
 - **Dinero:** enteros en céntimos. **Fechas:** UTC en la base, zona horaria de la sucursal en la UI.
 - **Idempotencia:** toda mutación del comensal lleva `Idempotency-Key`.
-- **Front → API:** el navegador llama siempre a `/v1/*` en su propio dominio y Next lo reenvía a la API (`rewrites` en `next.config.ts`). Nunca URLs absolutas a la API en el navegador.
-- **Sin APIs exclusivas de HTTPS:** el dev por la red local corre en HTTP. Por ejemplo, usar `uuid()` de `lib/storage.ts`, nunca `crypto.randomUUID()` directo.
+- **Front → API:** el navegador llama siempre a `/v1/*` en su propio dominio y Next lo reenvía a la API (`rewrites`).
+- **Sin APIs exclusivas de HTTPS:** el MVP por la red local corre en HTTP. Por ejemplo, usar `uuid()` de `lib/storage.ts`, nunca `crypto.randomUUID()` directo.
 - **ADR:** toda decisión no trivial va en `docs/adr/NNNN-titulo.md`.
 
-### Correr en local (una terminal por comando)
+### Arrancar el MVP (lo normal)
+**Doble clic en `INICIAR-MVP.cmd`.** Hace todo y abre `.mvp/LINKS.html` con los QR. Para apagar: `DETENER-MVP.cmd`. Logs en `.mvp/logs/`.
+
+Usuarios demo (contraseñas solo de desarrollo, definidas en `packages/db/prisma/seed.ts`):
+
+| Rol | Email | Contraseña | Entra a |
+| :-- | :-- | :-- | :-- |
+| Dueño | `dueno@bardemo.test` | `demo1234` | `/admin` |
+| Mozo | `mozo@bardemo.test` | `demo1234` | `/waiter` |
+| Cocina | `cocina@bardemo.test` | `demo1234` | `/kds` |
+| Super admin | `superadmin@bar.test` | `superadmin1234` | `/superadmin` |
+
+### Modo desarrollo (para programar)
 ```bash
-corepack pnpm infra:up                          # Postgres :5433 + Redis :6380 (Docker Desktop abierto)
-corepack pnpm db:deploy                         # aplica migraciones
-corepack pnpm db:seed                           # SOLO la primera vez: resetea el bar demo y regenera los QR
+corepack pnpm infra:up                          # Postgres :5433 + Redis :6380
+corepack pnpm db:deploy                         # migraciones
+corepack pnpm db:seed                           # SOLO si querés resetear el demo (regenera los QR)
 corepack pnpm --filter @bar/api dev             # API        http://localhost:4000
 corepack pnpm --filter @bar/guest-web dev       # Carta      http://localhost:3000/t/{code}
 corepack pnpm --filter @bar/staff-web dev       # Panel      http://localhost:3001/login
-corepack pnpm --filter @bar/api test            # 23 tests (flujo e2e, PIN, NFC, CORS, cuota)
+corepack pnpm --filter @bar/api test            # 46 tests
+node scripts/mvp/smoke.mjs                      # prueba de humo contra el MVP arrancado
 ```
-Usuarios demo: `mozo@`, `cocina@`, `dueno@`, `caja@bardemo.test`, todos con `demo1234`. Los links de cada mesa los imprime el seed.
+No mezclar: si el MVP está andando, los puertos 3000/3001/4000 están ocupados (primero `DETENER-MVP.cmd`).
 
-### Probar desde el celular
-- **Misma red Wi-Fi:** `http://<IP-de-la-PC>:3000/t/{code}` (hoy `192.168.100.25`). Sin cámara ni AR (no es HTTPS).
-- **Con HTTPS (cámara y AR), desde cualquier red:** túnel de Cloudflare, uno por front:
-  ```bash
-  "/c/Program Files (x86)/cloudflared/cloudflared.exe" tunnel --url http://localhost:3000
-  "/c/Program Files (x86)/cloudflared/cloudflared.exe" tunnel --url http://localhost:3001
-  ```
-  Cada uno imprime una URL `https://xxxx.trycloudflare.com` que cambia en cada arranque. Ver [§12](#12-problemas-conocidos-y-soluciones) si el celular no abre el link.
-- **Producción:** ver [DEPLOY.md](DEPLOY.md).
+### Celular
+- **En el Wi-Fi de casa:** `http://192.168.100.25:3000/t/{code}`. Funciona todo menos la cámara/AR.
+- **Con datos móviles:** el link `https://….trycloudflare.com` del túnel. Funciona todo, incluida la AR. En el Wi-Fi de casa no abre porque el router bloquea `trycloudflare.com` (ver §12).
+- **Producción:** [DEPLOY.md](DEPLOY.md).
 
 ### ADRs
 - ~~0001: NestJS vs Fastify~~ → **Fastify** (más liviano; los módulos son plugins por dominio)
@@ -424,59 +435,89 @@ Usuarios demo: `mozo@`, `cocina@`, `dueno@`, `caja@bardemo.test`, todos con `dem
 
 ## 10. API implementada
 
-### Endpoints (`/v1`)
+### Comensal y salón (`/v1`)
 
 | Método | Ruta | Quién | Qué hace |
 | :-- | :-- | :-- | :-- |
 | GET | `/tags/:code` | público | Resuelve el local y la mesa del QR/NFC |
-| GET | `/venues/:venueId/menu` | público (cacheable) | Carta compilada con overrides de la sucursal |
-| POST | `/tags/:code/session[?uid&ctr&cmac]` | comensal | Une el dispositivo a la mesa. QR: el primero crea la sesión `PENDING`, los demás necesitan el PIN; un dispositivo que ya estaba entra sin PIN. NFC SUN válido: abre la mesa directo (`OPEN`) |
-| GET | `/session` | comensal | Estado de la mesa, pedidos y llamados (410 si está cerrada) |
+| GET | `/venues/:venueId/menu` | público (cacheable) | Carta compilada con los overrides de la sucursal |
+| GET | `/media/:tenant/:file` | público | Fotos y modelos 3D subidos (nombres generados por el servidor) |
+| POST | `/tags/:code/session[?uid&ctr&cmac]` | comensal | Une el dispositivo a la mesa. QR: el primero crea la sesión `PENDING` y los demás necesitan el PIN (8 fallos → bloqueo); un dispositivo que ya estaba entra sin PIN. NFC SUN válido: abre la mesa directo |
+| GET | `/session` | comensal | Estado de la mesa, pedidos, llamados y hub (Wi-Fi solo con la mesa abierta, link de reseñas) |
 | POST | `/orders` | comensal | Pedido con `Idempotency-Key`; precios y estación los calcula el servidor |
 | POST | `/service-calls` | comensal | `WAITER` / `BILL`, deduplicado y con cooldown de 60 s |
 | GET | `/state?since=seq` | comensal / staff | Catch-up de eventos del outbox |
-| POST | `/onboarding/register` | público | Alta self-service: tenant + sucursal + dueño + carta vacía + 10 mesas con QR, plan FREE |
-| POST | `/staff/login` · `/staff/logout` | staff | JWT (Bearer o cookie HttpOnly) |
-| GET | `/staff/sessions` · POST `/staff/sessions/:id/open\|close` | mozo | Abrir (consume cuota del plan) y cerrar mesas (cancela los pedidos sin confirmar) |
-| GET | `/staff/orders` · POST `/staff/orders/:id/approve\|reject` | mozo | Aprobar manda los ítems a cocina (`FIRED`) |
-| GET | `/staff/kitchen/items?station=` · PATCH `/staff/order-items/:id/status` | cocina / mozo | KDS: `IN_PROGRESS → READY` (cocina), `SERVED` (mozo), `VOIDED` (encargado, con auditoría) |
+| POST | `/onboarding/register` | público | Alta self-service de un bar (tope global de 30 por hora) |
+| POST | `/staff/login` · `/staff/logout` | staff | JWT; 10 intentos por minuto por cuenta |
+| GET | `/staff/sessions` · POST `/staff/sessions/:id/open\|close\|new-pin` | mozo | Abrir (consume cuota), cerrar (cancela pedidos sin confirmar) y PIN nuevo |
+| GET | `/staff/orders` · POST `/staff/orders/:id/approve\|reject` | mozo | Aprobar manda los ítems a cocina |
+| GET | `/staff/kitchen/items` · PATCH `/staff/order-items/:id/status` | cocina / mozo | KDS |
 | GET | `/staff/service-calls` · POST `/staff/service-calls/:id/ack\|resolve` | mozo | Atender llamados |
 
+### Admin del bar (`/v1/admin`, OWNER y MANAGER)
+
+| Ruta | Qué hace |
+| :-- | :-- |
+| GET `/admin/overview` | Ventas de 24 h, mesas activas, plan y uso, top 5 platos de 7 días |
+| GET `/admin/menu` | Carta completa para editar (incluye archivados y ocultos) |
+| POST/PATCH/DELETE `/admin/categories[/:id]` | Categorías (borrar solo si está vacía) |
+| POST/PATCH/DELETE `/admin/dishes[/:id]` | Platos; DELETE = archivar (los pedidos viejos lo referencian) |
+| PUT `/admin/dishes/:id/availability` | Agotado / oculto / precio local de la sucursal |
+| PUT `/admin/dishes/:id/variants` · `/modifier-groups` | Tamaños y grupos de opciones (reemplazo completo) |
+| POST/PUT/DELETE `/admin/dishes/:id/media/:kind` | Foto, GLB o USDZ: subida multipart validada o URL https |
+| POST `/admin/stations` | Estaciones de cocina (pantallas del KDS) |
+| GET/POST/PATCH `/admin/tables[/:id]` · POST `/:id/regenerate-qr` · PUT `/:id/nfc` | Mesas, QR nuevo (invalida el impreso), vincular chip NTAG 424 |
+| POST `/admin/areas` | Áreas del salón |
+| GET/POST/PATCH `/admin/staff[/:id]` | Equipo con matriz de roles |
+| GET/PATCH `/admin/venue` | Nombre, layout, Wi-Fi de invitados, link de reseñas |
+
+### Super admin (`/v1/superadmin`, SUPER_ADMIN del tenant de la plataforma)
+
+| Ruta | Qué hace |
+| :-- | :-- |
+| GET `/superadmin/stats` | Bares, planes, mesas y pedidos de la plataforma |
+| GET `/superadmin/tenants[?q=]` · GET `/:id` | Listado con actividad de 30 días; detalle con equipo y auditoría |
+| POST `/superadmin/tenants` | Alta de un bar para un cliente (plan y cuota a elección) |
+| PATCH `/superadmin/tenants/:id/subscription` | Plan, cuota, reiniciar uso, extender período |
+| POST `/superadmin/tenants/:id/suspend\|unsuspend` | Corta al staff y la carta en el próximo request |
+| POST `/superadmin/staff/:id/reset-password` | Contraseña temporal (se muestra una sola vez) |
+| GET `/superadmin/audit[?tenantId=]` | Auditoría global |
+
 ### Decisiones tomadas en el código
-- **Una sesión activa por mesa:** índice único parcial (`WHERE status <> 'CLOSED'`). Si dos celulares escanean a la vez, uno reintenta y se une a la misma sesión.
-- **Outbox:** cada evento incrementa `Venue.eventSeq` dentro de la transacción. El worker marca `publishedAt` y **no borra**: `/v1/state` necesita los eventos para el catch-up. La limpieza de eventos con más de 24 h es horaria.
-- **NFC SUN:** CMAC propio (`node:crypto`, RFC 4493) + derivación de clave de sesión de NXP. El `nfcUid` del chip queda ligado a la mesa y el anti-replay es atómico (`UPDATE … WHERE sunCounter < ctr`).
-- **Cuota FREE:** se consume cuando la mesa se abre (mozo o NFC), no al escanear, para que un QR fotografiado no gaste la cuota del bar.
-- **Aislamiento:** todas las consultas de staff filtran por `tenantId` (+ `venueId` si el usuario está atado a una sucursal).
-- **CORS:** lista de orígenes (`CORS_ORIGINS`) + red local solo en dev. Nunca `origin: true` con credentials.
-- **Rate limit:** global de 300/min por IP; login 10/min; onboarding 5/min; pedidos 10/min **por dispositivo** (la mesa comparte IP).
+- **Una sesión activa por mesa:** índice único parcial (`WHERE status <> 'CLOSED'`).
+- **Outbox:** cada evento incrementa `Venue.eventSeq` en la transacción. El worker marca `publishedAt` y no borra (los eventos se purgan a las 24 h).
+- **NFC SUN:** algoritmo de NXP con AES-CMAC propio, UID ligado a la mesa y anti-replay atómico.
+- **Estado vivo del staff:** `requireStaff` mira la base (caché de 10 s). Las bajas, los cambios de rol y las suspensiones aplican enseguida.
+- **Cuota FREE:** se consume cuando la mesa se abre (mozo o NFC), no al escanear.
+- **Rate limit:** por dispositivo/usuario con token válido, o por IP; login por cuenta; onboarding con tope global.
 
 ---
 
 ## 11. Estado actual: qué está hecho y qué falta
 
-### ✅ Funciona hoy (probado en el navegador y con tests)
+### ✅ Funciona hoy (tests + navegador + prueba de humo en producción local)
 | Área | Qué hay |
 | :-- | :-- |
-| Comensal | QR/NFC → bienvenida → carta por categorías → plato con opciones → carrito por mesa → pedido → estado en vivo, PIN, Mozo / Cuenta / Pedidos |
-| 3D / AR | Visor `<model-viewer>` y botón "Ver en tu mesa". Plato demo **Tostada de palta** con el modelo Avocado (Khronos, CC0), solo en la base local |
-| Mozo | Mesas (abrir con PIN visible, descartar, cerrar), pedidos por confirmar, llamados, listos para llevar |
-| Cocina | KDS por estación, tiempos con colores, Empezar / Listo / Todo listo, sonido y pantalla encendida |
-| Seguridad | PIN, NFC SUN anti-replay, idempotencia, rate limit, aislamiento por tenant, CORS cerrado, secretos obligatorios en producción |
-| Negocio | Onboarding self-service y plan FREE (50 mesas/mes) con pantalla "atención en mesa" al superar el límite |
-| Infra | Docker de la API probado en modo producción, build de producción de los dos front, túnel HTTPS |
+| Comensal | QR/NFC → carta → plato con opciones → carrito por mesa → pedido → estado en vivo, PIN, Mozo / Cuenta / Pedidos, Wi-Fi, reseña |
+| Espera | 🕹️ Sudoku con solución única, 3 niveles, partida guardada, animación al ganar |
+| 3D / AR | `<model-viewer>` servido desde el propio sitio, botón "Ver en tu mesa", plato demo Tostada de palta (Avocado de Khronos, CC0) |
+| Mozo | Mesas (abrir, PIN, PIN nuevo, cerrar), pedidos, llamados, listos para llevar |
+| Cocina | KDS por estación con tiempos, sonido y pantalla encendida |
+| Dueño (admin) | Carta completa, agotados en un toque, fotos y 3D, mesas y QR imprimibles, NFC, equipo, Wi-Fi y reseñas |
+| Plataforma (super admin) | Métricas, bares, planes, suspensión, altas, contraseñas temporales, auditoría |
+| Seguridad | [docs/SEGURIDAD.md](docs/SEGURIDAD.md): 17 puntos revisados, `pnpm audit` limpio |
+| Infra | MVP con un clic, Docker de producción, `render.yaml`, build de producción con CSP |
+| Calidad | 46 tests de la API, typecheck de las 4 apps, `scripts/mvp/smoke.mjs` |
 
 ### ⬜ Falta, en orden de prioridad
-1. **Probarlo en el celular por el túnel.** Hoy no abre desde el Wi-Fi de casa por el DNS del router (ver §12). Probar con datos móviles o con DNS privado en el celular.
-2. **Deploy real** siguiendo [DEPLOY.md](DEPLOY.md): Neon + Upstash + Render + Vercel. Con eso los links quedan fijos y no dependen de la PC.
-3. **Admin de carta (staff-web `/admin`)**: alta y edición de platos, precios, agotados, subir foto y 3D, mesas y QR imprimibles. Sin esto, un bar real no puede cargar su carta.
-4. **Plato demo en el seed**, para que la Tostada de palta con 3D sobreviva a `db:seed` y exista en producción.
-5. **Compresión 3D**: el Avocado pesa 8 MB (objetivo: < 1,5 MB). `sharp` está roto en esta PC; correr `gltf-transform` en Linux (worker `asset-3d`) o en CI.
-6. **Probar NFC con un chip NTAG 424 real**: grabar `nfcUid` y `NFC_MASTER_KEY` y medir el flujo.
-7. **Tiempo real con push** (Ably o SSE) en lugar de polling, cuando haya más de un par de locales.
-8. **RLS en Postgres**, store de rate limit en Redis y backups.
-9. **PWA offline** y **analítica** (3D → pedidos).
-10. **Fase 2 en adelante:** Chef IA, fidelización, reseñas, App Clip, reservas, caja.
+1. **Deploy en la nube** ([DEPLOY.md](DEPLOY.md)): Neon + Upstash + Render (Starter, por el disco de fotos) + Vercel. Con eso hay links fijos y HTTPS sin túnel.
+2. **Dominio propio** y QR impresos con ese dominio.
+3. **Compresión 3D automática** (worker `asset-3d` con `gltf-transform` en Linux): el Avocado pesa 8 MB y el objetivo es menos de 1,5 MB.
+4. **Probar NFC con un chip NTAG 424 real.**
+5. **Tiempo real con push** (SSE o Ably) en lugar de polling, cuando haya varios locales.
+6. **Endurecer para producción:** cookie HttpOnly para el staff, CSP con nonces, rate limit en Redis, RLS en Postgres, 2FA para super admin, captcha en el registro (detalle en SEGURIDAD.md).
+7. **PWA offline y analítica** (aperturas 3D → pedidos).
+8. **Fase 2 y siguientes:** Chef IA, sellos/Wallet, feedback con fotos, reservas, caja, facturas con IA.
 
 ---
 
@@ -484,15 +525,16 @@ Usuarios demo: `mozo@`, `cocina@`, `dueno@`, `caja@bardemo.test`, todos con `dem
 
 | Síntoma | Causa | Solución |
 | :-- | :-- | :-- |
-| `EADDRINUSE` al levantar un server | Quedó otro proceso de Node escuchando en 3000 / 3001 / 4000 | Cerrar siempre con Ctrl+C. Para liberarlos: `Get-NetTCPConnection -LocalPort 3000,3001,4000 -State Listen \| % { Stop-Process -Id $_.OwningProcess -Force }` |
-| "Error de conexión" en el celular por `http://192.168.x.x` | `crypto.randomUUID()` no existe fuera de HTTPS | Resuelto: usar `uuid()` de `lib/storage.ts` |
-| El celular dice "no se puede acceder a este sitio" con el link `trycloudflare.com` | El DNS del router (`192.168.100.1`) no resuelve `*.trycloudflare.com` | En el celular: usar datos móviles, o Android → Ajustes → DNS privado → `one.one.one.one`. En la PC ya se cambió a 1.1.1.1 (IPv4 e IPv6) |
-| `cloudflared` falla con `lookup api.trycloudflare.com: no such host` | Mismo problema de DNS; Windows prioriza el DNS IPv6 del router (`fe80::1`) | PowerShell como admin: `Set-DnsClientServerAddress -InterfaceAlias "Ethernet 2" -ServerAddresses 1.1.1.1,8.8.8.8,2606:4700:4700::1111,2001:4860:4860::8888`. Para volver: `-ResetServerAddresses` |
-| "El mozo todavía no abrió la mesa" al enviar | Es la protección contra pedidos falsos: la mesa está `PENDING` | El mozo toca **Abrir mesa** en el panel (o se entra por NFC) |
-| Pide PIN al entrar | La mesa ya tiene una sesión abierta desde otro dispositivo | Ver el PIN en el panel del mozo (tarjeta de la mesa) o en la carta de quien la abrió |
-| `gltf-transform` / `sharp`: `colourspace: parameter space not set` | libvips de `sharp` roto en esta PC | Comprimir modelos en Linux o en CI |
-| `pnpm --filter @bar/db deploy` hace otra cosa | `deploy` es un comando propio de pnpm | Usar `corepack pnpm db:deploy` |
-| Después de `db:seed` los links de las mesas no andan | El seed regenera los códigos QR | Usar los links nuevos que imprime el seed |
+| El celular dice "no se puede acceder" con el link `trycloudflare.com` | El DNS del router (`192.168.100.1`) bloquea **todo** `trycloudflare.com` (verificado: el dominio raíz y los subdominios fallan; google.com anda) | En el celular: datos móviles, o Android → Ajustes → DNS privado → `one.one.one.one`. O cambiar el DNS del router. En el Wi-Fi, usar el link `http://192.168.100.25:3000` |
+| `cloudflared` no arranca: `lookup api.trycloudflare.com: no such host` | Mismo bloqueo, en la PC | Ya se cambió el DNS de la PC a 1.1.1.1 / 8.8.8.8 (IPv4 e IPv6). Para volver: `Set-DnsClientServerAddress -InterfaceAlias "Ethernet 2" -ResetServerAddresses` |
+| `EADDRINUSE` en 3000 / 3001 / 4000 | El MVP (u otro server) ya está corriendo | `DETENER-MVP.cmd`, o `Get-NetTCPConnection -LocalPort 3000,3001,4000 -State Listen \| % { Stop-Process -Id $_.OwningProcess -Force }` |
+| "Error de conexión" en el celular por `http://192.168.x.x` | `crypto.randomUUID()` no existe fuera de HTTPS | Resuelto: `uuid()` de `lib/storage.ts` |
+| "El mozo todavía no abrió la mesa" | Protección contra pedidos falsos | El mozo toca **Abrir mesa** (o se entra por NFC) |
+| Pide PIN al entrar | La mesa ya tiene sesión desde otro dispositivo (otro navegador u otro dominio cuenta como otro dispositivo) | Ver el PIN en el panel del mozo; si se bloqueó, **PIN nuevo** |
+| El 3D se queda en "Cargando 3D…" en el panel del navegador de Claude | El panel oculto no pinta y `<model-viewer>` espera a estar visible | No pasa en un navegador normal |
+| `sharp` / `gltf-transform`: `colourspace: parameter space not set` | libvips roto en esta PC | Comprimir modelos en Linux o en CI |
+| En PowerShell 5.1, `psql -c "... \"Tabla\" ..."` falla | PowerShell 5.1 rompe las comillas dobles al pasarlas a un .exe | Pasar el SQL por stdin (como hace `start-mvp.ps1`) |
+| Después de `db:seed` los links de las mesas cambian | El seed regenera los códigos QR | Usar los links nuevos (están en `.mvp/LINKS.html` al arrancar) |
 
 ---
 
@@ -502,6 +544,12 @@ Usuarios demo: `mozo@`, `cocina@`, `dueno@`, `caja@bardemo.test`, todos con `dem
 | :-- | :-- | :-- |
 | 19/10/2026 | `3cce4ec` | Fase 1 base: monorepo, esquema, API de mesa, carta, panel del mozo y KDS |
 | 19/10/2026 | `3141814` | NFC SUN, worker del outbox, billing FREE, onboarding, carta 3D nueva |
-| 20/10/2026 | `c935cf9` | Revisión: migración faltante, worker que borraba eventos, NFC con el algoritmo de NXP, PIN, CORS, carrito con variantes |
-| 20/10/2026 | `a317c14` | `uuid()` para HTTP en la red local |
-| 20/10/2026 | `2acd3df` | Estado en vivo en la carta, NFC desde la web, cuota al abrir, rewrites `/v1`, Docker + Render + Vercel, modelo 3D demo |
+| 20/10/2026 | `c935cf9` | Revisión: migración faltante, worker, NFC con el algoritmo de NXP, PIN, CORS, carrito con variantes |
+| 20/10/2026 | `2acd3df` | Estado en vivo en la carta, NFC desde la web, rewrites `/v1`, Docker + Render + Vercel |
+| 20/10/2026 | `f8f670e` | API de admin y super admin, auth endurecida, bloqueo de PIN, Wi-Fi y reseñas |
+| 20/10/2026 | `0658d9d` | Sudoku para la espera |
+| 20/10/2026 | `d1086eb` | Paneles de admin y super admin |
+| 21/10/2026 | `edb7ddd` | Auditoría: rate limit sin depender de la IP, CSP, dependencias; MVP con un clic |
+| 21/10/2026 | (este) | Documentación final: SEGURIDAD.md, plan y deploy actualizados |
+
+La sesión autónoma que armó el MVP está descripta en [docs/MISION-MVP.md](docs/MISION-MVP.md).

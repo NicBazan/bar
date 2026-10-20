@@ -35,3 +35,17 @@ Objetivo: que al despertar el dueño del proyecto tenga **un MVP andando en su P
 - Cada paso termina con tests y chequeo de tipos en verde, y con un commit.
 - Nada de datos inventados presentados como reales; lo demo se marca como demo.
 - Si algo no se puede resolver sin el usuario (DNS del router, cuentas en la nube), se documenta con la solución exacta en vez de forzarlo.
+
+## Resultado (21/10/2026)
+
+| Criterio | Estado |
+| :-- | :-- |
+| 1. Un solo comando levanta todo | ✅ `INICIAR-MVP.cmd` (Docker, migraciones, secretos, build, API, carta, panel, túneles y `.mvp/LINKS.html` con QR) |
+| 2. Flujo completo desde el celular | ✅ Probado con `scripts/mvp/smoke.mjs` por localhost **y por los túneles HTTPS**. En el Wi-Fi de casa, el link HTTPS no abre por un bloqueo del router a `trycloudflare.com`: usar el link de red local o datos móviles |
+| 3. El dueño administra sin código | ✅ `/admin`: carta, agotados, fotos/3D, mesas y QR imprimibles, NFC, equipo, Wi-Fi y reseñas |
+| 4. Plato 3D/AR que sobrevive al seed | ✅ Tostada de palta (Avocado de Khronos, CC0) |
+| 5. Auditoría de seguridad | ✅ [SEGURIDAD.md](SEGURIDAD.md): 17 puntos, 2 problemas reales corregidos (spoofing de IP y límite compartido), `pnpm audit` limpio |
+| 6. Tests, tipos y build | ✅ 46 tests de la API, typecheck de las 4 apps, build de producción con CSP |
+| 7. Plan actualizado | ✅ [PLAN-MAESTRO.md](../PLAN-MAESTRO.md) §9–§13 |
+
+Además, pedido durante la sesión: **Super Admin** de la plataforma y **Sudoku** para la espera.

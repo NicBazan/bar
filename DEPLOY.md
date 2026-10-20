@@ -13,7 +13,11 @@ Los navegadores **solo hablan con su propio dominio de Vercel**: Next reenvía `
 
 ---
 
-## 0. Probar sin deployar: túnel HTTPS (cámara/AR desde el celular)
+## 0. Probar sin deployar: MVP local con un clic
+
+Doble clic en **`INICIAR-MVP.cmd`** (raíz del repo): levanta Docker, migra la base, compila en modo producción, arranca API + carta + panel, abre los túneles HTTPS y muestra `.mvp/LINKS.html` con los QR. Para apagar: **`DETENER-MVP.cmd`**. Logs en `.mvp/logs`.
+
+## 0.b Túnel HTTPS a mano (cámara/AR desde el celular)
 
 ```bash
 cloudflared tunnel --url http://localhost:3000   # carta
@@ -47,8 +51,15 @@ Cada comando imprime una URL `https://xxxx.trycloudflare.com`. Abrila en el celu
 | `JWT_SECRET` | la genera Render (`generateValue`) |
 | `NFC_MASTER_KEY` | 32 caracteres hex. Generar: `node -e "console.log(require('crypto').randomBytes(16).toString('hex'))"` |
 | `CORS_ORIGINS` | los dominios de Vercel separados por coma (solo si algún cliente llama a la API directo) |
+| `PUBLIC_GUEST_URL` | la URL de la carta en Vercel (ej. `https://bar-carta.vercel.app`): con ella el admin arma los QR |
+| `TRUST_PROXY` | `2` (Vercel + Render). **Nunca** `true`: permitiría inventarse la IP y saltear los límites |
+| `UPLOADS_DIR` | `/data/uploads` con el disco persistente de `render.yaml` (sin disco, las fotos se pierden en cada deploy) |
 
 3. Probar: `https://bar-api.onrender.com/health` → `{"ok":true}`.
+4. Crear el super admin de la plataforma (una vez, desde tu PC, con la `DATABASE_URL` de Neon):
+   ```bash
+   DATABASE_URL="<url de neon>" corepack pnpm --filter @bar/db create-superadmin admin@tudominio.com "una-contraseña-larga"
+   ```
 
 > El plan free de Render "duerme" la API tras 15 minutos sin uso; el primer pedido tarda ~30 s en despertarla. Para un bar real: plan Starter.
 > El **worker** no tiene plan free. Mientras no exista el broker de tiempo real, la app funciona sin él (los fronts hacen polling a `/v1/state`), así que se puede dejar para después.
@@ -66,7 +77,8 @@ Vercel detecta pnpm y el monorepo solo. Después del primer deploy, los QR de la
 
 ## Checklist antes de abrirlo a un bar real
 - [ ] `JWT_SECRET` y `NFC_MASTER_KEY` propios. En producción la API **no arranca** sin ellos.
-- [ ] Usuarios demo (`*@bardemo.test` / `demo1234`) **no** cargados en la base de producción, o con contraseñas cambiadas.
+- [ ] Usuarios demo (`*@bardemo.test` / `demo1234`, `superadmin@bar.test`) **no** cargados en la base de producción: no correr el seed; usar `create-superadmin`.
+- [ ] Leer [docs/SEGURIDAD.md](docs/SEGURIDAD.md) → "Riesgos aceptados / pendientes".
 - [ ] Dominio propio (ej. `carta.tubar.com`) y QR impresos con ese dominio.
 - [ ] Backups automáticos de Neon activados.
 - [ ] Rate limit con store en Redis (hoy es por instancia; con una sola instancia alcanza).

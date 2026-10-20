@@ -6,7 +6,8 @@ services:
     runtime: docker
     dockerfilePath: infra/docker/api.Dockerfile
     dockerContext: .
-    plan: free
+    # starter (no free): el disco persistente de las fotos/3D requiere plan pago
+    plan: starter
     healthCheckPath: /health
     envVars:
       - key: NODE_ENV
@@ -21,6 +22,19 @@ services:
         sync: false
       - key: CORS_ORIGINS
         sync: false
+      # URL pública de la carta (para los QR que arma el admin)
+      - key: PUBLIC_GUEST_URL
+        sync: false
+      # Vercel + balanceador de Render: 2 saltos de proxy confiables (para el rate limit por IP)
+      - key: TRUST_PROXY
+        value: "2"
+      - key: UPLOADS_DIR
+        value: /data/uploads
+    # Fotos y modelos 3D subidos desde el admin (los discos requieren plan pago en Render)
+    disk:
+      name: uploads
+      mountPath: /data
+      sizeGB: 1
 
   - type: worker
     name: bar-outbox-worker
