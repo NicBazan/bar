@@ -94,7 +94,8 @@ try {
   corepack pnpm --filter @bar/db generate *> (Join-Path $Logs "db.log")
   corepack pnpm --filter @bar/db run migrate:deploy *>> (Join-Path $Logs "db.log")
   if ($LASTEXITCODE -ne 0) { Fail "Fallaron las migraciones" }
-  $hasDemo = docker exec bar-postgres-1 psql -U bar -d bar -tAc "select count(*) from \"Tenant\" where slug='bar-demo'"
+  # SQL por stdin: PowerShell 5.1 rompe las comillas dobles al pasarlas como argumento a un .exe
+  $hasDemo = "select count(*) from `"Tenant`" where slug = 'bar-demo';" | docker exec -i bar-postgres-1 psql -U bar -d bar -tA
   if ("$hasDemo".Trim() -eq "0") {
     Say "Cargando datos demo (primera vez)..."
     corepack pnpm --filter @bar/db seed *>> (Join-Path $Logs "db.log")
@@ -172,7 +173,8 @@ if (-not (Wait-Http "http://127.0.0.1:3001/login" 90)) { Fail "El panel no respo
 $pids | ConvertTo-Json | Set-Content -Path (Join-Path $State "pids.json") -Encoding UTF8
 
 # ── 6. Página con links y QR ──
-$rows = docker exec bar-postgres-1 psql -U bar -d bar -tA -F "|" -c "select d.label, t.code from \"TableTag\" t join \"DiningTable\" d on d.id=t.\"tableId\" join \"Tenant\" n on n.id=t.\"tenantId\" where n.slug='bar-demo' and t.active and t.type='QR' and d.active order by d.label"
+$sql = "select d.label, t.code from `"TableTag`" t join `"DiningTable`" d on d.id = t.`"tableId`" join `"Tenant`" n on n.id = t.`"tenantId`" where n.slug = 'bar-demo' and t.active and t.type = 'QR' and d.active order by d.label;"
+$rows = $sql | docker exec -i bar-postgres-1 psql -U bar -d bar -tA -F "|"
 $tables = @($rows | Where-Object { $_ -match "\|" } | ForEach-Object { $a = $_ -split "\|"; @{ label = $a[0]; code = $a[1] } })
 $info = @{ lanIp = $lanIp; cartaTunnel = $cartaTunnel; panelTunnel = $panelTunnel; tables = $tables; startedAt = (Get-Date).ToString("o") }
 $infoFile = Join-Path $State "info.json"

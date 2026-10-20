@@ -23,7 +23,9 @@ export function Dish3DViewer({
   // <model-viewer> servido desde el propio sitio (sin CDN externo): funciona aunque el Wi-Fi
   // del bar no tenga salida a internet y permite una CSP estricta. Se carga solo si hay un plato 3D.
   useEffect(() => {
-    void import("@google/model-viewer").catch(() => undefined);
+    void import("@google/model-viewer").catch((err: unknown) => {
+      console.error("[3D] no se pudo cargar model-viewer", err);
+    });
   }, []);
 
   useEffect(() => {
