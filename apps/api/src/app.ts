@@ -15,6 +15,7 @@ import { staffRoutes } from "./modules/staff/routes.js";
 import { superAdminRoutes } from "./modules/superadmin/routes.js";
 import { tableSessionRoutes } from "./modules/table-session/routes.js";
 import { errorHandler } from "./shared/errors.js";
+import { deviceOrIpKey } from "./shared/rate-limit/keys.js";
 import { realtimeRoutes } from "./shared/realtime/routes.js";
 
 // IPs privadas (192.168.x, 10.x, 172.16-31.x) en los puertos de los front de desarrollo
@@ -27,7 +28,12 @@ export function isAllowedOrigin(origin: string | undefined): boolean {
 }
 
 export async function buildApp(opts: { logger?: boolean } = {}) {
-  const app = Fastify({ logger: opts.logger === false ? false : { level: "info" }, trustProxy: true });
+  const hops = config.trustProxy;
+  const app = Fastify({
+    logger: opts.logger === false ? false : { level: "info" },
+    // N saltos de proxy confiables (ej. Vercel + Render = 2), o ninguno
+    trustProxy: typeof hops === "number" ? (_addr: string, i: number) => i < hops : hops,
+  });
 
   // BigInt (venueSeq) → number en JSON
   app.setReplySerializer((payload) =>
@@ -41,9 +47,9 @@ export async function buildApp(opts: { logger?: boolean } = {}) {
     credentials: true,
     methods: ["GET", "HEAD", "POST", "PUT", "PATCH", "DELETE"],
   });
-  // Límite global por IP; las rutas sensibles definen el suyo (ver cada módulo)
-  // TODO(fase 1b): store en Redis para compartir el límite entre instancias
-  await app.register(rateLimit, { max: 300, timeWindow: "1 minute" });
+  // Límite global por dispositivo/usuario (token válido) o por IP; las rutas sensibles definen el suyo.
+  // Ver shared/rate-limit/keys.ts. TODO(escala): store en Redis para compartirlo entre instancias.
+  await app.register(rateLimit, { max: 300, timeWindow: "1 minute", keyGenerator: deviceOrIpKey });
   // Subidas del admin: 1 archivo por request, hasta 25 MB (los límites por tipo están en media.ts)
   await app.register(multipart, { limits: { fileSize: 25 * 1024 * 1024, files: 1, fields: 5 } });
 

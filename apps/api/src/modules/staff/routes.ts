@@ -7,6 +7,7 @@ import { FLOOR_ROLES, STAFF_COOKIE, requireStaff, staffScope } from "../../share
 import { hashPassword, verifyPassword } from "../../shared/auth/password.js";
 import { signToken } from "../../shared/auth/tokens.js";
 import { prisma } from "../../shared/db/index.js";
+import { loginKey } from "../../shared/rate-limit/keys.js";
 import { HttpError, conflict, notFound } from "../../shared/errors.js";
 import { channels, emit } from "../../shared/outbox/outbox.js";
 import { assertTenantCanOpenSession, incrementSessionUsage } from "../billing/billing.guard.js";
@@ -17,7 +18,8 @@ const DUMMY_HASH = hashPassword("usuario-inexistente-para-igualar-tiempos");
 export async function staffRoutes(app: FastifyInstance) {
   app.post(
     "/staff/login",
-    { config: { rateLimit: { max: 10, timeWindow: "1 minute" } } },
+    // 10 intentos por minuto POR CUENTA (la clave se calcula con el body: hook preHandler)
+    { config: { rateLimit: { max: 10, timeWindow: "1 minute", keyGenerator: loginKey, hook: "preHandler" } } },
     async (req, reply) => {
       const { email, password } = StaffLoginBody.parse(req.body);
       const user = await prisma.staffUser.findUnique({

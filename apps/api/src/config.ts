@@ -12,6 +12,11 @@ function required(name: string, devDefault: string): string {
 export const config = {
   isProd,
   port: Number(process.env.PORT ?? 4000),
+  // 127.0.0.1 en el MVP local (solo los front de Next llegan a la API); 0.0.0.0 en Docker
+  host: process.env.HOST ?? "0.0.0.0",
+  // Confiar en X-Forwarded-For SOLO detrás de un proxy real: número de saltos (ej. 2 = Vercel + Render).
+  // Por defecto no: si no, cualquiera podría inventarse una IP por request.
+  trustProxy: /^\d+$/.test(process.env.TRUST_PROXY ?? "") ? Number(process.env.TRUST_PROXY) : process.env.TRUST_PROXY === "true",
   // En dev se usa un secreto fijo; en producción es obligatorio
   jwtSecret: new TextEncoder().encode(required("JWT_SECRET", "dev-only-secret-change-me-0123456789")),
   nfcMasterKey: required("NFC_MASTER_KEY", "00112233445566778899AABBCCDDEEFF"),

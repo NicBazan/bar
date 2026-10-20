@@ -158,3 +158,29 @@ describe("CORS", () => {
     expect((await preflight("http://192.168.1.10:8080")).headers["access-control-allow-origin"]).toBeUndefined();
   });
 });
+
+describe("Rate limit sin depender de la IP", () => {
+  it("cambiar X-Forwarded-For no da más intentos de login contra la misma cuenta", async () => {
+    const email = `nadie-${randomUUID()}@test.local`;
+    const codes: number[] = [];
+    for (let i = 0; i < 12; i++) {
+      const res = await app.inject({
+        method: "POST",
+        url: "/v1/staff/login",
+        headers: { "x-forwarded-for": `10.0.0.${i}` },
+        payload: { email, password: "incorrecta" },
+      });
+      codes.push(res.statusCode);
+    }
+    expect(codes.slice(0, 10).every((c) => c === 401)).toBe(true);
+    expect(codes.slice(10)).toEqual([429, 429]);
+  });
+
+  it("la API ignora X-Forwarded-For si no hay TRUST_PROXY", async () => {
+    const probe = await buildApp({ logger: false });
+    probe.get("/__ip", async (req) => ({ ip: req.ip }));
+    const res = await probe.inject({ url: "/__ip", headers: { "x-forwarded-for": "6.6.6.6" } });
+    expect(res.json().ip).not.toBe("6.6.6.6");
+    await probe.close();
+  });
+});

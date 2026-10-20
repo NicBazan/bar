@@ -2,7 +2,9 @@
   "name": "bar",
   "private": true,
   "packageManager": "pnpm@10.18.0",
-  "engines": { "node": ">=22" },
+  "engines": {
+    "node": ">=22"
+  },
   "scripts": {
     "dev": "turbo run dev",
     "build": "turbo run build",
@@ -19,5 +21,11 @@
   "devDependencies": {
     "turbo": "^2.5.0",
     "typescript": "^5.9.0"
+  },
+  "pnpm": {
+    "overrides": {
+      "deepmerge-ts": "^8.0.0",
+      "tinypool": ">=2.1.2"
+    }
   }
 }

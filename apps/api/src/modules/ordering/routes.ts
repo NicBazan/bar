@@ -1,8 +1,9 @@
 import { CreateOrderBody, RejectOrderBody } from "@bar/shared-types";
 import type { FastifyInstance } from "fastify";
 import { z } from "zod";
-import { FLOOR_ROLES, GUEST_COOKIE, requireGuest, requireStaff, staffScope } from "../../shared/auth/guards.js";
+import { FLOOR_ROLES, requireGuest, requireStaff, staffScope } from "../../shared/auth/guards.js";
 import { prisma } from "../../shared/db/index.js";
+import { deviceOrIpKey } from "../../shared/rate-limit/keys.js";
 import { HttpError, conflict, notFound } from "../../shared/errors.js";
 import { channels, emit } from "../../shared/outbox/outbox.js";
 import { createOrder } from "./service.js";
@@ -21,7 +22,7 @@ export async function orderingRoutes(app: FastifyInstance) {
           max: 10,
           timeWindow: "1 minute",
           // Límite por dispositivo/mesa, no por IP (toda la mesa comparte el Wi-Fi)
-          keyGenerator: (req) => req.headers.authorization ?? req.cookies?.[GUEST_COOKIE] ?? req.ip,
+          keyGenerator: deviceOrIpKey,
         },
       },
     },
