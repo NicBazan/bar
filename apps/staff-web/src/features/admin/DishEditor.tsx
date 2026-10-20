@@ -118,6 +118,14 @@ export function DishEditor({
     await onSaved();
   };
 
+  const setMediaUrl = async (kind: "PHOTO" | "GLB_LOD0" | "USDZ", url: string) => {
+    if (!dish) return;
+    setBusy(true);
+    await run(() => api(`/admin/dishes/${dish.id}/media/${kind}`, { method: "PUT", body: { url } }), "Link guardado");
+    setBusy(false);
+    await onSaved();
+  };
+
   const removeMedia = async (kind: "PHOTO" | "GLB_LOD0" | "USDZ") => {
     if (!dish) return;
     await run(() => api(`/admin/dishes/${dish.id}/media/${kind}`, { method: "DELETE" }), "Quitado");
@@ -279,6 +287,7 @@ export function DishEditor({
             preview
             busy={busy}
             onFile={(f) => uploadFile("PHOTO", f)}
+            onUrl={(u) => setMediaUrl("PHOTO", u)}
             onRemove={() => removeMedia("PHOTO")}
           />
           <MediaRow
@@ -288,6 +297,7 @@ export function DishEditor({
             current={dish.assets.GLB_LOD0}
             busy={busy}
             onFile={(f) => uploadFile("GLB_LOD0", f)}
+            onUrl={(u) => setMediaUrl("GLB_LOD0", u)}
             onRemove={() => removeMedia("GLB_LOD0")}
           />
           <MediaRow
@@ -297,6 +307,7 @@ export function DishEditor({
             current={dish.assets.USDZ}
             busy={busy}
             onFile={(f) => uploadFile("USDZ", f)}
+            onUrl={(u) => setMediaUrl("USDZ", u)}
             onRemove={() => removeMedia("USDZ")}
           />
         </div>
@@ -313,6 +324,7 @@ function MediaRow({
   preview,
   busy,
   onFile,
+  onUrl,
   onRemove,
 }: {
   title: string;
@@ -322,8 +334,12 @@ function MediaRow({
   preview?: boolean;
   busy: boolean;
   onFile: (f: File | undefined) => void;
+  onUrl: (url: string) => void;
   onRemove: () => void;
 }) {
+  const [pasting, setPasting] = useState(false);
+  const [url, setUrl] = useState("");
+  const urlOk = /^https:\/\/\S+$/.test(url.trim());
   return (
     <div className="flex flex-wrap items-center gap-3 rounded-2xl border border-line p-3">
       {preview && (
@@ -345,7 +361,29 @@ function MediaRow({
         {current ? "Reemplazar" : "Subir"}
         <input type="file" accept={accept} className="hidden" onChange={(e) => onFile(e.target.files?.[0])} />
       </label>
+      <Btn kind="ghost" onClick={() => setPasting((p) => !p)}>{pasting ? "Cancelar" : "Pegar link"}</Btn>
       {current && <Btn kind="ghost" onClick={onRemove}>Quitar</Btn>}
+      {pasting && (
+        <div className="flex w-full gap-2">
+          <input
+            className={inputCls}
+            placeholder="https://res.cloudinary.com/… (o cualquier link https)"
+            value={url}
+            onChange={(e) => setUrl(e.target.value)}
+          />
+          <Btn
+            kind="primary"
+            disabled={!urlOk || busy}
+            onClick={() => {
+              onUrl(url.trim());
+              setUrl("");
+              setPasting(false);
+            }}
+          >
+            Usar link
+          </Btn>
+        </div>
+      )}
     </div>
   );
 }

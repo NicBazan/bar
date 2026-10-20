@@ -5,6 +5,12 @@ import path from "node:path";
 import type { FastifyInstance } from "fastify";
 import { z } from "zod";
 import { config } from "../../config.js";
+import {
+  destroyInCloudinary,
+  optimizedImageUrl,
+  parseCloudinaryAssetUrl,
+  uploadToCloudinary,
+} from "../../shared/cloudinary.js";
 import { HttpError, notFound } from "../../shared/errors.js";
 
 /**
@@ -52,7 +58,10 @@ export function sniff(buf: Buffer): Ext | null {
   return null;
 }
 
-/** Guarda el archivo y devuelve la URL pública relativa (/v1/media/{tenant}/{uuid}.{ext}) */
+/**
+ * Valida y guarda el archivo. Con CLOUDINARY_URL va a Cloudinary (carpeta bar/{tenant}/);
+ * sin ella, al disco local (/v1/media/{tenant}/{uuid}.{ext}). La validación es la misma en los dos casos.
+ */
 export async function saveMedia(tenantId: string, kind: MediaKind, buf: Buffer) {
   const ext = sniff(buf);
   if (!ext || !ALLOWED_FOR[kind].includes(ext)) {
@@ -62,6 +71,23 @@ export async function saveMedia(tenantId: string, kind: MediaKind, buf: Buffer) 
   if (buf.length > TYPES[ext].max) {
     throw new HttpError(413, "FILE_TOO_LARGE", `El archivo supera ${TYPES[ext].max / 1024 / 1024} MB.`);
   }
+
+  if (config.cloudinary) {
+    const isImage = kind === "PHOTO";
+    const id = randomUUID();
+    try {
+      const up = await uploadToCloudinary(config.cloudinary, buf, {
+        resourceType: isImage ? "image" : "raw",
+        // raw: la extensión va en el public_id para que se sirva con su tipo (.glb / .usdz)
+        publicId: `bar/${tenantId}/${isImage ? id : `${id}.${ext}`}`,
+        mime: TYPES[ext].mime,
+      });
+      return { url: isImage ? optimizedImageUrl(up.url) : up.url, bytes: up.bytes };
+    } catch (e) {
+      throw new HttpError(502, "STORAGE_ERROR", `No se pudo subir a Cloudinary: ${e instanceof Error ? e.message : "error"}`);
+    }
+  }
+
   const dir = path.join(config.uploadsDir, tenantId);
   await mkdir(dir, { recursive: true });
   const file = `${randomUUID()}.${ext}`;
@@ -71,6 +97,14 @@ export async function saveMedia(tenantId: string, kind: MediaKind, buf: Buffer) 
 
 /** Borra un archivo propio del tenant a partir de su URL pública (ignora URLs externas) */
 export async function deleteMediaByUrl(tenantId: string, url: string) {
+  if (config.cloudinary) {
+    const asset = parseCloudinaryAssetUrl(config.cloudinary, url);
+    // Solo se borra lo que está en la carpeta de ESTE bar
+    if (asset && asset.publicId.startsWith(`bar/${tenantId}/`)) {
+      await destroyInCloudinary(config.cloudinary, asset.publicId, asset.resourceType);
+      return;
+    }
+  }
   const m = MEDIA_URL.exec(url);
   if (!m || m[1] !== tenantId) return;
   await unlink(path.join(config.uploadsDir, m[1], m[2]!)).catch(() => undefined);

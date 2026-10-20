@@ -1,4 +1,5 @@
 import path from "node:path";
+import { parseCloudinaryUrl } from "./shared/cloudinary.js";
 
 const isProd = process.env.NODE_ENV === "production";
 
@@ -27,6 +28,8 @@ export const config = {
   uploadsDir: path.resolve(process.env.UPLOADS_DIR ?? "uploads"),
   // URL pública de la carta, para armar los links/QR de las mesas en el admin
   publicGuestUrl: (process.env.PUBLIC_GUEST_URL ?? "http://localhost:3000").replace(/\/+$/, ""),
+  // Fotos y 3D en Cloudinary (recomendado en producción). Sin la variable, se guardan en UPLOADS_DIR
+  cloudinary: parseCloudinaryUrl(process.env.CLOUDINARY_URL),
   guestTokenTtl: "12h",
   staffTokenTtl: "12h",
   serviceCallCooldownSec: 60,

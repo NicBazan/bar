@@ -6,8 +6,8 @@ services:
     runtime: docker
     dockerfilePath: infra/docker/api.Dockerfile
     dockerContext: .
-    # starter (no free): el disco persistente de las fotos/3D requiere plan pago
-    plan: starter
+    # free alcanza: las fotos y los 3D van a Cloudinary (sin Cloudinary haría falta disco y plan starter)
+    plan: free
     healthCheckPath: /health
     envVars:
       - key: NODE_ENV
@@ -28,13 +28,9 @@ services:
       # Vercel + balanceador de Render: 2 saltos de proxy confiables (para el rate limit por IP)
       - key: TRUST_PROXY
         value: "2"
-      - key: UPLOADS_DIR
-        value: /data/uploads
-    # Fotos y modelos 3D subidos desde el admin (los discos requieren plan pago en Render)
-    disk:
-      name: uploads
-      mountPath: /data
-      sizeGB: 1
+      # Fotos y modelos 3D del admin: cloudinary://API_KEY:API_SECRET@CLOUD_NAME
+      - key: CLOUDINARY_URL
+        sync: false
 
   - type: worker
     name: bar-outbox-worker

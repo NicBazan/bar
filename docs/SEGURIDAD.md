@@ -40,7 +40,7 @@ Revisión hecha sobre todo el monorepo (API, carta, panel, scripts) antes de dej
 | Token del staff en `localStorage` (robable con XSS) | No hay vectores de XSS conocidos y hay CSP | Pasar a cookie `HttpOnly` + `SameSite=strict` exclusivamente |
 | `script-src 'unsafe-inline'` en la CSP | Next inyecta scripts inline para hidratar | CSP con *nonces* (middleware de Next) |
 | Rate limit en memoria | Una sola instancia de la API | Store en Redis al escalar a varias instancias |
-| Archivos subidos en el disco de la API | MVP local | En Render: disco persistente o mover a R2/S3 |
+| Archivos subidos en el disco de la API (sin `CLOUDINARY_URL`) | MVP local | Configurar `CLOUDINARY_URL`: las subidas van a Cloudinary con firma del lado del servidor (el secreto nunca llega al navegador) y se borran al reemplazarlas |
 | Una sola `NFC_MASTER_KEY` para todos los chips | El UID está ligado a la mesa, así que una firma de otro chip no sirve | Claves diversificadas por chip (AN10922) |
 | Onboarding abierto (cualquiera crea un bar) | Tope global de 30 altas por hora | Captcha (Turnstile) y verificación de email |
 | Sin 2FA para super admin | MVP | TOTP para SUPER_ADMIN |
