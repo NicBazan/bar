@@ -2,7 +2,9 @@
 
 Base de conocimiento del proyecto **bar**: une una carta interactiva 3D/AR con sistema operativo gastronómico (estilo *Menuly*) y un hub en mesa "zero-install" con NFC + QR (estilo *Candour*).
 
-> Estado: **Fase 0 (diseño + estructura)**. Todavía no hay código. Este documento es la fuente de verdad: cada decisión nueva se agrega acá o como ADR en `docs/adr/`.
+> **Estado (20/10/2026): Fase 1 avanzada.** El flujo de mesa funciona de punta a punta en local (QR → carta → pedido → mozo → cocina → listo), con NFC SUN verificado, carta 3D/AR y deploy preparado (Docker + Render + Vercel). Falta: deploy real, admin de carta y probarlo en un celular fuera de la red de casa. Ver [§11 Estado actual](#11-estado-actual-qué-está-hecho-y-qué-falta).
+>
+> Este documento es la fuente de verdad: cada decisión nueva se agrega acá o como ADR en `docs/adr/`. Repo: https://github.com/NicBazan/bar
 
 ---
 
@@ -17,7 +19,11 @@ Base de conocimiento del proyecto **bar**: une una carta interactiva 3D/AR con s
 6. [IA y seguridad en mesa](#6-ia-y-seguridad-en-mesa)
 7. [Roadmap por fases](#7-roadmap-por-fases)
 8. [Estructura de carpetas](#8-estructura-de-carpetas)
-9. [Convenciones y próximos pasos](#9-convenciones-y-próximos-pasos)
+9. [Convenciones y cómo correrlo](#9-convenciones-y-cómo-correrlo)
+10. [API implementada](#10-api-implementada)
+11. [Estado actual: qué está hecho y qué falta](#11-estado-actual-qué-está-hecho-y-qué-falta)
+12. [Problemas conocidos y soluciones](#12-problemas-conocidos-y-soluciones)
+13. [Historial](#13-historial)
 
 ---
 
@@ -274,34 +280,43 @@ Alertas de suba de precios y recálculo del food cost.
 
 ## 7. Roadmap por fases
 
-### Fase 0: spikes de riesgo (2–3 semanas) ← **estamos acá**
-- [x] Blueprint y estructura de carpetas
-- [ ] App Clip + `NEHotspotConfiguration` (¿aprobación de Apple?)
-- [ ] NTAG 424 + verificación de SUN en el servidor
-- [ ] Capturar 10 platos, medir tiempos y pesos
-- [ ] 3D en 4G real dentro de un local (Android gama baja + iPhone viejo)
+Leyenda: ✅ hecho · 🟡 a medias · ⬜ pendiente
 
-### Fase 1: MVP "carta viva + pedidos" (8–10 semanas), 3–5 locales piloto
-- Monorepo, Postgres + RLS, auth de staff, un local y una sucursal.
-- Admin de carta, un layout, ruteo QR/NFC, PWA offline.
-- Sesión de mesa + aprobación del mozo + pedidos + **panel de mozo** + **KDS con sonido**.
-- Llamar al mozo / pedir la cuenta, analítica base, 3D cargado a mano.
+### Fase 0: spikes de riesgo
+- ✅ Blueprint y estructura de carpetas
+- ✅ NTAG 424 + verificación SUN en el servidor (algoritmo NXP AN12196, validado con el vector oficial). Falta probarlo con un chip físico.
+- ⬜ App Clip + `NEHotspotConfiguration` (¿aprueba Apple el entitlement en un App Clip?)
+- ⬜ Capturar 10 platos reales y medir tiempos y pesos del pipeline 3D
+- 🟡 3D en 4G real dentro de un local: hay un modelo de ejemplo cargado; falta medirlo en celulares de gama baja
 
-### Fase 2: diferenciación (8 semanas)
-- Chef IA, layouts Clásico/Reels/Lista en vivo.
-- Sellos + Wallet, deep link a Google Reviews (sin *review gating*), feedback con fotos, minijuegos.
-- App Clip v1 (Wi-Fi + push efímera), pipeline 3D semiautomático.
+### Fase 1: MVP "carta viva + pedidos" ← **estamos acá**
+- ✅ Monorepo, Postgres multi-tenant, auth de staff, un local y una sucursal
+- ✅ Ruteo QR (`/t/{code}`) y NFC SUN, sesión de mesa con PIN, aprobación del mozo
+- ✅ Pedidos con variantes, modificadores y nota; idempotentes
+- ✅ Panel del mozo (mesas, pedidos, llamados, listos para llevar) y KDS por estación con sonido
+- ✅ Llamar al mozo / pedir la cuenta y estado en vivo en la carta
+- ✅ Visor 3D + botón "Ver en tu mesa" (WebXR / Scene Viewer / Quick Look)
+- ✅ Onboarding self-service y plan FREE con cuota mensual
+- 🟡 Deploy: Dockerfile, `render.yaml` y `DEPLOY.md` listos; falta crear las cuentas y subirlo
+- ⬜ **Admin de carta**: platos, precios, agotados, fotos/3D, mesas y QR imprimibles (hoy todo sale del seed)
+- ⬜ PWA offline (Service Worker con la carta cacheada)
+- ⬜ RLS en Postgres como segunda barrera de aislamiento
+- ⬜ Analítica base (aperturas 3D → pedidos)
 
-### Fase 3: sistema operativo del local (10 semanas)
-- Reservas con cupo y lista de espera.
-- Caja (turnos, división de cuenta, cierre Z), pagos (Mercado Pago/Stripe), facturación fiscal mediante un proveedor (ARCA).
-- Facturas con IA + inventario + food cost.
-- Multi-sucursal con clonación de carta, dashboards de conversión.
+### Fase 2: diferenciación
+- ⬜ Chef IA y layouts Clásico/Reels/Lista en vivo
+- ⬜ Sellos + Wallet, deep link a Google Reviews (sin *review gating*), feedback con fotos y minijuegos
+- ⬜ App Clip v1 (Wi-Fi + push efímera) y pipeline 3D semiautomático
+
+### Fase 3: sistema operativo del local
+- ⬜ Reservas con cupo y lista de espera
+- ⬜ Caja (turnos, división de cuenta, cierre Z), pagos (Mercado Pago/Stripe) y facturación (ARCA)
+- ⬜ Facturas de proveedores con IA + inventario + food cost
+- ⬜ Multi-sucursal con clonación de carta y dashboards de conversión
 
 ### Fase 4: escala
-- Centrifugo, Temporal, ClickHouse, particionado.
-- Gaussian Splatting, captura 3D autoservicio, integraciones POS, impresoras, QR dinámico e-ink.
-- Extraer solo los servicios con más carga.
+- ⬜ Centrifugo, Temporal, ClickHouse y particionado
+- ⬜ Gaussian Splatting, captura 3D autoservicio, integraciones POS, impresoras y QR dinámico e-ink
 
 ---
 
@@ -310,6 +325,8 @@ Alertas de suba de precios y recálculo del food cost.
 ```
 bar/
 ├── PLAN-MAESTRO.md            ← este documento
+├── DEPLOY.md                  ← guía de deploy (Neon, Upstash, Render, Vercel)
+├── render.yaml                ← blueprint de Render (API + worker)
 ├── README.md
 ├── apps/
 │   ├── guest-web/             PWA del comensal (Next.js)
@@ -350,7 +367,7 @@ bar/
 │   ├── realtime-client/       wrapper de suscripción + catch-up por seq
 │   └── ai-prompts/            prompts versionados del Chef IA y OCR
 ├── infra/
-│   ├── docker/                docker-compose: postgres + redis local
+│   ├── docker/                docker-compose (postgres + redis), api.Dockerfile, entrypoint.sh
 │   ├── edge/                  resolver /t/{tag_code}
 │   └── well-known/            apple-app-site-association, assetlinks.json
 ├── tools/
@@ -363,71 +380,128 @@ bar/
 
 ---
 
-## 9. Convenciones y próximos pasos
+## 9. Convenciones y cómo correrlo
 
 ### Convenciones
-- **Gestor:** pnpm workspaces + Turborepo. Node 22 LTS. TypeScript `strict`.
-- **Validación:** Zod en `packages/shared-types`, compartido entre el front y la API (como en Enterprice).
+- **Gestor:** pnpm workspaces + Turborepo. Node 22+. TypeScript `strict`.
+- **Validación:** Zod en `packages/shared-types`, compartido entre los front y la API.
 - **Seguridad heredada de taller y Enterprice:** headers estrictos, `HttpOnly` borrado solo en el servidor, Swagger oculto en producción, uploads sin SVG/HTML, `overflow-x: clip` en mobile, `noindex` en paneles.
 - **Dinero:** enteros en céntimos. **Fechas:** UTC en la base, zona horaria de la sucursal en la UI.
 - **Idempotencia:** toda mutación del comensal lleva `Idempotency-Key`.
+- **Front → API:** el navegador llama siempre a `/v1/*` en su propio dominio y Next lo reenvía a la API (`rewrites` en `next.config.ts`). Nunca URLs absolutas a la API en el navegador.
+- **Sin APIs exclusivas de HTTPS:** el dev por la red local corre en HTTP. Por ejemplo, usar `uuid()` de `lib/storage.ts`, nunca `crypto.randomUUID()` directo.
 - **ADR:** toda decisión no trivial va en `docs/adr/NNNN-titulo.md`.
 
-### Próximos pasos (inicio de la codificación)
-1. ✅ Monorepo pnpm + Turborepo (`packages/config` con el tsconfig base).
-2. ✅ `infra/docker/docker-compose.yml`: Postgres 17 (puerto **5433**) + Redis 7 (puerto **6380**).
-3. ✅ `packages/db` (**Prisma**): esquema de la Fase 1, migración `fase1_init` y seed de un bar demo (8 mesas con tag QR, carta de 11 platos, staff por rol). Correr con `pnpm infra:up`, `pnpm db:migrate` y `pnpm db:seed`.
-4. ✅ `apps/api` (**Fastify 5 + Zod + jose**): módulos `catalog`, `table-session`, `ordering`, `kitchen`, `service-calls`, `staff` + outbox transaccional + catch-up `/v1/state`. Test e2e del flujo completo (`pnpm --filter @bar/api test`). Detalle en [§10](#10-api-fase-1-implementada).
-5. ✅ `apps/guest-web` (**Next.js 16 + Tailwind v4**): `/t/[tag]` → unirse (con PIN si la mesa ya está abierta) → carta por categorías → ficha del plato (variantes, modificadores, nota) → carrito persistente → pedido idempotente con reintentos → estado en vivo (polling a `/state` cada 4 s y al volver a la pestaña o recuperar red) → llamar al mozo / pedir la cuenta. Correr con `pnpm --filter @bar/guest-web dev` (puerto 3000).
-6. ✅ `apps/staff-web` (**Next.js 16**, puerto 3001):
-   - `/login`.
-   - `/waiter`: llamados (Voy / Listo), pedidos por confirmar (confirmar o rechazar con motivo), platos listos para llevar (Servido) y mesas (abrir, descartar, cerrar).
-   - `/kds`: comandas por estación agrupadas por pedido, tiempo de espera con colores (10′ / 20′), Empezar / Listo / Todo listo.
-   - Botón "🔔 Iniciar turno": desbloquea el sonido (Web Audio) y mantiene la pantalla encendida (Wake Lock). Polling a `/state` cada 3 s.
-   - OWNER y MANAGER pueden pasar de Salón a Cocina.
-7. Prueba de punta a punta: escanear QR → pedir → aprobar → KDS → listo.
+### Correr en local (una terminal por comando)
+```bash
+corepack pnpm infra:up                          # Postgres :5433 + Redis :6380 (Docker Desktop abierto)
+corepack pnpm db:deploy                         # aplica migraciones
+corepack pnpm db:seed                           # SOLO la primera vez: resetea el bar demo y regenera los QR
+corepack pnpm --filter @bar/api dev             # API        http://localhost:4000
+corepack pnpm --filter @bar/guest-web dev       # Carta      http://localhost:3000/t/{code}
+corepack pnpm --filter @bar/staff-web dev       # Panel      http://localhost:3001/login
+corepack pnpm --filter @bar/api test            # 23 tests (flujo e2e, PIN, NFC, CORS, cuota)
+```
+Usuarios demo: `mozo@`, `cocina@`, `dueno@`, `caja@bardemo.test`, todos con `demo1234`. Los links de cada mesa los imprime el seed.
 
-### ADRs pendientes
+### Probar desde el celular
+- **Misma red Wi-Fi:** `http://<IP-de-la-PC>:3000/t/{code}` (hoy `192.168.100.25`). Sin cámara ni AR (no es HTTPS).
+- **Con HTTPS (cámara y AR), desde cualquier red:** túnel de Cloudflare, uno por front:
+  ```bash
+  "/c/Program Files (x86)/cloudflared/cloudflared.exe" tunnel --url http://localhost:3000
+  "/c/Program Files (x86)/cloudflared/cloudflared.exe" tunnel --url http://localhost:3001
+  ```
+  Cada uno imprime una URL `https://xxxx.trycloudflare.com` que cambia en cada arranque. Ver [§12](#12-problemas-conocidos-y-soluciones) si el celular no abre el link.
+- **Producción:** ver [DEPLOY.md](DEPLOY.md).
+
+### ADRs
 - ~~0001: NestJS vs Fastify~~ → **Fastify** (más liviano; los módulos son plugins por dominio)
 - ~~0002: Prisma vs Drizzle~~ → **Prisma** (migraciones + Studio; SQL a mano para índices parciales y RLS)
-- 0003: Ably vs Centrifugo desde el día 1
-- 0004: hosting de la API (Fly.io vs Railway vs ECS)
+- ~~0004: hosting de la API~~ → **Render** (Docker) + **Vercel** para los front + **Neon** (Postgres) + **Upstash** (Redis)
+- 0003: tiempo real gestionado (Ably) vs propio (Centrifugo/SSE). Hoy: polling a `/v1/state` cada 3–4 s, suficiente para el piloto.
 
 ---
 
-## 10. API Fase 1 (implementada)
-
-Correr local:
-```bash
-pnpm infra:up && pnpm db:migrate && pnpm db:seed   # el seed imprime las URLs /t/{code} de cada mesa
-pnpm --filter @bar/api dev                          # http://localhost:4000
-```
-Staff demo: `dueno@`, `mozo@`, `cocina@`, `caja@bardemo.test` (contraseña de desarrollo en `packages/db/prisma/seed.ts`).
+## 10. API implementada
 
 ### Endpoints (`/v1`)
 
 | Método | Ruta | Quién | Qué hace |
 | :-- | :-- | :-- | :-- |
-| GET | `/tags/:code` | público | Resuelve local y mesa del QR/NFC |
+| GET | `/tags/:code` | público | Resuelve el local y la mesa del QR/NFC |
 | GET | `/venues/:venueId/menu` | público (cacheable) | Carta compilada con overrides de la sucursal |
-| POST | `/tags/:code/session` | comensal | Une el dispositivo a la mesa. El primero crea la sesión `PENDING` y recibe el PIN; los demás necesitan el PIN |
+| POST | `/tags/:code/session[?uid&ctr&cmac]` | comensal | Une el dispositivo a la mesa. QR: el primero crea la sesión `PENDING`, los demás necesitan el PIN; un dispositivo que ya estaba entra sin PIN. NFC SUN válido: abre la mesa directo (`OPEN`) |
 | GET | `/session` | comensal | Estado de la mesa, pedidos y llamados (410 si está cerrada) |
-| POST | `/orders` | comensal | Pedido con `Idempotency-Key`; precios y estación calculados en el servidor |
+| POST | `/orders` | comensal | Pedido con `Idempotency-Key`; precios y estación los calcula el servidor |
 | POST | `/service-calls` | comensal | `WAITER` / `BILL`, deduplicado y con cooldown de 60 s |
 | GET | `/state?since=seq` | comensal / staff | Catch-up de eventos del outbox |
+| POST | `/onboarding/register` | público | Alta self-service: tenant + sucursal + dueño + carta vacía + 10 mesas con QR, plan FREE |
 | POST | `/staff/login` · `/staff/logout` | staff | JWT (Bearer o cookie HttpOnly) |
-| GET | `/staff/sessions` · POST `/staff/sessions/:id/open\|close` | mozo | Abrir y cerrar mesas |
+| GET | `/staff/sessions` · POST `/staff/sessions/:id/open\|close` | mozo | Abrir (consume cuota del plan) y cerrar mesas (cancela los pedidos sin confirmar) |
 | GET | `/staff/orders` · POST `/staff/orders/:id/approve\|reject` | mozo | Aprobar manda los ítems a cocina (`FIRED`) |
 | GET | `/staff/kitchen/items?station=` · PATCH `/staff/order-items/:id/status` | cocina / mozo | KDS: `IN_PROGRESS → READY` (cocina), `SERVED` (mozo), `VOIDED` (encargado, con auditoría) |
 | GET | `/staff/service-calls` · POST `/staff/service-calls/:id/ack\|resolve` | mozo | Atender llamados |
 
 ### Decisiones tomadas en el código
 - **Una sesión activa por mesa:** índice único parcial (`WHERE status <> 'CLOSED'`). Si dos celulares escanean a la vez, uno reintenta y se une a la misma sesión.
-- **Outbox:** cada evento incrementa `Venue.eventSeq` dentro de la transacción y se escribe en un canal (`venue:{id}:staff`, `venue:{id}:kitchen`, `table_session:{id}`).
+- **Outbox:** cada evento incrementa `Venue.eventSeq` dentro de la transacción. El worker marca `publishedAt` y **no borra**: `/v1/state` necesita los eventos para el catch-up. La limpieza de eventos con más de 24 h es horaria.
+- **NFC SUN:** CMAC propio (`node:crypto`, RFC 4493) + derivación de clave de sesión de NXP. El `nfcUid` del chip queda ligado a la mesa y el anti-replay es atómico (`UPDATE … WHERE sunCounter < ctr`).
+- **Cuota FREE:** se consume cuando la mesa se abre (mozo o NFC), no al escanear, para que un QR fotografiado no gaste la cuota del bar.
 - **Aislamiento:** todas las consultas de staff filtran por `tenantId` (+ `venueId` si el usuario está atado a una sucursal).
-- **Rate limit:** global de 300/min por IP; login 10/min; pedidos 10/min **por dispositivo** (la mesa comparte IP).
+- **CORS:** lista de orígenes (`CORS_ORIGINS`) + red local solo en dev. Nunca `origin: true` con credentials.
+- **Rate limit:** global de 300/min por IP; login 10/min; onboarding 5/min; pedidos 10/min **por dispositivo** (la mesa comparte IP).
 
-### Pendiente de la API
-- Relay del outbox → broker (Ably/SSE) en `apps/workers` (hoy el front puede hacer polling a `/state`).
-- Store de rate limit en Redis. RLS en Postgres como segunda barrera.
-- Verificación SUN de NTAG 424 en `POST /tags/:code/session`.
+---
+
+## 11. Estado actual: qué está hecho y qué falta
+
+### ✅ Funciona hoy (probado en el navegador y con tests)
+| Área | Qué hay |
+| :-- | :-- |
+| Comensal | QR/NFC → bienvenida → carta por categorías → plato con opciones → carrito por mesa → pedido → estado en vivo, PIN, Mozo / Cuenta / Pedidos |
+| 3D / AR | Visor `<model-viewer>` y botón "Ver en tu mesa". Plato demo **Tostada de palta** con el modelo Avocado (Khronos, CC0), solo en la base local |
+| Mozo | Mesas (abrir con PIN visible, descartar, cerrar), pedidos por confirmar, llamados, listos para llevar |
+| Cocina | KDS por estación, tiempos con colores, Empezar / Listo / Todo listo, sonido y pantalla encendida |
+| Seguridad | PIN, NFC SUN anti-replay, idempotencia, rate limit, aislamiento por tenant, CORS cerrado, secretos obligatorios en producción |
+| Negocio | Onboarding self-service y plan FREE (50 mesas/mes) con pantalla "atención en mesa" al superar el límite |
+| Infra | Docker de la API probado en modo producción, build de producción de los dos front, túnel HTTPS |
+
+### ⬜ Falta, en orden de prioridad
+1. **Probarlo en el celular por el túnel.** Hoy no abre desde el Wi-Fi de casa por el DNS del router (ver §12). Probar con datos móviles o con DNS privado en el celular.
+2. **Deploy real** siguiendo [DEPLOY.md](DEPLOY.md): Neon + Upstash + Render + Vercel. Con eso los links quedan fijos y no dependen de la PC.
+3. **Admin de carta (staff-web `/admin`)**: alta y edición de platos, precios, agotados, subir foto y 3D, mesas y QR imprimibles. Sin esto, un bar real no puede cargar su carta.
+4. **Plato demo en el seed**, para que la Tostada de palta con 3D sobreviva a `db:seed` y exista en producción.
+5. **Compresión 3D**: el Avocado pesa 8 MB (objetivo: < 1,5 MB). `sharp` está roto en esta PC; correr `gltf-transform` en Linux (worker `asset-3d`) o en CI.
+6. **Probar NFC con un chip NTAG 424 real**: grabar `nfcUid` y `NFC_MASTER_KEY` y medir el flujo.
+7. **Tiempo real con push** (Ably o SSE) en lugar de polling, cuando haya más de un par de locales.
+8. **RLS en Postgres**, store de rate limit en Redis y backups.
+9. **PWA offline** y **analítica** (3D → pedidos).
+10. **Fase 2 en adelante:** Chef IA, fidelización, reseñas, App Clip, reservas, caja.
+
+---
+
+## 12. Problemas conocidos y soluciones
+
+| Síntoma | Causa | Solución |
+| :-- | :-- | :-- |
+| `EADDRINUSE` al levantar un server | Quedó otro proceso de Node escuchando en 3000 / 3001 / 4000 | Cerrar siempre con Ctrl+C. Para liberarlos: `Get-NetTCPConnection -LocalPort 3000,3001,4000 -State Listen \| % { Stop-Process -Id $_.OwningProcess -Force }` |
+| "Error de conexión" en el celular por `http://192.168.x.x` | `crypto.randomUUID()` no existe fuera de HTTPS | Resuelto: usar `uuid()` de `lib/storage.ts` |
+| El celular dice "no se puede acceder a este sitio" con el link `trycloudflare.com` | El DNS del router (`192.168.100.1`) no resuelve `*.trycloudflare.com` | En el celular: usar datos móviles, o Android → Ajustes → DNS privado → `one.one.one.one`. En la PC ya se cambió a 1.1.1.1 (IPv4 e IPv6) |
+| `cloudflared` falla con `lookup api.trycloudflare.com: no such host` | Mismo problema de DNS; Windows prioriza el DNS IPv6 del router (`fe80::1`) | PowerShell como admin: `Set-DnsClientServerAddress -InterfaceAlias "Ethernet 2" -ServerAddresses 1.1.1.1,8.8.8.8,2606:4700:4700::1111,2001:4860:4860::8888`. Para volver: `-ResetServerAddresses` |
+| "El mozo todavía no abrió la mesa" al enviar | Es la protección contra pedidos falsos: la mesa está `PENDING` | El mozo toca **Abrir mesa** en el panel (o se entra por NFC) |
+| Pide PIN al entrar | La mesa ya tiene una sesión abierta desde otro dispositivo | Ver el PIN en el panel del mozo (tarjeta de la mesa) o en la carta de quien la abrió |
+| `gltf-transform` / `sharp`: `colourspace: parameter space not set` | libvips de `sharp` roto en esta PC | Comprimir modelos en Linux o en CI |
+| `pnpm --filter @bar/db deploy` hace otra cosa | `deploy` es un comando propio de pnpm | Usar `corepack pnpm db:deploy` |
+| Después de `db:seed` los links de las mesas no andan | El seed regenera los códigos QR | Usar los links nuevos que imprime el seed |
+
+---
+
+## 13. Historial
+
+| Fecha | Commit | Qué se hizo |
+| :-- | :-- | :-- |
+| 19/10/2026 | `3cce4ec` | Fase 1 base: monorepo, esquema, API de mesa, carta, panel del mozo y KDS |
+| 19/10/2026 | `3141814` | NFC SUN, worker del outbox, billing FREE, onboarding, carta 3D nueva |
+| 20/10/2026 | `c935cf9` | Revisión: migración faltante, worker que borraba eventos, NFC con el algoritmo de NXP, PIN, CORS, carrito con variantes |
+| 20/10/2026 | `a317c14` | `uuid()` para HTTP en la red local |
+| 20/10/2026 | `2acd3df` | Estado en vivo en la carta, NFC desde la web, cuota al abrir, rewrites `/v1`, Docker + Render + Vercel, modelo 3D demo |
