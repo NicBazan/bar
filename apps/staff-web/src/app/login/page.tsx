@@ -4,7 +4,8 @@ import { useState } from "react";
 import { ApiError, type StaffUser, api, setAuth } from "@/lib/api";
 
 const HOME_BY_ROLE: Record<StaffUser["role"], string> = {
-  OWNER: "/waiter",
+  SUPER_ADMIN: "/superadmin",
+  OWNER: "/admin",
   MANAGER: "/waiter",
   WAITER: "/waiter",
   KITCHEN: "/kds",

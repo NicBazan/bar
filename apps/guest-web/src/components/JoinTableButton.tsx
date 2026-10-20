@@ -67,9 +67,16 @@ export function JoinTableButton({ code, venueId, tableLabel, nfc }: JoinTableBut
           return;
         }
 
-        // 2. PIN incorrecto (va antes: requiresPin también es true para este caso)
+        // 2. PIN bloqueado por intentos fallidos: solo el mozo puede sumarlo
+        if (err.code === "PIN_LOCKED") {
+          setPinError(err.message || "Demasiados intentos. Pedile al mozo que te sume a la mesa.");
+          setShowPinModal(true);
+          return;
+        }
+
+        // 3. PIN incorrecto (va antes: requiresPin también es true para este caso)
         if (err.code === "PIN_INVALID") {
-          setPinError("El PIN ingresado es incorrecto. Pedíselo a quien abrió la mesa.");
+          setPinError(err.message && err.message !== err.code ? err.message : "El PIN ingresado es incorrecto. Pedíselo a quien abrió la mesa.");
           setShowPinModal(true);
           return;
         }

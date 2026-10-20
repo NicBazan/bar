@@ -14,6 +14,7 @@ import { Toasts } from "./Sheet";
 export function TableLiveBar({ tag, currency }: { tag?: string; currency: string }) {
   const live = useLiveTable(tag);
   const [showOrders, setShowOrders] = useState(false);
+  const [showWifi, setShowWifi] = useState(false);
   const s = live.session;
   const isOpen = s?.status === "OPEN" || s?.status === "BILL_REQUESTED";
 
@@ -72,9 +73,28 @@ export function TableLiveBar({ tag, currency }: { tag?: string; currency: string
               )}
             </button>
           </div>
+          {(s.hub?.wifi || (s.hub?.googleReviewUrl && s.orders.length > 0)) && (
+            <div className="mt-2 grid grid-cols-2 gap-2 text-xs font-medium">
+              {s.hub?.wifi && (
+                <button onClick={() => setShowWifi(true)} className="rounded-xl bg-surface-2 py-2.5">📶 Wi-Fi</button>
+              )}
+              {s.hub?.googleReviewUrl && s.orders.length > 0 && (
+                <a
+                  href={s.hub.googleReviewUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className={`rounded-xl bg-surface-2 py-2.5 text-center ${s.hub?.wifi ? "" : "col-span-2"}`}
+                >
+                  ⭐ Dejanos tu reseña
+                </a>
+              )}
+            </div>
+          )}
           <Pin pin={s.pin} compact />
         </div>
       )}
+
+      {showWifi && s.hub?.wifi && <WifiSheet wifi={s.hub.wifi} onClose={() => setShowWifi(false)} onCopied={() => live.notify("Clave copiada ✅", "success")} />}
 
       {showOrders && <OrdersSheet orders={s.orders} currency={currency} onClose={() => setShowOrders(false)} />}
     </>
@@ -87,5 +107,39 @@ function Pin({ pin, compact }: { pin: string; compact?: boolean }) {
       ¿Vienen más amigos? Para unirse necesitan el PIN{" "}
       <span className="rounded bg-surface-2 px-1.5 py-0.5 font-mono font-bold tracking-widest text-cream">{pin}</span>
     </p>
+  );
+}
+
+function WifiSheet({ wifi, onClose, onCopied }: { wifi: { ssid: string; password: string }; onClose: () => void; onCopied: () => void }) {
+  const copy = async () => {
+    try {
+      await navigator.clipboard.writeText(wifi.password);
+      onCopied();
+    } catch {
+      /* sin portapapeles (HTTP): la clave queda visible para copiar a mano */
+    }
+  };
+  return (
+    <div className="fixed inset-0 z-50 flex items-end justify-center" role="dialog" aria-modal="true" aria-label="Wi-Fi del local">
+      <button aria-label="Cerrar" className="absolute inset-0 bg-black/60" onClick={onClose} />
+      <div className="animate-sheet relative w-full max-w-md rounded-t-3xl border-t border-line bg-surface p-5 pb-[max(1.25rem,env(safe-area-inset-bottom))]">
+        <h2 className="font-display text-xl">📶 Wi-Fi del local</h2>
+        <p className="mt-3 text-xs text-muted">Red</p>
+        <p className="font-mono text-lg text-cream">{wifi.ssid}</p>
+        {wifi.password && (
+          <>
+            <p className="mt-3 text-xs text-muted">Contraseña</p>
+            <p className="font-mono text-lg break-all text-cream select-all">{wifi.password}</p>
+          </>
+        )}
+        <p className="mt-3 text-xs text-muted">Abrí los ajustes de Wi-Fi del celular, elegí la red y pegá la contraseña.</p>
+        <div className="mt-4 grid grid-cols-2 gap-2">
+          {wifi.password && (
+            <button onClick={copy} className="h-12 rounded-2xl bg-amber text-sm font-semibold text-amber-ink">Copiar contraseña</button>
+          )}
+          <button onClick={onClose} className={`h-12 rounded-2xl border border-line text-sm ${wifi.password ? "" : "col-span-2"}`}>Listo</button>
+        </div>
+      </div>
+    </div>
   );
 }

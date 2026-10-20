@@ -121,8 +121,12 @@ export default function WaiterPage() {
                 </span>
               </div>
               <p className="mt-1 text-sm text-muted">PIN {s.joinPin} · {s._count.devices} celular(es) · {s._count.orders} pedido(s)</p>
+              {s.pinFailures >= 8 && <p className="mt-1 text-sm text-warn">🔒 PIN bloqueado por intentos fallidos: generá uno nuevo</p>}
               <div className="mt-3">
-                <Btn onClick={() => confirm(`¿Cerrar la mesa ${s.table.label}?`) && act(`/staff/sessions/${s.id}/close`)}>Cerrar mesa</Btn>
+                <div className="flex gap-2">
+                  <Btn onClick={() => confirm(`¿Cerrar la mesa ${s.table.label}?`) && act(`/staff/sessions/${s.id}/close`)}>Cerrar mesa</Btn>
+                  <Btn onClick={() => act(`/staff/sessions/${s.id}/new-pin`)}>PIN nuevo</Btn>
+                </div>
               </div>
             </Card>
           ))}

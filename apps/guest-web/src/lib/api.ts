@@ -151,6 +151,8 @@ export type SessionState = {
   orders: Order[];
   serviceCalls: Array<{ id: string; type: "WAITER" | "BILL"; status: string }>;
   lastSeq: number;
+  // Hub en mesa: Wi-Fi (solo mesas abiertas) y link de reseñas
+  hub?: { wifi: { ssid: string; password: string } | null; googleReviewUrl: string | null };
 };
 
 export type StateEvents = {
