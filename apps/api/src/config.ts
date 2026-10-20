@@ -13,7 +13,9 @@ export const config = {
   // En dev se usa un secreto fijo; en producción es obligatorio
   jwtSecret: new TextEncoder().encode(required("JWT_SECRET", "dev-only-secret-change-me-0123456789")),
   nfcMasterKey: required("NFC_MASTER_KEY", "00112233445566778899AABBCCDDEEFF"),
-  corsOrigins: (process.env.CORS_ORIGINS ?? "http://localhost:3000,http://localhost:3001").split(","),
+  corsOrigins: (process.env.CORS_ORIGINS ?? "http://localhost:3000,http://localhost:3001").split(",").map((o) => o.trim()),
+  // Solo en desarrollo: aceptar el front servido desde la red local (probar con el celular por Wi-Fi)
+  allowLanOrigins: !isProd && process.env.CORS_ALLOW_LAN !== "false",
   guestTokenTtl: "12h",
   staffTokenTtl: "12h",
   serviceCallCooldownSec: 60,

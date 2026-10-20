@@ -42,6 +42,15 @@ export function resolveChannel(event: {
   return "venue:default:staff";
 }
 
+/** Borra eventos ya publicados más viejos que la ventana de catch-up (por defecto 24 h) */
+export async function pruneOutbox(retentionHours = 24): Promise<number> {
+  return prisma.$executeRaw`
+    DELETE FROM "OutboxEvent"
+    WHERE "publishedAt" IS NOT NULL
+      AND "publishedAt" < NOW() - make_interval(hours => ${retentionHours});
+  `;
+}
+
 export interface OutboxRelayOptions {
   batchSize?: number;
   pollIntervalMs?: number;
@@ -62,6 +71,7 @@ export async function processOutboxBatch(
       const events = await tx.$queryRaw<OutboxEventRow[]>`
         SELECT id, "tenantId", "venueId", "venueSeq", channel, type, payload, "createdAt"
         FROM "OutboxEvent"
+        WHERE "publishedAt" IS NULL
         ORDER BY id ASC
         LIMIT ${batchSize}
         FOR UPDATE SKIP LOCKED;
@@ -88,10 +98,12 @@ export async function processOutboxBatch(
         await redis.publish(targetChannel, payloadJson);
       }
 
-      // 3. Eliminación de la base de datos tras publicación confirmada
+      // 3. Marcar como publicados. NO se borran: GET /v1/state los lee para el catch-up
+      //    de clientes que se reconectan (celular bloqueado, cambio de red).
+      //    La limpieza de eventos viejos la hace pruneOutbox() con una ventana de retención.
       const eventIds = events.map((e) => e.id);
       await tx.$executeRaw`
-        DELETE FROM "OutboxEvent"
+        UPDATE "OutboxEvent" SET "publishedAt" = NOW()
         WHERE id IN (${Prisma.join(eventIds)});
       `;
 

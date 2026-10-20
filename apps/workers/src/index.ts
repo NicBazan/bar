@@ -1,5 +1,5 @@
 import { Redis } from "ioredis";
-import { OutboxRelayWorker } from "./jobs/outbox-relay.job.js";
+import { OutboxRelayWorker, pruneOutbox } from "./jobs/outbox-relay.job.js";
 
 const REDIS_URL = process.env.REDIS_URL ?? "redis://localhost:6380";
 
@@ -45,8 +45,14 @@ const outboxWorker = new OutboxRelayWorker(redis, {
 
 outboxWorker.start();
 
+// Limpieza horaria de eventos ya publicados (se conservan 24 h para el catch-up de /v1/state)
+const pruneTimer = setInterval(() => {
+  pruneOutbox().catch((err) => console.error("[OutboxRelay] Error al limpiar eventos:", err));
+}, 60 * 60 * 1000);
+
 const shutdown = async (signal: string) => {
   console.log(`\n[Workers] Señal ${signal} recibida. Deteniendo servicios...`);
+  clearInterval(pruneTimer);
   await outboxWorker.stop();
   await redis.quit();
   console.log("[Workers] Servicios detenidos limpiamente.");

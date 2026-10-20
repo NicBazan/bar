@@ -140,6 +140,8 @@ model TableTag {
   tableId    String   @db.Uuid
   type       TagType  @default(QR)
   sunCounter Int      @default(0) // último contador SUN aceptado (anti-replay)
+  // UID del chip NTAG 424 grabado en esta mesa: una firma válida de otro chip no abre esta mesa
+  nfcUid     String?  @unique
   active     Boolean  @default(true)
   createdAt  DateTime @default(now())
 

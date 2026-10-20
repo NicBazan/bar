@@ -1,6 +1,8 @@
 "use client";
 
 import { useState } from "react";
+import { DishSheet } from "@/features/menu/DishSheet";
+import type { Dish } from "@/lib/api";
 import { formatMoney } from "@/lib/storage";
 import { useCartStore } from "@/store/cartStore";
 import { Dish3DViewer } from "./Dish3DViewer";
@@ -17,6 +19,8 @@ export interface DishCardProps {
   glbUrl?: string;
   usdzUrl?: string;
   posterUrl?: string;
+  variants?: Dish["variants"];
+  modifierGroups?: Dish["modifierGroups"];
 }
 
 export function DishCard({
@@ -31,15 +35,27 @@ export function DishCard({
   glbUrl,
   usdzUrl,
   posterUrl,
+  variants = [],
+  modifierGroups = [],
 }: DishCardProps) {
   const [added, setAdded] = useState(false);
+  const [choosing, setChoosing] = useState(false);
   const addItem = useCartStore((state) => state.addItem);
+
+  // Platos con tamaños u opciones (punto de cocción, extras) se eligen en la hoja de detalle
+  const needsChoice = variants.length > 0 || modifierGroups.length > 0;
+  const displayPrice = variants.length > 0 ? Math.min(...variants.map((v) => v.priceCents)) : priceCents;
+
+  const flashAdded = () => {
+    setAdded(true);
+    setTimeout(() => setAdded(false), 1500);
+  };
 
   const handleAdd = () => {
     if (!available) return;
-    addItem({ dishId: id, name, priceCents });
-    setAdded(true);
-    setTimeout(() => setAdded(false), 1500);
+    if (needsChoice) return setChoosing(true);
+    addItem({ dishId: id, name, priceCents, modifierIds: [], modifierNames: [] });
+    flashAdded();
   };
 
   return (
@@ -119,7 +135,8 @@ export function DishCard({
           <div>
             <span className="text-[10px] tracking-wider text-muted uppercase">Precio</span>
             <div className="font-display text-lg font-semibold text-amber">
-              {formatMoney(priceCents, currency)}
+              {variants.length > 0 && <span className="text-xs font-normal text-muted">desde </span>}
+              {formatMoney(displayPrice, currency)}
             </div>
           </div>
 
@@ -141,12 +158,35 @@ export function DishCard({
             ) : (
               <>
                 <span>+</span>
-                <span>Agregar al pedido</span>
+                <span>{needsChoice ? "Elegir opciones" : "Agregar al pedido"}</span>
               </>
             )}
           </button>
         </div>
       </div>
+
+      {choosing && (
+        <DishSheet
+          dish={{ id, name, description, priceCents, available, tags, allergens, variants, modifierGroups, assets: {} }}
+          currency={currency}
+          canAdd
+          onClose={() => setChoosing(false)}
+          onAdd={(line) => {
+            addItem({
+              dishId: line.dishId,
+              name: line.name,
+              variantId: line.variantId,
+              variantName: line.variantName,
+              modifierIds: line.modifierIds,
+              modifierNames: line.modifierNames,
+              note: line.note,
+              priceCents: line.unitPriceCents,
+              quantity: line.quantity,
+            });
+            flashAdded();
+          }}
+        />
+      )}
     </article>
   );
 }

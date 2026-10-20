@@ -1,8 +1,8 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { ApiError, api } from "@/lib/api";
-import { formatMoney, load } from "@/lib/storage";
+import { formatMoney, load, remove, save } from "@/lib/storage";
 import { useCartStore } from "@/store/cartStore";
 
 interface FloatingCartProps {
@@ -23,6 +23,12 @@ export function FloatingCart({ currency = "ARS", tag }: FloatingCartProps) {
   const clearCart = useCartStore((state) => state.clearCart);
   const getTotalPrice = useCartStore((state) => state.getTotalPrice);
   const getTotalItems = useCartStore((state) => state.getTotalItems);
+  const bindToTable = useCartStore((state) => state.bindToTable);
+
+  // El carrito pertenece a esta mesa: entrar a otra mesa empieza vacío
+  useEffect(() => {
+    if (tag) bindToTable(tag);
+  }, [tag, bindToTable]);
 
   const totalItems = getTotalItems();
   const totalPrice = getTotalPrice();
@@ -34,20 +40,27 @@ export function FloatingCart({ currency = "ARS", tag }: FloatingCartProps) {
     setErrorMsg(null);
 
     try {
-      // Clave de idempotencia única para prevenir órdenes duplicadas ante interrupciones de red
-      const idempotencyKey = crypto.randomUUID();
-
       // Token de respaldo si está almacenado en memoria local
       const storedToken = tag ? load<string | null>(`bar.token.${tag}`, null) : null;
 
       const bodyPayload = {
         items: items.map((item) => ({
           dishId: item.dishId,
+          variantId: item.variantId,
+          modifierIds: item.modifierIds,
           quantity: item.quantity,
-          modifierIds: [],
+          note: item.note,
         })),
         note: orderNote.trim() || undefined,
       };
+
+      // Idempotencia: si se corta la red y el comensal reintenta el MISMO pedido, se reusa la key
+      // y la API devuelve el pedido ya creado en vez de duplicarlo en cocina.
+      const pendingKey = `bar.pendingOrder.${tag ?? "sin-mesa"}`;
+      const serialized = JSON.stringify(bodyPayload);
+      const pending = load<{ key: string; body: string } | null>(pendingKey, null);
+      const idempotencyKey = pending?.body === serialized ? pending.key : crypto.randomUUID();
+      save(pendingKey, { key: idempotencyKey, body: serialized });
 
       await api("/orders", {
         method: "POST",
@@ -59,6 +72,7 @@ export function FloatingCart({ currency = "ARS", tag }: FloatingCartProps) {
       });
 
       // Éxito: vaciamos carrito, cerramos sheet y mostramos confirmación
+      remove(pendingKey);
       clearCart();
       setOrderNote("");
       setIsOpen(false);
@@ -169,13 +183,19 @@ export function FloatingCart({ currency = "ARS", tag }: FloatingCartProps) {
             <div className="mt-4 flex-1 overflow-y-auto space-y-3.5 pr-1 no-scrollbar">
               {items.map((item) => (
                 <div
-                  key={item.dishId}
+                  key={item.lineId}
                   className="flex items-center justify-between gap-3 rounded-2xl border border-line/40 bg-surface-2/60 p-3.5"
                 >
                   <div className="min-w-0 flex-1">
                     <p className="font-medium text-sm text-cream truncate">
                       {item.name}
+                      {item.variantName && <span className="text-muted"> · {item.variantName}</span>}
                     </p>
+                    {(item.modifierNames.length > 0 || item.note) && (
+                      <p className="truncate text-[11px] text-muted">
+                        {[item.modifierNames.join(", "), item.note && `“${item.note}”`].filter(Boolean).join(" · ")}
+                      </p>
+                    )}
                     <p className="mt-0.5 text-xs text-amber font-display">
                       {formatMoney(item.priceCents * item.quantity, currency)}
                     </p>
@@ -185,7 +205,7 @@ export function FloatingCart({ currency = "ARS", tag }: FloatingCartProps) {
                   <div className="flex items-center gap-2 rounded-xl border border-line bg-surface p-1">
                     <button
                       type="button"
-                      onClick={() => updateQuantity(item.dishId, item.quantity - 1)}
+                      onClick={() => updateQuantity(item.lineId, item.quantity - 1)}
                       className="flex h-7 w-7 items-center justify-center rounded-lg bg-surface-2 text-sm text-muted hover:text-cream active:scale-95 transition"
                     >
                       -
@@ -195,7 +215,7 @@ export function FloatingCart({ currency = "ARS", tag }: FloatingCartProps) {
                     </span>
                     <button
                       type="button"
-                      onClick={() => updateQuantity(item.dishId, item.quantity + 1)}
+                      onClick={() => updateQuantity(item.lineId, item.quantity + 1)}
                       className="flex h-7 w-7 items-center justify-center rounded-lg bg-surface-2 text-sm text-muted hover:text-cream active:scale-95 transition"
                     >
                       +
@@ -205,7 +225,7 @@ export function FloatingCart({ currency = "ARS", tag }: FloatingCartProps) {
                   {/* Botón eliminar plato */}
                   <button
                     type="button"
-                    onClick={() => removeItem(item.dishId)}
+                    onClick={() => removeItem(item.lineId)}
                     className="p-1.5 text-muted hover:text-warn transition"
                     title="Eliminar del pedido"
                   >

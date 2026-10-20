@@ -1,60 +1,44 @@
 import { describe, expect, it } from "vitest";
-import { aesCmac } from "node-aes-cmac";
-import { NfcSunService } from "../src/modules/table-session/nfc-sun.service.js";
+import { NfcSunService, aesCmac } from "../src/modules/table-session/nfc-sun.service.js";
 
-describe("NfcSunService", () => {
+const hex = (s: string) => Buffer.from(s, "hex");
+
+describe("AES-CMAC (vectores oficiales RFC 4493)", () => {
+  const key = hex("2b7e151628aed2a6abf7158809cf4f3c");
+  it.each([
+    ["", "bb1d6929e95937287fa37d129b756746"],
+    ["6bc1bee22e409f96e93d7e117393172a", "070a16b46b4d4144f79bdd9dd04a287c"],
+    [
+      "6bc1bee22e409f96e93d7e117393172aae2d8a571e03ac9c9eb76fac45af8e5130c81c46a35ce411",
+      "dfa66747de9ae63030ca32611497c827",
+    ],
+  ])("mensaje de %s bytes", (msg, expected) => {
+    expect(aesCmac(key, hex(msg)).toString("hex")).toBe(expected);
+  });
+});
+
+describe("NfcSunService (NTAG 424 DNA, AN12196)", () => {
   const service = new NfcSunService();
-  const masterKey = "00112233445566778899AABBCCDDEEFF";
-  const uid = "04A1B2C3D4E5F6";
-  const counter = "000001";
+  const zeroKey = "00000000000000000000000000000000";
 
-  it("calculates and verifies valid truncated odd-byte CMAC", () => {
-    // Generate valid CMAC directly using the exact formula
-    const keyBuf = Buffer.from(masterKey, "hex");
-    const prefix = Buffer.from([0x3c]);
-    const ctrBuf = Buffer.from(counter, "hex");
-    const uidBuf = Buffer.from(uid, "hex");
-    const message = Buffer.concat([prefix, ctrBuf, uidBuf]);
-
-    const fullCmac = aesCmac(keyBuf, message, { returnAsBuffer: true }) as Buffer;
-
-    // Odd bytes (1, 3, 5, 7, 9, 11, 13, 15)
-    const truncated = Buffer.alloc(8);
-    for (let i = 0; i < 8; i++) {
-      truncated[i] = fullCmac[2 * i + 1]!;
-    }
-    const validCmacHex = truncated.toString("hex");
-
-    const result = service.verifyNfcSignature(uid, counter, validCmacHex, masterKey);
-    expect(result).toBe(true);
+  // Ejemplo de mirroring plain con la clave de fábrica (todo ceros)
+  it("acepta un mensaje SUN de un chip con clave de fábrica", () => {
+    expect(service.verify("041E3C8A2D6B80", "000006", "4B00064004B0B3D3", zeroKey)).toBe(6);
   });
 
-  it("rejects altered CMAC signature", () => {
-    const invalidCmac = "0102030405060708";
-    const result = service.verifyNfcSignature(uid, counter, invalidCmac, masterKey);
-    expect(result).toBe(false);
+  it("rechaza si cambia el contador, el UID o el CMAC", () => {
+    expect(service.verify("041E3C8A2D6B80", "000007", "4B00064004B0B3D3", zeroKey)).toBeNull();
+    expect(service.verify("041E3C8A2D6B81", "000006", "4B00064004B0B3D3", zeroKey)).toBeNull();
+    expect(service.verify("041E3C8A2D6B80", "000006", "4B00064004B0B3D4", zeroKey)).toBeNull();
   });
 
-  it("rejects mismatched UID or Counter", () => {
-    // Valid CMAC for counter "000001"
-    const keyBuf = Buffer.from(masterKey, "hex");
-    const message = Buffer.concat([Buffer.from([0x3c]), Buffer.from(counter, "hex"), Buffer.from(uid, "hex")]);
-    const fullCmac = aesCmac(keyBuf, message, { returnAsBuffer: true }) as Buffer;
-    const truncated = Buffer.alloc(8);
-    for (let i = 0; i < 8; i++) {
-      truncated[i] = fullCmac[2 * i + 1]!;
-    }
-    const validCmacHex = truncated.toString("hex");
-
-    // Different counter
-    expect(service.verifyNfcSignature(uid, "000002", validCmacHex, masterKey)).toBe(false);
-    // Different UID
-    expect(service.verifyNfcSignature("04FFFFFFFFFFFF", counter, validCmacHex, masterKey)).toBe(false);
+  it("rechaza con otra clave", () => {
+    expect(service.verify("041E3C8A2D6B80", "000006", "4B00064004B0B3D3", "00112233445566778899AABBCCDDEEFF")).toBeNull();
   });
 
-  it("handles malformed or invalid hex strings safely without throwing", () => {
-    expect(service.verifyNfcSignature("", counter, "1234", masterKey)).toBe(false);
-    expect(service.verifyNfcSignature(uid, counter, "not-hex-at-all!!", masterKey)).toBe(false);
-    expect(service.verifyNfcSignature(uid, counter, "1234", masterKey)).toBe(false);
+  it("no lanza excepciones con entradas mal formadas", () => {
+    expect(service.verify("", "000006", "4B00064004B0B3D3", zeroKey)).toBeNull();
+    expect(service.verify("041E3C8A2D6B80", "6", "4B00064004B0B3D3", zeroKey)).toBeNull();
+    expect(service.verify("041E3C8A2D6B80", "000006", "no-es-hex!!!!!!!", zeroKey)).toBeNull();
   });
 });

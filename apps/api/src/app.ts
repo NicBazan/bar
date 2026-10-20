@@ -13,6 +13,15 @@ import { tableSessionRoutes } from "./modules/table-session/routes.js";
 import { errorHandler } from "./shared/errors.js";
 import { realtimeRoutes } from "./shared/realtime/routes.js";
 
+// IPs privadas (192.168.x, 10.x, 172.16-31.x) en los puertos de los front de desarrollo
+const LAN_ORIGIN = /^http:\/\/(192\.168\.\d{1,3}\.\d{1,3}|10\.\d{1,3}\.\d{1,3}\.\d{1,3}|172\.(1[6-9]|2\d|3[01])\.\d{1,3}\.\d{1,3}):(3000|3001)$/;
+
+export function isAllowedOrigin(origin: string | undefined): boolean {
+  if (!origin) return true; // curl, apps nativas, server-side rendering (sin header Origin)
+  if (config.corsOrigins.includes(origin)) return true;
+  return config.allowLanOrigins && LAN_ORIGIN.test(origin);
+}
+
 export async function buildApp(opts: { logger?: boolean } = {}) {
   const app = Fastify({ logger: opts.logger === false ? false : { level: "info" }, trustProxy: true });
 
@@ -23,7 +32,8 @@ export async function buildApp(opts: { logger?: boolean } = {}) {
 
   await app.register(cookie);
   await app.register(cors, {
-    origin: true,
+    // Nunca `origin: true` con credentials: cualquier sitio podría usar la sesión del navegador
+    origin: (origin, cb) => cb(null, isAllowedOrigin(origin)),
     credentials: true,
     methods: ["GET", "HEAD", "POST", "PATCH", "DELETE"],
   });

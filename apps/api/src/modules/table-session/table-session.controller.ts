@@ -91,57 +91,39 @@ export async function joinTableSession(req: FastifyRequest, reply: FastifyReply)
   // 1. Consulta tableTag en Prisma junto a su sesión activa
   const tag = await getTableTagWithActiveSession(code);
   const { table } = tag;
-  const activeSession = table.sessions[0];
 
   let isPhysicalPresence = false;
   let parsedCounter = 0;
 
-  const hasNfcParams = Boolean(query.uid && query.ctr && query.cmac);
-
-  // 2. Si los parámetros NFC están presentes, validar anti-replay y firma criptográfica
-  if (hasNfcParams) {
-    const { uid, ctr, cmac } = query;
-
-    // Parsea el ctr a entero (hexadecimal estándar NXP o decimal)
-    parsedCounter = /^[0-9a-fA-F]+$/.test(ctr!) ? parseInt(ctr!, 16) : Number(ctr);
-
-    if (Number.isNaN(parsedCounter) || parsedCounter <= tag.sunCounter) {
-      throw forbidden("REPLAY_ATTACK_DETECTED", "El contador NFC ya fue utilizado o es inválido");
+  // 2. Toque NFC (NTAG 424 SUN): validar que el chip sea el de ESTA mesa y que la firma sea válida
+  if (query.uid || query.ctr || query.cmac) {
+    const { uid = "", ctr = "", cmac = "" } = query;
+    // El UID grabado en la mesa ata la firma al tag: una URL válida de otra mesa no sirve acá
+    if (!tag.nfcUid || tag.nfcUid.toUpperCase() !== uid.toUpperCase()) {
+      throw forbidden("INVALID_NFC_SIGNATURE", "El tag NFC no corresponde a esta mesa");
     }
-
-    const isValidSignature = nfcSunService.verifyNfcSignature(
-      uid!,
-      ctr!,
-      cmac!,
-      config.nfcMasterKey,
-    );
-
-    if (!isValidSignature) {
+    const counter = nfcSunService.verify(uid, ctr, cmac, config.nfcMasterKey);
+    if (counter === null) {
       throw forbidden("INVALID_NFC_SIGNATURE", "Firma criptográfica del tag NFC inválida");
     }
-
+    parsedCounter = counter;
     isPhysicalPresence = true;
   }
 
-  // 3. Si no ingresó por NFC válido (ej. QR estático), exige y valida el PIN si ya existe sesión activa
-  if (!isPhysicalPresence && activeSession) {
-    if (!body.pin) {
-      throw forbidden("PIN_REQUIRED", "Pedile el PIN de 4 dígitos a quien abrió la mesa");
-    }
-    if (body.pin !== activeSession.joinPin) {
-      throw forbidden("PIN_INVALID", "El PIN ingresado es incorrecto");
-    }
-  }
-
-  // 4. Transacción atómica: quemar contador SUN, crear/obtener sesión y registrar dispositivo
+  // 3. Transacción atómica: quemar contador SUN, crear/obtener sesión y registrar dispositivo.
+  //    El PIN se valida adentro: un dispositivo que ya estaba en la mesa vuelve a entrar sin PIN.
   const result = await withRetryOnUnique(() =>
     prisma.$transaction(async (tx) => {
-      // Si la firma es válida, actualiza el sunCounter en Prisma para "quemar" esa URL
       if (isPhysicalPresence) {
-        await tx.tableTag.update({
-          where: { code: tag.code },
+        // Anti-replay atómico: solo avanza si el contador es mayor que el último aceptado.
+        // Dos requests con la misma URL a la vez: una actualiza, la otra ve count = 0.
+        const burned = await tx.tableTag.updateMany({
+          where: { code: tag.code, sunCounter: { lt: parsedCounter } },
           data: { sunCounter: parsedCounter },
         });
+        if (burned.count === 0) {
+          throw forbidden("REPLAY_ATTACK_DETECTED", "Este toque NFC ya fue utilizado. Apoyá el celular de nuevo.");
+        }
       }
 
       let session = await tx.tableSession.findFirst({

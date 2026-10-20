@@ -1,7 +1,7 @@
 // Seed de desarrollo: un bar demo con salón, tags QR, carta y staff.
 // Uso: pnpm db:seed  (borra y recrea los datos del tenant "bar-demo")
 import { randomBytes, scryptSync } from "node:crypto";
-import { PrismaClient, StaffRole } from "@prisma/client";
+import { PrismaClient, StaffRole } from "../src/client/index.js";
 
 const prisma = new PrismaClient();
 
@@ -93,7 +93,14 @@ async function main() {
     ]);
   }
 
-  const tenant = await prisma.tenant.create({ data: { name: "Bar Demo", slug: "bar-demo" } });
+  // Plan PRO: el bar demo (y los tests e2e) no deben chocar con el límite mensual del plan FREE
+  const tenant = await prisma.tenant.create({
+    data: {
+      name: "Bar Demo",
+      slug: "bar-demo",
+      subscription: { create: { plan: "PRO", currentPeriodEnd: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000) } },
+    },
+  });
   const tenantId = tenant.id;
 
   const venue = await prisma.venue.create({

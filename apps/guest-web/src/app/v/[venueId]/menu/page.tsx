@@ -142,6 +142,8 @@ export default async function VenueMenuPage({ params, searchParams }: MenuPagePr
                   glbUrl={dish.assets?.GLB_LOD0 || dish.assets?.GLB_LOD1}
                   usdzUrl={dish.assets?.USDZ}
                   posterUrl={dish.assets?.POSTER || dish.assets?.PHOTO}
+                  variants={dish.variants}
+                  modifierGroups={dish.modifierGroups}
                 />
               ))}
             </div>
