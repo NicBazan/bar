@@ -1,6 +1,5 @@
 "use client";
 
-import Script from "next/script";
 import { useEffect, useRef, useState } from "react";
 
 export interface Dish3DViewerProps {
@@ -21,6 +20,12 @@ export function Dish3DViewer({
   const viewerRef = useRef<HTMLElement | null>(null);
   const [loaded, setLoaded] = useState(false);
 
+  // <model-viewer> servido desde el propio sitio (sin CDN externo): funciona aunque el Wi-Fi
+  // del bar no tenga salida a internet y permite una CSP estricta. Se carga solo si hay un plato 3D.
+  useEffect(() => {
+    void import("@google/model-viewer").catch(() => undefined);
+  }, []);
+
   useEffect(() => {
     const el = viewerRef.current;
     if (!el) return;
@@ -36,13 +41,6 @@ export function Dish3DViewer({
     <div
       className={`relative h-full w-full overflow-hidden rounded-2xl bg-[radial-gradient(ellipse_at_center,_var(--color-surface-2)_0%,_var(--color-ink)_100%)] ${className}`}
     >
-      {/* Carga asíncrona del motor WebXR / 3D de Google */}
-      <Script
-        type="module"
-        src="https://ajax.googleapis.com/ajax/libs/model-viewer/3.4.0/model-viewer.min.js"
-        strategy="afterInteractive"
-      />
-
       {/* Visor 3D y WebAR */}
       <model-viewer
         ref={viewerRef}
