@@ -211,6 +211,15 @@ async function main() {
     }
   }
 
+  // Fidelización demo: sellos por visita con dos premios
+  const program = await prisma.loyaltyProgram.create({ data: { tenantId, active: true, mode: "STAMPS" } });
+  await prisma.loyaltyReward.createMany({
+    data: [
+      { tenantId, programId: program.id, name: "Café o cerveza gratis", cost: 5, position: 0 },
+      { tenantId, programId: program.id, name: "Postre gratis", cost: 10, position: 1 },
+    ],
+  });
+
   console.log(`✔ Super admin: ${superEmail} (contraseña dev en prisma/seed.ts)`);
   console.log(`✔ Tenant "${tenant.name}" / ${venue.name}`);
   console.log(`✔ Staff: ${staff.map((s) => s[0]).join(", ")} (contraseña dev en prisma/seed.ts)`);

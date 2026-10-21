@@ -121,6 +121,8 @@ function announce(ev: StateEvents["events"][number], notify: (t: string, tone?: 
     case "service_call.updated":
       if (p.status === "ACKNOWLEDGED") return notify("El mozo ya viene en camino.");
       return;
+    case "loyalty.redeemed":
+      return notify(`🎉 Canjeaste: ${String(p.reward ?? "tu premio")}`, "success");
     case "session.closed":
       return notify("La mesa se cerró. ¡Gracias por venir!");
   }

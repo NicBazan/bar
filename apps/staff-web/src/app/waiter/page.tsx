@@ -2,6 +2,7 @@
 
 import { useCallback, useState } from "react";
 import { StaffHeader } from "@/components/StaffHeader";
+import { TableCustomers } from "@/features/waiter/TableCustomers";
 import {
   ApiError,
   type KitchenItem,
@@ -21,6 +22,7 @@ export default function WaiterPage() {
   const chime = useChime();
   const [board, setBoard] = useState<Board>({ sessions: [], orders: [], calls: [], ready: [] });
   const [error, setError] = useState<string | null>(null);
+  const [customersOf, setCustomersOf] = useState<TableSession | null>(null);
 
   const refresh = useCallback(async () => {
     const [sessions, orders, calls, items] = await Promise.all([
@@ -123,15 +125,17 @@ export default function WaiterPage() {
               <p className="mt-1 text-sm text-muted">PIN {s.joinPin} · {s._count.devices} celular(es) · {s._count.orders} pedido(s)</p>
               {s.pinFailures >= 8 && <p className="mt-1 text-sm text-warn">🔒 PIN bloqueado por intentos fallidos: generá uno nuevo</p>}
               <div className="mt-3">
-                <div className="flex gap-2">
+                <div className="flex flex-wrap gap-2">
                   <Btn onClick={() => confirm(`¿Cerrar la mesa ${s.table.label}?`) && act(`/staff/sessions/${s.id}/close`)}>Cerrar mesa</Btn>
                   <Btn onClick={() => act(`/staff/sessions/${s.id}/new-pin`)}>PIN nuevo</Btn>
+                  <Btn onClick={() => setCustomersOf(s)}>⭐ Clientes</Btn>
                 </div>
               </div>
             </Card>
           ))}
         </Column>
       </div>
+      {customersOf && <TableCustomers sessionId={customersOf.id} tableLabel={customersOf.table.label} onClose={() => setCustomersOf(null)} />}
     </main>
   );
 }

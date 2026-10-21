@@ -445,9 +445,10 @@ model Customer {
   createdAt         DateTime  @default(now())
   lastLoginAt       DateTime?
 
-  tenant  Tenant        @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-  devices GuestDevice[]
-  orders  Order[]
+  tenant        Tenant         @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  devices       GuestDevice[]
+  orders        Order[]
+  loyaltyEvents LoyaltyEvent[]
 
   @@unique([tenantId, email])
 }
@@ -464,6 +465,65 @@ model CustomerLoginCode {
   createdAt DateTime  @default(now())
 
   @@index([tenantId, email, createdAt])
+}
+
+// ───────────── Fidelización (cada bar elige sellos o puntos) ─────────────
+
+enum LoyaltyMode {
+  STAMPS // 1 sello por visita con pedido confirmado
+  POINTS // puntos por gasto: 1 punto cada `centsPerPoint`
+}
+
+model LoyaltyProgram {
+  id            String      @id @default(uuid()) @db.Uuid
+  tenantId      String      @unique @db.Uuid
+  active        Boolean     @default(false)
+  mode          LoyaltyMode @default(STAMPS)
+  centsPerPoint Int         @default(100000) // $1.000 = 1 punto
+  updatedAt     DateTime    @updatedAt
+
+  rewards LoyaltyReward[]
+}
+
+model LoyaltyReward {
+  id        String  @id @default(uuid()) @db.Uuid
+  tenantId  String  @db.Uuid
+  programId String  @db.Uuid
+  name      String
+  cost      Int // sellos o puntos necesarios
+  active    Boolean @default(true)
+  position  Int     @default(0)
+
+  program LoyaltyProgram @relation(fields: [programId], references: [id], onDelete: Cascade)
+  events  LoyaltyEvent[]
+}
+
+enum LoyaltyEventKind {
+  EARN
+  REDEEM
+}
+
+// Libro de movimientos: el saldo es la suma de `amount` en la unidad (modo) vigente.
+// Si el bar cambia de sellos a puntos, los movimientos del modo anterior dejan de contar.
+model LoyaltyEvent {
+  id         String           @id @default(uuid()) @db.Uuid
+  tenantId   String           @db.Uuid
+  customerId String           @db.Uuid
+  kind       LoyaltyEventKind
+  mode       LoyaltyMode
+  amount     Int // + al sumar, - al canjear
+  sessionId  String?          @db.Uuid // visita que lo generó (EARN)
+  rewardId   String?          @db.Uuid
+  rewardName String? // snapshot: el premio puede cambiar o borrarse
+  staffId    String?          @db.Uuid // quién hizo el canje
+  createdAt  DateTime         @default(now())
+
+  customer Customer       @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  reward   LoyaltyReward? @relation(fields: [rewardId], references: [id], onDelete: SetNull)
+
+  // Una visita suma una sola vez por cliente (los REDEEM tienen sessionId null y no chocan)
+  @@unique([customerId, sessionId, kind])
+  @@index([customerId, createdAt])
 }
 
 // ───────────── Llamados ─────────────

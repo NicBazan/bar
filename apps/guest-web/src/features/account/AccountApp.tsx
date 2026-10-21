@@ -4,7 +4,17 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useState } from "react";
 import { ApiError } from "@/lib/api";
-import { type Me, type ReorderItem, type Visit, clearCustomerToken, customerApi, getCustomerToken, linkVisitIfLoggedIn } from "@/lib/customer";
+import {
+  type Loyalty,
+  type Me,
+  type ReorderItem,
+  type Visit,
+  clearCustomerToken,
+  customerApi,
+  getCustomerToken,
+  linkVisitIfLoggedIn,
+  unitLabel,
+} from "@/lib/customer";
 import { formatMoney } from "@/lib/storage";
 import { useCartStore } from "@/store/cartStore";
 import { LoginScreen } from "./LoginScreen";
@@ -28,6 +38,8 @@ export function AccountApp(props: Props) {
   const [tab, setTab] = useState<Tab>(TABS.includes(props.initialTab as Tab) ? (props.initialTab as Tab) : "home");
   const [me, setMe] = useState<Me | null>(null);
   const [visits, setVisits] = useState<Visit[] | null>(null);
+  const [loyalty, setLoyalty] = useState<Loyalty | null>(null);
+  const [showRewards, setShowRewards] = useState(false);
   const [toast, setToast] = useState<string | null>(null);
 
   useEffect(() => setToken(getCustomerToken(venueId)), [venueId]);
@@ -40,12 +52,14 @@ export function AccountApp(props: Props) {
   const loadAll = useCallback(async () => {
     try {
       if (tag) await linkVisitIfLoggedIn(venueId, tag);
-      const [m, h] = await Promise.all([
+      const [m, h, l] = await Promise.all([
         customerApi<Me>(venueId, "/customer/me"),
         customerApi<Visit[]>(venueId, "/customer/me/history"),
+        customerApi<Loyalty>(venueId, "/customer/me/loyalty"),
       ]);
       setMe(m);
       setVisits(h);
+      setLoyalty(l);
     } catch (e) {
       if (e instanceof ApiError && e.status === 401) setToken(null);
       else notify("Sin conexión. Probá de nuevo en un rato.");
@@ -63,13 +77,14 @@ export function AccountApp(props: Props) {
     clearCustomerToken(venueId);
     setMe(null);
     setVisits(null);
+    setLoyalty(null);
     setToken(null);
   };
 
   return (
     <div className="min-h-dvh bg-paper text-night">
       <main className="mx-auto max-w-md px-5 pt-6 pb-32">
-        {tab === "home" && <HomeTab {...props} me={me} visits={visits} go={setTab} />}
+        {tab === "home" && <HomeTab {...props} me={me} visits={visits} loyalty={loyalty} go={setTab} openRewards={() => setShowRewards(true)} />}
         {tab === "history" && <HistoryTab {...props} visits={visits} notify={notify} />}
         {tab === "promos" && <PromosTab {...props} />}
         {tab === "profile" && <ProfileTab {...props} me={me} onSaved={loadAll} onLogout={logout} notify={notify} />}
@@ -80,6 +95,8 @@ export function AccountApp(props: Props) {
           {toast}
         </div>
       )}
+
+      {showRewards && loyalty?.active && <RewardsSheet loyalty={loyalty} onClose={() => setShowRewards(false)} />}
 
       <BottomNav tab={tab} setTab={setTab} />
     </div>
@@ -143,11 +160,17 @@ const thisMonth = (iso: string) => {
 
 // ───── Inicio ─────
 
-function HomeTab({ venueId, venueName, currency, tag, me, visits, go }: Props & {
+function HomeTab({ venueId, venueName, currency, tag, me, visits, loyalty, go, openRewards }: Props & {
   me: Me | null;
   visits: Visit[] | null;
+  loyalty: Loyalty | null;
   go: (t: Tab) => void;
+  openRewards: () => void;
 }) {
+  const card = loyalty?.active ? loyalty : null;
+  const earnedBySession = new Map(
+    (card?.events ?? []).filter((e) => e.kind === "EARN" && e.sessionId).map((e) => [e.sessionId!, e.amount]),
+  );
   const menuHref = tag ? `/v/${venueId}/menu?tag=${tag}` : `/v/${venueId}/menu`;
   const monthVisits = visits?.filter((v) => thisMonth(v.date)).length ?? 0;
   const firstName = me?.name?.split(" ")[0];
@@ -162,25 +185,42 @@ function HomeTab({ venueId, venueName, currency, tag, me, visits, go }: Props & 
         <Avatar name={me?.name ?? null} email={me?.email} />
       </header>
 
-      <section className="mt-5 rounded-[28px] bg-night p-6 text-white shadow-xl" aria-label="Tus visitas">
+      <section className="mt-5 rounded-[28px] bg-night p-6 text-white shadow-xl" aria-label={card ? "Tu tarjeta de fidelización" : "Tus visitas"}>
         <div className="flex items-center justify-between text-xs text-white/60">
           <span>{venueName}</span>
-          <span className="rounded-full bg-white/10 px-2.5 py-1">Mi cuenta</span>
+          <span className="rounded-full bg-white/10 px-2.5 py-1">{card ? (card.mode === "STAMPS" ? "Tarjeta de sellos" : "Puntos") : "Mi cuenta"}</span>
         </div>
-        <p className="mt-4 text-sm text-white/60">Tus visitas</p>
-        <p className="text-5xl font-semibold tracking-tight">{me?.stats.visits ?? "–"}</p>
+        <p className="mt-4 text-sm text-white/60">{card ? `Tus ${unitLabel(card.mode, 2)}` : "Tus visitas"}</p>
+        <p className="text-5xl font-semibold tracking-tight">{card ? card.balance : (me?.stats.visits ?? "–")}</p>
         <p className="mt-2 text-sm">
-          <span className="rounded-full bg-brand px-2.5 py-1 text-xs font-semibold">+{monthVisits} este mes</span>
-          <span className="ml-2 text-white/60">{formatMoney(me?.stats.spentCents ?? 0, currency)} en total</span>
+          <span className="rounded-full bg-brand px-2.5 py-1 text-xs font-semibold">+{card ? card.earnedThisMonth : monthVisits} este mes</span>
+          <span className="ml-2 text-white/60">
+            {card ? plural(me?.stats.visits ?? 0, "visita", "visitas") : `${formatMoney(me?.stats.spentCents ?? 0, currency)} en total`}
+          </span>
         </p>
+        {card?.mode === "STAMPS" && card.next && card.next.cost <= 12 && (
+          <div className="mt-4 flex flex-wrap gap-1.5" aria-hidden>
+            {Array.from({ length: card.next.cost }, (_, i) => (
+              <span key={i} className={`grid h-7 w-7 place-items-center rounded-full text-xs ${i < card.balance ? "bg-brand text-white" : "bg-white/10 text-white/30"}`}>
+                ★
+              </span>
+            ))}
+          </div>
+        )}
       </section>
 
-      <section className="mt-5 grid grid-cols-4 gap-2 text-center" aria-label="Accesos rápidos">
+      <section className="mt-5 grid grid-cols-4 items-start gap-2 text-center" aria-label="Accesos rápidos">
         <QuickAction href={menuHref} icon="🍽" label="Carta" />
-        <QuickAction onClick={() => go("history")} icon="↺" label="Pedir de nuevo" />
+        <QuickAction onClick={() => go("history")} icon="↺" label="Repetir" />
         <QuickAction onClick={() => go("promos")} icon="%" label="Promos" />
-        <QuickAction onClick={() => go("profile")} icon="◯" label="Perfil" />
+        {card ? (
+          <QuickAction onClick={openRewards} icon="★" label="Premios" />
+        ) : (
+          <QuickAction onClick={() => go("profile")} icon="◯" label="Perfil" />
+        )}
       </section>
+
+      {card?.next && <NextReward card={card} currency={currency} />}
 
       <section className="mt-6">
         <div className="flex items-center justify-between">
@@ -204,7 +244,14 @@ function HomeTab({ venueId, venueName, currency, tag, me, visits, go }: Props & 
                   <p className="truncate font-medium">{v.venue.name} · Mesa {v.tableLabel}</p>
                   <p className="text-xs text-night/50">{fmtDate(v.date)} · {plural(v.orders.reduce((s, o) => s + o.items.reduce((q, i) => q + i.quantity, 0), 0), "ítem", "ítems")}</p>
                 </div>
-                <span className="text-sm font-semibold">{formatMoney(v.totalCents, v.venue.currency)}</span>
+                <span className="text-right">
+                  <span className="block text-sm font-semibold">{formatMoney(v.totalCents, v.venue.currency)}</span>
+                  {card && earnedBySession.has(v.sessionId) && (
+                    <span className="block text-xs font-semibold text-brand">
+                      +{earnedBySession.get(v.sessionId)} {unitLabel(card.mode, earnedBySession.get(v.sessionId)!)}
+                    </span>
+                  )}
+                </span>
               </li>
             ))}
           </ul>
@@ -224,6 +271,69 @@ function QuickAction({ href, onClick, icon, label }: { href?: string; onClick?: 
     </>
   );
   return href ? <Link href={href} className="block">{circle}</Link> : <button onClick={onClick} className="block w-full">{circle}</button>;
+}
+
+type Card = Extract<Loyalty, { active: true }>;
+
+function NextReward({ card, currency }: { card: Card; currency: string }) {
+  const next = card.next!;
+  const have = Math.min(card.balance, next.cost);
+  return (
+    <section className="mt-5 rounded-3xl bg-white p-5 shadow-sm" aria-label="Próximo premio">
+      <div className="flex items-start justify-between gap-3">
+        <div>
+          <p className="text-xs text-night/50">Próximo premio</p>
+          <p className="font-semibold">{next.name}</p>
+        </div>
+        <p className="text-sm font-semibold whitespace-nowrap">
+          {have}/{next.cost} <span className="font-normal text-night/50">{unitLabel(card.mode, next.cost)}</span>
+        </p>
+      </div>
+      <div className="mt-3 h-3 overflow-hidden rounded-full bg-paper" role="progressbar" aria-valuemin={0} aria-valuemax={next.cost} aria-valuenow={have}>
+        <div className="h-full rounded-full bg-brand transition-all" style={{ width: `${(have / next.cost) * 100}%` }} />
+      </div>
+      <p className="mt-2 text-xs text-night/60">
+        {next.remaining === 0
+          ? "¡Ya lo tenés! Pedile al mozo que te lo canjee."
+          : card.mode === "STAMPS"
+            ? `Te ${next.remaining === 1 ? "falta 1 visita" : `faltan ${next.remaining} visitas`}.`
+            : `Te faltan ${next.remaining} puntos (1 punto cada ${formatMoney(card.centsPerPoint, currency)}).`}
+      </p>
+    </section>
+  );
+}
+
+function RewardsSheet({ loyalty, onClose }: { loyalty: Card; onClose: () => void }) {
+  return (
+    <div className="fixed inset-0 z-50 flex items-end justify-center" role="dialog" aria-modal="true" aria-label="Premios">
+      <button aria-label="Cerrar" className="absolute inset-0 bg-night/50" onClick={onClose} />
+      <div className="animate-sheet relative w-full max-w-md rounded-t-[28px] bg-paper p-5 pb-[max(1.25rem,env(safe-area-inset-bottom))]">
+        <div className="flex items-center justify-between">
+          <h2 className="text-xl font-semibold">Premios</h2>
+          <button onClick={onClose} className="h-11 rounded-full px-4 text-sm text-night/60">Cerrar</button>
+        </div>
+        <p className="text-sm text-night/60">
+          Tenés <b className="text-night">{plural(loyalty.balance, unitLabel(loyalty.mode, 1), unitLabel(loyalty.mode, 2))}</b>. Para canjear, pedíselo al mozo en la mesa.
+        </p>
+        <ul className="mt-4 space-y-2">
+          {loyalty.rewards.map((r) => (
+            <li key={r.id} className="flex items-center gap-3 rounded-3xl bg-white p-4 shadow-sm">
+              <span aria-hidden className={`grid h-11 w-11 place-items-center rounded-full text-lg ${r.canRedeem ? "bg-brand text-white" : "bg-paper text-night/40"}`}>★</span>
+              <div className="flex-1">
+                <p className="font-medium">{r.name}</p>
+                <p className="text-xs text-night/50">{plural(r.cost, unitLabel(loyalty.mode, 1), unitLabel(loyalty.mode, 2))}</p>
+              </div>
+              {r.canRedeem ? (
+                <span className="rounded-full bg-brand/10 px-3 py-1 text-xs font-semibold text-brand-dark">¡Disponible!</span>
+              ) : (
+                <span className="text-xs text-night/50">faltan {r.cost - loyalty.balance}</span>
+              )}
+            </li>
+          ))}
+        </ul>
+      </div>
+    </div>
+  );
 }
 
 // ───── Historial y "Pedir lo mismo" ─────

@@ -73,6 +73,11 @@ beforeAll(async () => {
 });
 
 afterAll(async () => {
+  // No dejar mesas abiertas ni clientes de prueba en el bar demo
+  const tag = await prisma.tableTag.findUniqueOrThrow({ where: { code: tagCode } });
+  await prisma.order.updateMany({ where: { session: { tableId: tag.tableId }, status: "PENDING_APPROVAL" }, data: { status: "CANCELLED" } });
+  await prisma.tableSession.updateMany({ where: { tableId: tag.tableId, status: { not: "CLOSED" } }, data: { status: "CLOSED", closedAt: new Date() } });
+  await prisma.customer.deleteMany({ where: { email: { endsWith: "@test.local" } } });
   for (const id of created) await purgeTenant(prisma, id);
   await app.close();
   await prisma.$disconnect();

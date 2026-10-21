@@ -66,4 +66,5 @@ export type RealtimeEventType =
   | "order.rejected"
   | "item.status_changed"
   | "service_call.created"
-  | "service_call.updated";
+  | "service_call.updated"
+  | "loyalty.redeemed";

@@ -9,6 +9,7 @@ import { sendEmail } from "../../shared/email/index.js";
 import { HttpError, notFound } from "../../shared/errors.js";
 import { customerCodeKey } from "../../shared/rate-limit/keys.js";
 import { getVenueMenu } from "../catalog/service.js";
+import { awardSession } from "../loyalty/service.js";
 
 /** El código de ingreso vence a los 10 minutos y admite 5 intentos */
 export const CODE_TTL_MS = 10 * 60 * 1000;
@@ -65,6 +66,8 @@ export async function linkGuestToken(tx: Tx, guestToken: string, customer: { id:
     where: { tenantId: claims.tid, sessionId: claims.sid, deviceId: claims.did, customerId: null },
     data: { customerId: customer.id },
   });
+  // Si la mesa ya se cerró (guardó la cuenta al irse), la visita suma igual
+  await awardSession(tx, claims.sid);
   return true;
 }
 

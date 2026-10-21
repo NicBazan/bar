@@ -204,6 +204,29 @@ export type AdminVenue = {
   instagramUrl: string | null;
 };
 
+export type AdminLoyalty = {
+  active: boolean;
+  mode: "STAMPS" | "POINTS";
+  centsPerPoint: number;
+  rewards: Array<{ id?: string; name: string; cost: number; active: boolean }>;
+  stats: { customers: number; redeemed: number };
+};
+
+/** Cliente con "Mi cuenta" sentado en una mesa (panel del mozo) */
+export type TableCustomer = {
+  id: string;
+  name: string | null;
+  email: string; // enmascarado
+  loyalty:
+    | { active: false }
+    | {
+        active: true;
+        mode: "STAMPS" | "POINTS";
+        balance: number;
+        rewards: Array<{ id: string; name: string; cost: number; canRedeem: boolean }>;
+      };
+};
+
 // ───── Super admin ─────
 
 export type SaTenant = {

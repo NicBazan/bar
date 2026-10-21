@@ -9,6 +9,7 @@ import { Prisma, prisma } from "../../shared/db/index.js";
 import { HttpError, forbidden, notFound } from "../../shared/errors.js";
 import { channels, emit } from "../../shared/outbox/outbox.js";
 import { assertTenantCanOpenSession, incrementSessionUsage } from "../billing/billing.guard.js";
+import { awardSession } from "../loyalty/service.js";
 import { nfcSunService } from "./nfc-sun.service.js";
 
 export const ACTIVE_SESSION_STATUSES = ["PENDING", "OPEN", "BILL_REQUESTED"] as const;
@@ -186,6 +187,7 @@ export async function joinTableSession(req: FastifyRequest, reply: FastifyReply)
       // se cierra sola para que el próximo cliente de la mesa no se encuentre con un PIN ajeno
       if (session && (await isAbandoned(tx, session))) {
         await tx.tableSession.update({ where: { id: session.id }, data: { status: "CLOSED", closedAt: new Date() } });
+        await awardSession(tx, session.id);
         session = null;
       }
 

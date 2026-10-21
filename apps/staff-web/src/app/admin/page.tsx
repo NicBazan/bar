@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { StaffHeader } from "@/components/StaffHeader";
+import { Loyalty } from "@/features/admin/Loyalty";
 import { MenuEditor } from "@/features/admin/MenuEditor";
 import { Overview } from "@/features/admin/Overview";
 import { TablesQr } from "@/features/admin/TablesQr";
@@ -9,12 +10,13 @@ import { Team } from "@/features/admin/Team";
 import { VenueSettings } from "@/features/admin/VenueSettings";
 import { useStaffAuth } from "@/lib/live";
 
-type Tab = "inicio" | "carta" | "mesas" | "equipo" | "local";
+type Tab = "inicio" | "carta" | "mesas" | "fidelizacion" | "equipo" | "local";
 
 const TABS: Array<[Tab, string]> = [
   ["inicio", "Inicio"],
   ["carta", "Carta"],
   ["mesas", "Mesas y QR"],
+  ["fidelizacion", "Fidelización"],
   ["equipo", "Equipo"],
   ["local", "Local"],
 ];
@@ -59,6 +61,7 @@ export default function AdminPage() {
         {tab === "inicio" && <Overview onGo={go} />}
         {tab === "carta" && <MenuEditor />}
         {tab === "mesas" && <TablesQr />}
+        {tab === "fidelizacion" && <Loyalty />}
         {tab === "equipo" && <Team />}
         {tab === "local" && <VenueSettings />}
       </div>

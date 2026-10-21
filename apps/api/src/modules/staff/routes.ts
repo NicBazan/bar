@@ -11,6 +11,7 @@ import { loginKey } from "../../shared/rate-limit/keys.js";
 import { HttpError, conflict, notFound } from "../../shared/errors.js";
 import { channels, emit } from "../../shared/outbox/outbox.js";
 import { assertTenantCanOpenSession, incrementSessionUsage } from "../billing/billing.guard.js";
+import { awardSession } from "../loyalty/service.js";
 
 // Hash con el mismo costo que uno real, para igualar tiempos cuando el email no existe
 const DUMMY_HASH = hashPassword("usuario-inexistente-para-igualar-tiempos");
@@ -116,6 +117,8 @@ export async function staffRoutes(app: FastifyInstance) {
         await tx.order.updateMany({ where: { id: { in: ids } }, data: { status: "CANCELLED" } });
         await tx.orderItem.updateMany({ where: { orderId: { in: ids } }, data: { status: "VOIDED", voidReason: "Mesa cerrada" } });
       }
+      // Fidelización: sellos o puntos para los clientes identificados en esta visita
+      await awardSession(tx, id);
       // Llamados abiertos se resuelven al cerrar la mesa
       await tx.serviceCall.updateMany({
         where: { sessionId: id, status: { not: "RESOLVED" } },

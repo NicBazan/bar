@@ -72,3 +72,21 @@ export async function linkVisitIfLoggedIn(venueId: string, tag: string) {
     /* sin conexión: se reintenta en la próxima carga */
   }
 }
+
+export type LoyaltyReward = { id: string; name: string; cost: number; canRedeem: boolean };
+
+export type Loyalty =
+  | { active: false }
+  | {
+      active: true;
+      mode: "STAMPS" | "POINTS";
+      centsPerPoint: number;
+      balance: number;
+      earnedThisMonth: number;
+      rewards: LoyaltyReward[];
+      next: (LoyaltyReward & { remaining: number }) | null;
+      events: Array<{ kind: "EARN" | "REDEEM"; amount: number; sessionId: string | null; rewardName: string | null; createdAt: string }>;
+    };
+
+export const unitLabel = (mode: "STAMPS" | "POINTS", n: number) =>
+  mode === "STAMPS" ? (n === 1 ? "sello" : "sellos") : n === 1 ? "punto" : "puntos";
