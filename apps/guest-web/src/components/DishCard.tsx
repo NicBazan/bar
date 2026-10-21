@@ -21,7 +21,11 @@ export interface DishCardProps {
   posterUrl?: string;
   variants?: Dish["variants"];
   modifierGroups?: Dish["modifierGroups"];
+  /** Diseño elegido por el dueño en Admin → Local: tarjetas (clásico), pantalla completa (reels) o lista compacta */
+  layout?: MenuLayout;
 }
+
+export type MenuLayout = "classic" | "reels" | "list";
 
 export function DishCard({
   id,
@@ -37,6 +41,7 @@ export function DishCard({
   posterUrl,
   variants = [],
   modifierGroups = [],
+  layout = "classic",
 }: DishCardProps) {
   const [added, setAdded] = useState(false);
   const [choosing, setChoosing] = useState(false);
@@ -57,6 +62,108 @@ export function DishCard({
     addItem({ dishId: id, name, priceCents, modifierIds: [], modifierNames: [] });
     flashAdded();
   };
+
+  const addLabel = needsChoice ? "Elegir opciones" : "Agregar al pedido";
+
+  const sheet = choosing && (
+    <DishSheet
+      dish={{ id, name, description, priceCents, available, tags, allergens, variants, modifierGroups, assets: {} }}
+      currency={currency}
+      canAdd
+      onClose={() => setChoosing(false)}
+      onAdd={(line) => {
+        addItem({
+          dishId: line.dishId,
+          name: line.name,
+          variantId: line.variantId,
+          variantName: line.variantName,
+          modifierIds: line.modifierIds,
+          modifierNames: line.modifierNames,
+          note: line.note,
+          priceCents: line.unitPriceCents,
+          quantity: line.quantity,
+        });
+        flashAdded();
+      }}
+    />
+  );
+
+  const price = (
+    <>
+      {variants.length > 0 && <span className="text-xs font-normal text-muted">desde </span>}
+      {formatMoney(displayPrice, currency)}
+    </>
+  );
+
+  if (layout === "list") {
+    return (
+      <article className="flex items-center gap-3 border-b border-line/50 py-3 last:border-b-0">
+        <div className="grid h-16 w-16 shrink-0 place-items-center overflow-hidden rounded-2xl bg-surface-2 text-2xl">
+          {posterUrl ? <img src={posterUrl} alt="" className="h-full w-full object-cover" /> : glbUrl ? "✨" : "🍽️"}
+        </div>
+        <div className="min-w-0 flex-1">
+          <h3 className="truncate font-medium text-cream">
+            {name}
+            {!available && <span className="ml-2 text-[10px] font-semibold text-warn">Agotado</span>}
+          </h3>
+          {description && <p className="truncate text-xs text-muted">{description}</p>}
+          <p className="mt-0.5 text-sm font-semibold text-amber">{price}</p>
+        </div>
+        <button
+          type="button"
+          onClick={handleAdd}
+          disabled={!available}
+          aria-label={`${addLabel}: ${name}`}
+          className={`grid h-11 w-11 shrink-0 place-items-center rounded-full text-lg font-bold transition active:scale-95 disabled:opacity-40 ${
+            added ? "bg-ok text-ink" : "bg-amber text-amber-ink"
+          }`}
+        >
+          {added ? "✓" : "+"}
+        </button>
+        {sheet}
+      </article>
+    );
+  }
+
+  if (layout === "reels") {
+    return (
+      <article className="relative flex h-[calc(100dvh-7rem)] min-h-[480px] snap-start scroll-mt-16 flex-col overflow-hidden rounded-3xl border border-line/70 bg-surface">
+        <div className="relative min-h-0 flex-1 bg-surface-2">
+          {glbUrl ? (
+            <Dish3DViewer glbUrl={glbUrl} usdzUrl={usdzUrl} posterUrl={posterUrl} altText={name} />
+          ) : posterUrl ? (
+            <img src={posterUrl} alt={name} className="h-full w-full object-cover" />
+          ) : (
+            <div className="grid h-full place-items-center text-6xl">🍽️</div>
+          )}
+        </div>
+        <div className="p-5">
+          {tags.length > 0 && (
+            <div className="mb-2 flex flex-wrap gap-1.5">
+              {tags.map((t) => (
+                <span key={t} className="rounded-full bg-surface-2 px-2 py-0.5 text-[10px] text-cream/70">{t}</span>
+              ))}
+            </div>
+          )}
+          <h3 className="font-display text-2xl text-cream">{name}</h3>
+          {description && <p className="mt-1 line-clamp-3 text-sm text-muted">{description}</p>}
+          {allergens.length > 0 && <p className="mt-1 text-[11px] text-warn/80">Contiene {allergens.join(", ")}</p>}
+          <div className="mt-4 flex items-center justify-between gap-3">
+            <span className="font-display text-2xl font-semibold text-amber">{price}</span>
+            <button
+              type="button"
+              onClick={handleAdd}
+              disabled={!available}
+              className={`h-12 rounded-2xl px-5 text-sm font-semibold transition active:scale-95 disabled:opacity-40 ${added ? "bg-ok text-ink" : "bg-amber text-amber-ink"}`}
+            >
+              {!available ? "Agotado" : added ? "✓ ¡Agregado!" : `+ ${addLabel}`}
+            </button>
+          </div>
+        </div>
+        {sheet}
+      </article>
+    );
+  }
 
   return (
     <article className="group flex flex-col overflow-hidden rounded-3xl border border-line/70 bg-surface/90 shadow-lg shadow-black/40 transition-all duration-300 hover:border-amber/40 hover:shadow-amber/5">
@@ -135,8 +242,7 @@ export function DishCard({
           <div>
             <span className="text-[10px] tracking-wider text-muted uppercase">Precio</span>
             <div className="font-display text-lg font-semibold text-amber">
-              {variants.length > 0 && <span className="text-xs font-normal text-muted">desde </span>}
-              {formatMoney(displayPrice, currency)}
+              {price}
             </div>
           </div>
 
@@ -158,35 +264,14 @@ export function DishCard({
             ) : (
               <>
                 <span>+</span>
-                <span>{needsChoice ? "Elegir opciones" : "Agregar al pedido"}</span>
+                <span>{addLabel}</span>
               </>
             )}
           </button>
         </div>
       </div>
 
-      {choosing && (
-        <DishSheet
-          dish={{ id, name, description, priceCents, available, tags, allergens, variants, modifierGroups, assets: {} }}
-          currency={currency}
-          canAdd
-          onClose={() => setChoosing(false)}
-          onAdd={(line) => {
-            addItem({
-              dishId: line.dishId,
-              name: line.name,
-              variantId: line.variantId,
-              variantName: line.variantName,
-              modifierIds: line.modifierIds,
-              modifierNames: line.modifierNames,
-              note: line.note,
-              priceCents: line.unitPriceCents,
-              quantity: line.quantity,
-            });
-            flashAdded();
-          }}
-        />
-      )}
+      {sheet}
     </article>
   );
 }

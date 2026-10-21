@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { DishCard } from "@/components/DishCard";
+import { DishCard, type MenuLayout } from "@/components/DishCard";
 import { FloatingCart } from "@/components/FloatingCart";
 import { MenuCategoryNav } from "@/components/MenuCategoryNav";
 import { TableLiveBar } from "@/components/TableLiveBar";
@@ -66,6 +66,10 @@ export default async function VenueMenuPage({ params, searchParams }: MenuPagePr
       </main>
     );
   }
+
+  // Diseño que eligió el dueño en Admin → Local (Clásico, Reels o Lista)
+  const mode = (menu.venue.layout as { mode?: string } | null)?.mode;
+  const layout: MenuLayout = mode === "reels" || mode === "list" ? mode : "classic";
 
   // Los modelos 3D vienen de la API (DishAsset GLB/USDZ): un plato sin modelo muestra foto o nada
   const categoriesWith3D = menu.categories;
@@ -163,7 +167,7 @@ export default async function VenueMenuPage({ params, searchParams }: MenuPagePr
               <span className="text-xs text-muted/70">{cat.dishes.length} platos</span>
             </div>
 
-            <div className="grid gap-4">
+            <div className={layout === "list" ? "rounded-3xl bg-surface/60 px-4" : layout === "reels" ? "grid gap-6" : "grid gap-4"}>
               {cat.dishes.map((dish) => (
                 <DishCard
                   key={dish.id}
@@ -180,12 +184,16 @@ export default async function VenueMenuPage({ params, searchParams }: MenuPagePr
                   posterUrl={dish.assets?.POSTER || dish.assets?.PHOTO}
                   variants={dish.variants}
                   modifierGroups={dish.modifierGroups}
+                  layout={layout}
                 />
               ))}
             </div>
           </section>
         ))}
       </div>
+
+      {/* Reels: cada plato encaja en la pantalla al deslizar */}
+      {layout === "reels" && <style>{"html{scroll-snap-type:y proximity}"}</style>}
 
       {/* Panel flotante interactivo del Carrito (Zustand) */}
       <FloatingCart currency={menu.venue.currency} tag={tag} />
