@@ -55,7 +55,7 @@ async function newCustomer(guest: string) {
 
 const card = async (token: string) => (await app.inject({ url: "/v1/customer/me/loyalty", headers: auth(token) })).json();
 
-const setProgram = (body: unknown, token = owner) => app.inject({ method: "PUT", url: "/v1/admin/loyalty", headers: auth(token), payload: body });
+const setProgram = (body: Record<string, unknown>, token = owner) => app.inject({ method: "PUT", url: "/v1/admin/loyalty", headers: auth(token), payload: body });
 
 beforeAll(async () => {
   app = await buildApp({ logger: false });
