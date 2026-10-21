@@ -79,7 +79,7 @@ export async function api<T>(path: string, opts: FetchOptions = {}): Promise<T> 
 // ───── Modelos de Datos de la API ─────
 
 export type TagInfo = {
-  venue: { id: string; name: string; layout?: unknown };
+  venue: { id: string; name: string; layout?: unknown; logoUrl?: string | null };
   table: { id: string; label: string };
 };
 
@@ -119,7 +119,15 @@ export type Dish = {
 };
 
 export type Menu = {
-  venue: { id: string; name: string; currency: string; layout: unknown };
+  venue: {
+    id: string;
+    name: string;
+    currency: string;
+    layout: unknown;
+    logoUrl?: string | null;
+    address?: string | null;
+    instagramUrl?: string | null;
+  };
   version: number;
   categories: Array<{ id: string; name: string; dishes: Dish[] }>;
 };

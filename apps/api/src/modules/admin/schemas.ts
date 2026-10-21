@@ -129,4 +129,11 @@ export const VenueUpdate = z.object({
     .max(300)
     .refine((u) => /^https:\/\/[^\s"'<>]+$/i.test(u), "Debe ser un link https://")
     .nullish(),
+  address: z.string().trim().max(160).nullish(),
+  instagramUrl: z
+    .string()
+    .trim()
+    .max(200)
+    .refine((u) => /^https:\/\/(www\.)?instagram\.com\/[^\s"'<>]+$/i.test(u), "Debe ser un link de instagram.com")
+    .nullish(),
 });

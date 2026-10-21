@@ -64,6 +64,10 @@ model Venue {
   wifiSsid        String?
   wifiPassword    String?
   googleReviewUrl String?
+  // Identidad del local en la carta
+  logoUrl         String?
+  address         String?
+  instagramUrl    String?
   createdAt DateTime @default(now())
 
   tenant          Tenant           @relation(fields: [tenantId], references: [id])

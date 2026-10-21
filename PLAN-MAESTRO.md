@@ -470,7 +470,7 @@ No mezclar: si el MVP está andando, los puertos 3000/3001/4000 están ocupados 
 | GET/POST/PATCH `/admin/tables[/:id]` · POST `/:id/regenerate-qr` · PUT `/:id/nfc` | Mesas, QR nuevo (invalida el impreso), vincular chip NTAG 424 |
 | POST `/admin/areas` | Áreas del salón |
 | GET/POST/PATCH `/admin/staff[/:id]` | Equipo con matriz de roles |
-| GET/PATCH `/admin/venue` | Nombre, layout, Wi-Fi de invitados, link de reseñas |
+| GET/PATCH `/admin/venue` · POST/DELETE `/admin/venue/logo` | Nombre, logo, dirección, Instagram, layout, Wi-Fi de invitados, link de reseñas |
 
 ### Super admin (`/v1/superadmin`, SUPER_ADMIN del tenant de la plataforma)
 

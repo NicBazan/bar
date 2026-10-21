@@ -417,3 +417,33 @@ describe("super admin", () => {
     expect((await login(email, reset.json().temporaryPassword)).statusCode).toBe(200);
   });
 });
+
+describe("admin: identidad del local", () => {
+  it("sube el logo y la carta pública lo muestra con dirección e Instagram", async () => {
+    const PNG = Buffer.from(
+      "89504e470d0a1a0a0000000d4948445200000001000000010806000000" + "1f15c4890000000d49444154789c6360000002000154a24f5d0000000049454e44ae426082",
+      "hex",
+    );
+    const up = await app.inject({ method: "POST", url: "/v1/admin/venue/logo", ...multipart(A.token, "logo.png", PNG) });
+    expect(up.statusCode).toBe(201);
+    const patch = await app.inject({
+      method: "PATCH",
+      url: "/v1/admin/venue",
+      headers: { authorization: `Bearer ${A.token}` },
+      payload: { address: "Av. Siempre Viva 742", instagramUrl: "https://instagram.com/bartest" },
+    });
+    expect(patch.statusCode).toBe(200);
+    const bad = await app.inject({
+      method: "PATCH",
+      url: "/v1/admin/venue",
+      headers: { authorization: `Bearer ${A.token}` },
+      payload: { instagramUrl: "https://evil.com/x" },
+    });
+    expect(bad.statusCode).toBe(400);
+    const menu = (await app.inject({ url: `/v1/venues/${A.venueId}/menu` })).json();
+    expect(menu.venue.logoUrl).toBe(up.json().logoUrl);
+    expect(menu.venue.address).toBe("Av. Siempre Viva 742");
+    const tag = (await app.inject({ url: `/v1/tags/${A.tableCodes[0]}` })).json();
+    expect(tag.venue.logoUrl).toBe(up.json().logoUrl);
+  });
+});

@@ -199,6 +199,9 @@ export type AdminVenue = {
   wifiSsid: string | null;
   wifiPassword: string | null;
   googleReviewUrl: string | null;
+  logoUrl: string | null;
+  address: string | null;
+  instagramUrl: string | null;
 };
 
 // ───── Super admin ─────

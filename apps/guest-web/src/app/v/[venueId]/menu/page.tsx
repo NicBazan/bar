@@ -89,9 +89,22 @@ export default async function VenueMenuPage({ params, searchParams }: MenuPagePr
           )}
         </div>
 
-        <h1 className="mt-3 font-display text-3xl font-medium tracking-tight text-cream">
-          {menu.venue.name}
-        </h1>
+        <div className="mt-3 flex items-center gap-3">
+          {menu.venue.logoUrl && (
+            <img src={menu.venue.logoUrl} alt="" className="h-12 w-12 shrink-0 rounded-2xl border border-line bg-surface object-contain p-1" />
+          )}
+          <h1 className="font-display text-3xl font-medium tracking-tight text-cream">{menu.venue.name}</h1>
+        </div>
+        {(menu.venue.address || menu.venue.instagramUrl) && (
+          <p className="mt-1 flex flex-wrap gap-x-3 text-xs text-muted">
+            {menu.venue.address && <span>📍 {menu.venue.address}</span>}
+            {menu.venue.instagramUrl && (
+              <a href={menu.venue.instagramUrl} target="_blank" rel="noopener noreferrer" className="text-amber">
+                Instagram
+              </a>
+            )}
+          </p>
+        )}
         <p className="mt-1 text-xs text-muted">
           Tocá un plato con el sello 3D para proyectarlo a escala real sobre tu mesa.
         </p>

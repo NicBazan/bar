@@ -96,7 +96,7 @@ export async function getTableTagWithActiveSession(code: string) {
       table: {
         include: {
           venue: {
-            select: { id: true, name: true, layout: true },
+            select: { id: true, name: true, layout: true, logoUrl: true },
           },
           sessions: {
             where: { status: { in: [...ACTIVE_SESSION_STATUSES] } },

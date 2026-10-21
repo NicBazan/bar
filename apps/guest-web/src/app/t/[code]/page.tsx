@@ -66,7 +66,7 @@ export default async function TableWelcomePage({ params, searchParams }: TableWe
       {/* Cabecera / Identidad */}
       <header className="flex flex-col items-center pt-8">
         <div className="mb-6 flex h-20 w-20 items-center justify-center rounded-3xl border border-line/60 bg-gradient-to-br from-surface-2 to-surface text-4xl shadow-2xl ring-1 ring-white/5">
-          🍸
+          {venue.logoUrl ? <img src={venue.logoUrl} alt={venue.name} className="h-full w-full rounded-3xl object-contain p-1" /> : "🍸"}
         </div>
         <span className="text-xs font-semibold tracking-widest text-amber uppercase">
           Bienvenidos a

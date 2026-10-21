@@ -4,7 +4,8 @@ import { invalidateStaffStatus } from "../../shared/auth/guards.js";
 import { hashPassword } from "../../shared/auth/password.js";
 import type { StaffRole } from "../../shared/auth/tokens.js";
 import { prisma } from "../../shared/db/index.js";
-import { conflict, forbidden, notFound } from "../../shared/errors.js";
+import { HttpError, conflict, forbidden, notFound } from "../../shared/errors.js";
+import { deleteMediaByUrl, saveMedia } from "./media.js";
 import { audit, requireAdmin } from "./context.js";
 import { IdParams, StaffCreate, StaffUpdate, VenueUpdate } from "./schemas.js";
 
@@ -147,7 +148,30 @@ export async function adminTeamRoutes(app: FastifyInstance) {
       wifiSsid: v.wifiSsid,
       wifiPassword: v.wifiPassword,
       googleReviewUrl: v.googleReviewUrl,
+      logoUrl: v.logoUrl,
+      address: v.address,
+      instagramUrl: v.instagramUrl,
     };
+  });
+
+  // Logo del local: misma validación que las fotos de platos (JPG/PNG/WebP por contenido)
+  app.post("/admin/venue/logo", async (req, reply) => {
+    const ctx = await requireAdmin(req);
+    const file = await req.file();
+    if (!file) throw new HttpError(400, "FILE_REQUIRED", "Falta el archivo");
+    const saved = await saveMedia(ctx.tenantId, "PHOTO", await file.toBuffer());
+    const prev = await prisma.venue.findUniqueOrThrow({ where: { id: ctx.venueId }, select: { logoUrl: true } });
+    await prisma.venue.update({ where: { id: ctx.venueId }, data: { logoUrl: saved.url } });
+    if (prev.logoUrl) await deleteMediaByUrl(ctx.tenantId, prev.logoUrl);
+    return reply.status(201).send({ logoUrl: saved.url });
+  });
+
+  app.delete("/admin/venue/logo", async (req) => {
+    const ctx = await requireAdmin(req);
+    const prev = await prisma.venue.findUniqueOrThrow({ where: { id: ctx.venueId }, select: { logoUrl: true } });
+    await prisma.venue.update({ where: { id: ctx.venueId }, data: { logoUrl: null } });
+    if (prev.logoUrl) await deleteMediaByUrl(ctx.tenantId, prev.logoUrl);
+    return { ok: true };
   });
 
   app.patch("/admin/venue", async (req) => {
@@ -163,6 +187,8 @@ export async function adminTeamRoutes(app: FastifyInstance) {
         wifiSsid: body.wifiSsid === undefined ? undefined : body.wifiSsid || null,
         wifiPassword: body.wifiPassword === undefined ? undefined : body.wifiPassword || null,
         googleReviewUrl: body.googleReviewUrl === undefined ? undefined : body.googleReviewUrl || null,
+        address: body.address === undefined ? undefined : body.address || null,
+        instagramUrl: body.instagramUrl === undefined ? undefined : body.instagramUrl || null,
       },
     });
     return { ok: true };

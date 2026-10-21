@@ -6,7 +6,15 @@ import { notFound } from "../../shared/errors.js";
  * Es la misma estructura que se cachea en CDN y que recibe el Chef IA.
  */
 export type VenueMenuCompiled = {
-  venue: { id: string; name: string; currency: string; layout: unknown };
+  venue: {
+    id: string;
+    name: string;
+    currency: string;
+    layout: unknown;
+    logoUrl: string | null;
+    address: string | null;
+    instagramUrl: string | null;
+  };
   version: number;
   categories: Array<{
     id: string;
@@ -35,7 +43,7 @@ export type VenueMenuCompiled = {
 export async function getVenueMenu(venueId: string): Promise<VenueMenuCompiled> {
   const venue = await prisma.venue.findUnique({
     where: { id: venueId },
-    select: { id: true, name: true, currency: true, layout: true },
+    select: { id: true, name: true, currency: true, layout: true, logoUrl: true, address: true, instagramUrl: true },
   });
   if (!venue) throw notFound("Local");
 
