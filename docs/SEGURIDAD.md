@@ -44,4 +44,5 @@ Revisión hecha sobre todo el monorepo (API, carta, panel, scripts) antes de dej
 | Una sola `NFC_MASTER_KEY` para todos los chips | El UID está ligado a la mesa, así que una firma de otro chip no sirve | Claves diversificadas por chip (AN10922) |
 | Onboarding abierto (cualquiera crea un bar) | Tope global de 30 altas por hora | Captcha (Turnstile) y verificación de email |
 | Sin 2FA para super admin | MVP | TOTP para SUPER_ADMIN |
+| Autoridad local de Caddy para el HTTPS del MVP | Solo para la demo; la clave privada queda en `.mvp/caddy` (ignorado por git) y solo se publica el certificado público | Quitar el certificado del celular al terminar las pruebas; en producción, HTTPS real (Vercel) |
 | Usuarios demo con contraseñas conocidas | Solo en la base local | No correr el seed en producción; usar `create-superadmin` |

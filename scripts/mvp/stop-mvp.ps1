@@ -15,7 +15,7 @@ if (Test-Path $pidsFile) {
 }
 
 # Por si quedó algo escuchando en los puertos del MVP (por ejemplo, de una corrida anterior)
-foreach ($port in 3000, 3001, 4000) {
+foreach ($port in 3000, 3001, 4000, 3443, 3444, 3480) {
   Get-NetTCPConnection -LocalPort $port -State Listen -ErrorAction SilentlyContinue | ForEach-Object {
     taskkill /PID $_.OwningProcess /T /F 2>$null | Out-Null
   }

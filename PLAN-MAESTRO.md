@@ -421,7 +421,8 @@ node scripts/mvp/smoke.mjs                      # prueba de humo contra el MVP a
 No mezclar: si el MVP está andando, los puertos 3000/3001/4000 están ocupados (primero `DETENER-MVP.cmd`).
 
 ### Celular
-- **En el Wi-Fi de casa:** `http://192.168.100.25:3000/t/{code}`. Funciona todo menos la cámara/AR.
+- **En el Wi-Fi de casa, con HTTPS (recomendado):** `https://192.168.100.25:3443/t/{code}`. Lo sirve Caddy con una autoridad local. Hay que instalar **una sola vez** en el celular el certificado `http://192.168.100.25:3480/bar-mvp-ca.crt`; los pasos están en `.mvp/LINKS.html`. Así hay cámara y secure context sin túnel ni internet.
+- **En el Wi-Fi de casa, sin instalar nada:** `http://192.168.100.25:3000/t/{code}`. Funciona todo menos la cámara/AR.
 - **Con datos móviles:** el link `https://….trycloudflare.com` del túnel. Funciona todo, incluida la AR. En el Wi-Fi de casa no abre porque el router bloquea `trycloudflare.com` (ver §12).
 - **Producción:** [DEPLOY.md](DEPLOY.md).
 
@@ -526,6 +527,8 @@ No mezclar: si el MVP está andando, los puertos 3000/3001/4000 están ocupados 
 | Síntoma | Causa | Solución |
 | :-- | :-- | :-- |
 | El celular dice "no se puede acceder" con el link `trycloudflare.com` | El DNS del router (`192.168.100.1`) bloquea **todo** `trycloudflare.com` (verificado: el dominio raíz y los subdominios fallan; google.com anda) | En el celular: datos móviles, o Android → Ajustes → DNS privado → `one.one.one.one`. O cambiar el DNS del router. En el Wi-Fi, usar el link `http://192.168.100.25:3000` |
+| "Ver en tu mesa" no abre la AR en Android con el HTTPS local | Scene Viewer (la app de AR de Google) puede no confiar en certificados instalados por el usuario | Usar el link del túnel con datos móviles para la AR; el visor 3D y la cámara web andan igual |
+| El celular avisa "conexión no privada" en `https://192.168.100.25:3443` | Falta instalar el certificado del MVP | Abrir `http://192.168.100.25:3480/bar-mvp-ca.crt` e instalarlo como certificado CA (pasos en LINKS.html) |
 | `cloudflared` no arranca: `lookup api.trycloudflare.com: no such host` | Mismo bloqueo, en la PC | Ya se cambió el DNS de la PC a 1.1.1.1 / 8.8.8.8 (IPv4 e IPv6). Para volver: `Set-DnsClientServerAddress -InterfaceAlias "Ethernet 2" -ResetServerAddresses` |
 | `EADDRINUSE` en 3000 / 3001 / 4000 | El MVP (u otro server) ya está corriendo | `DETENER-MVP.cmd`, o `Get-NetTCPConnection -LocalPort 3000,3001,4000 -State Listen \| % { Stop-Process -Id $_.OwningProcess -Force }` |
 | "Error de conexión" en el celular por `http://192.168.x.x` | `crypto.randomUUID()` no existe fuera de HTTPS | Resuelto: `uuid()` de `lib/storage.ts` |

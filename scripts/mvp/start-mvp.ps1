@@ -170,13 +170,65 @@ foreach ($w in @(@{ name = "guest"; dir = "apps\guest-web"; port = 3000 }, @{ na
 if (-not (Wait-Http "http://127.0.0.1:3000/" 90)) { Fail "La carta no respondió" }
 if (-not (Wait-Http "http://127.0.0.1:3001/login" 90)) { Fail "El panel no respondió" }
 
+# ── 5.b HTTPS local (Caddy): cámara y AR en el celular por el Wi-Fi, sin túnel ni internet ──
+# Caddy emite certificados con su propia autoridad local. El celular instala ese certificado
+# (bar-mvp-ca.crt) una sola vez. La clave privada de la autoridad queda solo en .mvp/caddy.
+$localHttps = $null
+$caddy = @("$env:LOCALAPPDATA\Microsoft\WinGet\Links\caddy.exe", "$env:ProgramFiles\Caddy\caddy.exe") +
+  @(Get-ChildItem "$env:LOCALAPPDATA\Microsoft\WinGet\Packages\CaddyServer.Caddy*\caddy.exe" -ErrorAction SilentlyContinue | ForEach-Object { $_.FullName }) |
+  Where-Object { $_ -and (Test-Path $_) } | Select-Object -First 1
+if ($caddy -and $lanIp) {
+  Say "Abriendo HTTPS local (https://${lanIp}:3443)..."
+  $caddyDir = Join-Path $State "caddy"; $caDir = Join-Path $State "ca"
+  New-Item -ItemType Directory -Force -Path $caddyDir, $caDir | Out-Null
+  $fwd = $State -replace "\\", "/"
+  $caddyfile = @"
+{
+	skip_install_trust
+	admin off
+	storage file_system "$fwd/caddy"
+	auto_https disable_redirects
+}
+
+https://${lanIp}:3443, https://localhost:3443 {
+	tls internal
+	reverse_proxy 127.0.0.1:3000
+}
+
+https://${lanIp}:3444, https://localhost:3444 {
+	tls internal
+	reverse_proxy 127.0.0.1:3001
+}
+
+# Solo el certificado PUBLICO de la autoridad local, para instalarlo en el celular
+http://${lanIp}:3480, http://localhost:3480 {
+	root * "$fwd/ca"
+	file_server
+}
+"@
+  $caddyfile | Set-Content -Path (Join-Path $State "Caddyfile") -Encoding ASCII
+  $c = Start-Process -FilePath $caddy -ArgumentList @("run", "--config", "`"$(Join-Path $State 'Caddyfile')`"", "--adapter", "caddyfile") `
+    -RedirectStandardError (Join-Path $Logs "caddy.log") -RedirectStandardOutput (Join-Path $Logs "caddy.out.log") -WindowStyle Hidden -PassThru
+  $pids["caddy"] = $c.Id
+  $rootCrt = Join-Path $caddyDir "pki\authorities\local\root.crt"
+  for ($i = 0; $i -lt 20 -and -not (Test-Path $rootCrt); $i++) { Start-Sleep -Seconds 1 }
+  if (Test-Path $rootCrt) {
+    Copy-Item $rootCrt (Join-Path $caDir "bar-mvp-ca.crt") -Force
+    $localHttps = @{ carta = "https://${lanIp}:3443"; panel = "https://${lanIp}:3444"; ca = "http://${lanIp}:3480/bar-mvp-ca.crt" }
+  } else {
+    Say "Caddy no generó el certificado: sigo sin HTTPS local (ver logs\caddy.log)"
+  }
+} elseif (-not $caddy) {
+  Say "Caddy no está instalado: sin HTTPS local (winget install CaddyServer.Caddy)"
+}
+
 $pids | ConvertTo-Json | Set-Content -Path (Join-Path $State "pids.json") -Encoding UTF8
 
 # ── 6. Página con links y QR ──
 $sql = "select d.label, t.code from `"TableTag`" t join `"DiningTable`" d on d.id = t.`"tableId`" join `"Tenant`" n on n.id = t.`"tenantId`" where n.slug = 'bar-demo' and t.active and t.type = 'QR' and d.active order by d.label;"
 $rows = $sql | docker exec -i bar-postgres-1 psql -U bar -d bar -tA -F "|"
 $tables = @($rows | Where-Object { $_ -match "\|" } | ForEach-Object { $a = $_ -split "\|"; @{ label = $a[0]; code = $a[1] } })
-$info = @{ lanIp = $lanIp; cartaTunnel = $cartaTunnel; panelTunnel = $panelTunnel; tables = $tables; startedAt = (Get-Date).ToString("o") }
+$info = @{ lanIp = $lanIp; cartaTunnel = $cartaTunnel; panelTunnel = $panelTunnel; localHttps = $localHttps; tables = $tables; startedAt = (Get-Date).ToString("o") }
 $infoFile = Join-Path $State "info.json"
 $info | ConvertTo-Json -Depth 4 | Set-Content -Path $infoFile -Encoding UTF8
 $html = Join-Path $State "LINKS.html"
@@ -185,6 +237,7 @@ node (Join-Path $Root "scripts\mvp\links.mjs") $infoFile $html | Out-Null
 Write-Host ""
 Write-Host "  LISTO: el MVP está andando" -ForegroundColor Green
 Write-Host ""
+if ($localHttps) { Write-Host "  Carta (HTTPS Wi-Fi): $($localHttps.carta)/t/$($tables[0].code)" }
 if ($cartaTunnel) { Write-Host "  Carta (HTTPS):     $cartaTunnel/t/$($tables[0].code)" }
 if ($lanIp) { Write-Host "  Carta (Wi-Fi):     http://${lanIp}:3000/t/$($tables[0].code)" }
 if ($panelTunnel) { Write-Host "  Panel (HTTPS):     $panelTunnel/login" }

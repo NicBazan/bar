@@ -21,6 +21,19 @@ const lanCarta = data.lanIp ? `http://${data.lanIp}:3000` : null;
 const lanPanel = data.lanIp ? `http://${data.lanIp}:3001` : null;
 
 const blocks = [];
+const lh = data.localHttps;
+if (lh && firstTable) {
+  blocks.push({
+    title: `Carta · Mesa ${firstTable.label} (HTTPS en tu Wi-Fi, con cámara)`,
+    url: `${lh.carta}/t/${firstTable.code}`,
+    note: "Requiere instalar una vez el certificado del MVP en el celular (tarjeta de al lado).",
+  });
+  blocks.push({
+    title: "1º: certificado del MVP (instalar una sola vez)",
+    url: lh.ca,
+    note: "Android: abrilo, se descarga; Ajustes → Seguridad → Encriptación y credenciales → Instalar certificado → Certificado CA. iPhone: abrilo en Safari, Ajustes → Perfil descargado → Instalar, y después Ajustes → General → Información → Confianza de certificados → activarlo.",
+  });
+}
 if (data.cartaTunnel && firstTable) {
   blocks.push({
     title: `Carta · Mesa ${firstTable.label} (HTTPS, desde cualquier red)`,
@@ -35,6 +48,7 @@ if (lanCarta && firstTable) {
     note: "Sin HTTPS: funciona todo menos la cámara/AR.",
   });
 }
+if (lh) blocks.push({ title: "Panel del local (HTTPS en tu Wi-Fi)", url: `${lh.panel}/login`, note: "" });
 if (data.panelTunnel) blocks.push({ title: "Panel del local (HTTPS)", url: `${data.panelTunnel}/login`, note: "Mozo, cocina, admin y super admin." });
 if (lanPanel) blocks.push({ title: "Panel del local (misma red Wi-Fi)", url: `${lanPanel}/login`, note: "" });
 
@@ -53,7 +67,8 @@ const cards = await Promise.all(
 const tableRows = data.tables
   .map((t) => {
     const links = [
-      data.cartaTunnel ? `<a href="${esc(`${data.cartaTunnel}/t/${t.code}`)}">HTTPS</a>` : "",
+      lh ? `<a href="${esc(`${lh.carta}/t/${t.code}`)}">HTTPS Wi-Fi</a>` : "",
+      data.cartaTunnel ? `<a href="${esc(`${data.cartaTunnel}/t/${t.code}`)}">HTTPS túnel</a>` : "",
       lanCarta ? `<a href="${esc(`${lanCarta}/t/${t.code}`)}">Wi-Fi</a>` : "",
       `<a href="${esc(`http://localhost:3000/t/${t.code}`)}">esta PC</a>`,
     ]
@@ -121,6 +136,7 @@ const html = `<!doctype html>
       <li>Mientras esperás: <b>🕹️ Sudoku</b> en la carta.</li>
       <li>Dueño: <b>Admin</b> para editar la carta, marcar agotados, imprimir QR y sumar al equipo.</li>
     </ol>
+    <p class="note">Sobre el certificado del MVP: lo genera tu PC solo para esta demo (su clave privada no sale de la carpeta .mvp). Cuando termines de probar, podés quitarlo del celular desde la misma pantalla de credenciales.</p>
     <p class="note">Para apagar todo: doble clic en <code>DETENER-MVP.cmd</code>. Para volver a prenderlo: <code>INICIAR-MVP.cmd</code>. Logs en <code>.mvp/logs</code>.</p>
   </section>
 </main>
