@@ -1,6 +1,6 @@
 # 📱 Plan: "Mi cuenta" del cliente (historial, fidelización y notificaciones)
 
-> Estado: **idea evaluada, sin implementar.** Para retomar en un chat nuevo. Contexto del proyecto: [PLAN-MAESTRO.md](../PLAN-MAESTRO.md).
+> Estado: **decisiones tomadas (21/10/2026), sin implementar.** Para retomar en un chat nuevo. Contexto del proyecto: [PLAN-MAESTRO.md](../PLAN-MAESTRO.md).
 
 ## 1. La idea
 Una sección para el **cliente del bar** (no para el staff), con el estilo de la imagen de referencia (app tipo billetera: saludo, tarjeta destacada oscura, accesos rápidos en círculos, barra de progreso, "actividad reciente" y menú inferior):
@@ -79,8 +79,21 @@ Pantallas (estructura de la referencia):
 | D | Pase de Apple/Google Wallet (requiere cuenta Apple Developer) | 1 sesión + trámite de cuentas |
 | E | App nativa con geofencing (solo si A–D no alcanzan) | proyecto aparte |
 
-## 6. Decisiones a tomar antes de arrancar
-1. ¿Identificar por **email** (gratis) o **teléfono/WhatsApp** (más natural en Argentina, pero los SMS/WhatsApp cuestan)?
-2. ¿Sellos (simple: "10 visitas = postre gratis") o puntos ($ gastado → puntos)?
-3. ¿La cuenta es **por bar** (cada bar con su "app") o **una sola cuenta** que sirve en todos los bares de la plataforma? (Recomendado: una sola cuenta, con los datos separados por bar.)
-4. ¿Se paga la cuenta de Apple Developer para Wallet?
+## 6. Decisiones tomadas (21/10/2026)
+
+| Tema | Decisión | Consecuencia en el diseño |
+| :-- | :-- | :-- |
+| Identificación | **Email** con código de 6 dígitos (sin contraseña) | Hace falta un proveedor de envío de email (ej. Resend o SMTP); en local, los códigos se muestran en el log/consola de la API |
+| Fidelización | **Lo elige cada bar** en el admin: *sellos por visita* o *puntos por gasto* | `LoyaltyProgram.mode = STAMPS | POINTS` con sus reglas (sellos para el premio, o $ por punto y canjes) |
+| Cuenta | **Una cuenta por bar** | `Customer` pertenece a un tenant (`tenantId`): el mismo email en dos bares son dos cuentas separadas. Más simple y aislado; cada bar es "dueño" de sus clientes |
+| Apple Wallet | **No** | Sin aviso por cercanía. Para que vuelvan: **Web Push** (Android directo; iPhone si agregan a inicio) + **email** de promos segmentadas ("no venís hace 30 días") |
+
+### Ajustes al plan por estas decisiones
+- Modelo: `Customer` y `CustomerVenue` pasan a ser uno solo **por tenant** (`@@unique([tenantId, email])`).
+- Se descarta la **Fase D** (Wallet). La "vuelta al bar" queda en la **Fase C**: Web Push + email.
+- Envío de email: un adaptador con dos implementaciones, **consola** en local (el código aparece en `.mvp/logs/api.log` y en el panel de dev) y **SMTP/Resend** cuando se deploye.
+
+### Orden para el próximo chat
+1. **Fase A:** "Mi cuenta" (login por email con código, historial, "Pedir lo mismo") con el diseño de la referencia en colores ZainSoft.
+2. **Fase B:** fidelización configurable por bar (sellos o puntos) + canje desde el panel del mozo.
+3. **Fase C:** promociones + Web Push + emails segmentados desde el admin.
