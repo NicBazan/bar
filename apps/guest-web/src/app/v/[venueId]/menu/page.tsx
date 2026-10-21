@@ -5,6 +5,7 @@ import { FloatingCart } from "@/components/FloatingCart";
 import { MenuCategoryNav } from "@/components/MenuCategoryNav";
 import { TableLiveBar } from "@/components/TableLiveBar";
 import { ApiError, api, type Menu } from "@/lib/api";
+import type { Promo } from "@/lib/customer";
 
 interface MenuPageProps {
   params: Promise<{ venueId: string }>;
@@ -31,8 +32,13 @@ export default async function VenueMenuPage({ params, searchParams }: MenuPagePr
   let menu: Menu | null = null;
   let fetchError: string | null = null;
 
+  let promos: Promo[] = [];
+
   try {
-    menu = await api<Menu>(`/venues/${venueId}/menu`);
+    [menu, promos] = await Promise.all([
+      api<Menu>(`/venues/${venueId}/menu`),
+      api<Promo[]>(`/venues/${venueId}/promos`).catch(() => []),
+    ]);
   } catch (err) {
     if (err instanceof ApiError && err.status === 404) {
       fetchError = "El local o la carta solicitada no existen.";
@@ -111,6 +117,21 @@ export default async function VenueMenuPage({ params, searchParams }: MenuPagePr
           Tocá un plato con el sello 3D para proyectarlo a escala real sobre tu mesa.
         </p>
       </header>
+
+      {/* Promo vigente del local (las carga el dueño en Admin → Promos) */}
+      {promos[0] && (
+        <Link
+          href={`/v/${venueId}/cuenta?tab=promos${tag ? `&tag=${tag}` : ""}`}
+          className="mb-4 flex items-center gap-3 rounded-2xl bg-brand p-4 text-white shadow-lg shadow-brand/20 active:bg-brand-dark"
+        >
+          <span aria-hidden className="grid h-11 w-11 shrink-0 place-items-center rounded-full bg-white/20 text-lg font-bold">%</span>
+          <span className="min-w-0 flex-1">
+            <span className="block text-sm font-semibold">{promos[0].title}</span>
+            <span className="block truncate text-xs text-white/80">{promos[0].body}</span>
+          </span>
+          {promos.length > 1 && <span className="text-xs font-semibold whitespace-nowrap">+{promos.length - 1}</span>}
+        </Link>
+      )}
 
       {/* Gamificación: algo para hacer mientras llega la comida */}
       <Link

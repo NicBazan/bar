@@ -30,6 +30,9 @@ export function FloatingCart({ currency = "ARS", tag }: FloatingCartProps) {
     if (tag) bindToTable(tag);
   }, [tag, bindToTable]);
 
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => setMounted(true), []);
+
   // "Pedir lo mismo" desde Mi cuenta llega con ?cart=1: se abre el carrito ya cargado
   useEffect(() => {
     if (new URLSearchParams(window.location.search).get("cart") === "1") setIsOpen(true);
@@ -111,7 +114,9 @@ export function FloatingCart({ currency = "ARS", tag }: FloatingCartProps) {
   };
 
   // Si no hay ítems y no hay toast visible, no renderiza nada
-  if (totalItems === 0 && !successToast) {
+  // El carrito vive en localStorage: hasta montar en el navegador se renderiza igual que en el
+  // servidor (vacío); si no, React avisa "hydration mismatch" cuando hay ítems guardados
+  if (!mounted || (totalItems === 0 && !successToast)) {
     return null;
   }
 

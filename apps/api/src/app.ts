@@ -12,6 +12,7 @@ import { kitchenRoutes } from "./modules/kitchen/routes.js";
 import { loyaltyRoutes } from "./modules/loyalty/routes.js";
 import { onboardingRoutes } from "./modules/onboarding/routes.js";
 import { orderingRoutes } from "./modules/ordering/routes.js";
+import { promotionRoutes } from "./modules/promotions/routes.js";
 import { serviceCallRoutes } from "./modules/service-calls/routes.js";
 import { staffRoutes } from "./modules/staff/routes.js";
 import { superAdminRoutes } from "./modules/superadmin/routes.js";
@@ -84,6 +85,7 @@ export async function buildApp(opts: { logger?: boolean } = {}) {
       await v1.register(realtimeRoutes);
       await v1.register(customerRoutes);
       await v1.register(loyaltyRoutes);
+      await v1.register(promotionRoutes);
     },
     { prefix: "/v1" },
   );

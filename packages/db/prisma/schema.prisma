@@ -30,6 +30,8 @@ model Tenant {
   menus        Menu[]
   subscription Subscription?
   customers    Customer[]
+  promotions   Promotion[]
+  campaigns    Campaign[]
 }
 
 enum SubscriptionPlan {
@@ -444,11 +446,14 @@ model Customer {
   privacyAcceptedAt DateTime // consentimiento informado (Ley 25.326) al crear la cuenta
   createdAt         DateTime  @default(now())
   lastLoginAt       DateTime?
+  // Promos por email: opt-in explícito y separado (nunca preseleccionado). null = no acepta
+  marketingOptInAt  DateTime?
 
   tenant        Tenant         @relation(fields: [tenantId], references: [id], onDelete: Cascade)
   devices       GuestDevice[]
   orders        Order[]
   loyaltyEvents LoyaltyEvent[]
+  pushSubs      PushSubscription[]
 
   @@unique([tenantId, email])
 }
@@ -524,6 +529,67 @@ model LoyaltyEvent {
   // Una visita suma una sola vez por cliente (los REDEEM tienen sessionId null y no chocan)
   @@unique([customerId, sessionId, kind])
   @@index([customerId, createdAt])
+}
+
+// ───────────── Promociones y avisos ─────────────
+
+model Promotion {
+  id        String    @id @default(uuid()) @db.Uuid
+  tenantId  String    @db.Uuid
+  title     String
+  body      String
+  startsAt  DateTime?
+  endsAt    DateTime?
+  active    Boolean   @default(true)
+  createdAt DateTime  @default(now())
+
+  tenant    Tenant     @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  campaigns Campaign[]
+
+  @@index([tenantId, active])
+}
+
+// Suscripción Web Push (VAPID) de un celular a los avisos de UN bar. El navegador tiene un solo
+// endpoint por sitio, así que el mismo endpoint puede estar en varios bares (una fila por cliente).
+// Se borra sola si el navegador la da de baja (404/410)
+model PushSubscription {
+  id         String   @id @default(uuid()) @db.Uuid
+  tenantId   String   @db.Uuid
+  customerId String   @db.Uuid
+  endpoint   String
+  p256dh     String
+  auth       String
+  createdAt  DateTime @default(now())
+
+  customer Customer @relation(fields: [customerId], references: [id], onDelete: Cascade)
+
+  @@unique([customerId, endpoint])
+  @@index([tenantId])
+  @@index([endpoint])
+}
+
+enum CampaignSegment {
+  ALL // todos los que aceptaron
+  INACTIVE_30 // no vienen hace 30 días o más
+}
+
+// Envío de una promo a los clientes que aceptaron avisos. Tope: 1 por semana por bar
+model Campaign {
+  id          String          @id @default(uuid()) @db.Uuid
+  tenantId    String          @db.Uuid
+  promotionId String?         @db.Uuid
+  title       String
+  body        String
+  segment     CampaignSegment
+  pushSent    Int             @default(0)
+  emailSent   Int             @default(0)
+  staffId     String?         @db.Uuid
+  createdAt   DateTime        @default(now())
+
+  tenant    Tenant     @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  promotion Promotion? @relation(fields: [promotionId], references: [id], onDelete: SetNull)
+
+  @@index([tenantId, createdAt])
 }
 
 // ───────────── Llamados ─────────────

@@ -90,3 +90,5 @@ export type Loyalty =
 
 export const unitLabel = (mode: "STAMPS" | "POINTS", n: number) =>
   mode === "STAMPS" ? (n === 1 ? "sello" : "sellos") : n === 1 ? "punto" : "puntos";
+
+export type Promo = { id: string; title: string; body: string; startsAt: string | null; endsAt: string | null };

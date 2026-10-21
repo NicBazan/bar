@@ -53,3 +53,26 @@ export async function verifyToken(token: string): Promise<Claims | null> {
     return null;
   }
 }
+
+/**
+ * Token de baja de promos por email ("baja en un toque", Ley 25.326): va en cada email y no
+ * sirve para nada más (no es un token de sesión, verifyToken lo rechaza).
+ */
+export async function signUnsubToken(customerId: string, tenantId: string): Promise<string> {
+  return new SignJWT({ typ: "unsub", tid: tenantId })
+    .setProtectedHeader({ alg: "HS256" })
+    .setSubject(customerId)
+    .setIssuedAt()
+    .setExpirationTime("400d")
+    .sign(config.jwtSecret);
+}
+
+export async function verifyUnsubToken(token: string): Promise<{ customerId: string; tenantId: string } | null> {
+  try {
+    const { payload } = await jwtVerify(token, config.jwtSecret, { algorithms: ["HS256"] });
+    if (payload.typ !== "unsub" || typeof payload.sub !== "string" || typeof payload.tid !== "string") return null;
+    return { customerId: payload.sub, tenantId: payload.tid };
+  } catch {
+    return null;
+  }
+}

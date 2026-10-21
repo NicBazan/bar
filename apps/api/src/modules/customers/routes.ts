@@ -311,7 +311,10 @@ export async function customerRoutes(app: FastifyInstance) {
         createdAt: true,
         privacyAcceptedAt: true,
         lastLoginAt: true,
+        marketingOptInAt: true,
         tenant: { select: { name: true } },
+        loyaltyEvents: { orderBy: { createdAt: "asc" }, select: { kind: true, mode: true, amount: true, rewardName: true, createdAt: true } },
+        pushSubs: { select: { createdAt: true } },
         orders: {
           orderBy: { createdAt: "asc" },
           select: {

@@ -5,18 +5,20 @@ import { StaffHeader } from "@/components/StaffHeader";
 import { Loyalty } from "@/features/admin/Loyalty";
 import { MenuEditor } from "@/features/admin/MenuEditor";
 import { Overview } from "@/features/admin/Overview";
+import { Promotions } from "@/features/admin/Promotions";
 import { TablesQr } from "@/features/admin/TablesQr";
 import { Team } from "@/features/admin/Team";
 import { VenueSettings } from "@/features/admin/VenueSettings";
 import { useStaffAuth } from "@/lib/live";
 
-type Tab = "inicio" | "carta" | "mesas" | "fidelizacion" | "equipo" | "local";
+type Tab = "inicio" | "carta" | "mesas" | "fidelizacion" | "promos" | "equipo" | "local";
 
 const TABS: Array<[Tab, string]> = [
   ["inicio", "Inicio"],
   ["carta", "Carta"],
   ["mesas", "Mesas y QR"],
   ["fidelizacion", "Fidelización"],
+  ["promos", "Promos y avisos"],
   ["equipo", "Equipo"],
   ["local", "Local"],
 ];
@@ -62,6 +64,7 @@ export default function AdminPage() {
         {tab === "carta" && <MenuEditor />}
         {tab === "mesas" && <TablesQr />}
         {tab === "fidelizacion" && <Loyalty />}
+        {tab === "promos" && <Promotions />}
         {tab === "equipo" && <Team />}
         {tab === "local" && <VenueSettings />}
       </div>

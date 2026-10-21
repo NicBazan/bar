@@ -7,6 +7,7 @@ import { ApiError } from "@/lib/api";
 import {
   type Loyalty,
   type Me,
+  type Promo,
   type ReorderItem,
   type Visit,
   clearCustomerToken,
@@ -15,6 +16,7 @@ import {
   linkVisitIfLoggedIn,
   unitLabel,
 } from "@/lib/customer";
+import { type NotificationPrefs, type PushSupport, disablePush, enablePush, loadNotificationPrefs, pushSupport } from "@/lib/push";
 import { formatMoney } from "@/lib/storage";
 import { useCartStore } from "@/store/cartStore";
 import { LoginScreen } from "./LoginScreen";
@@ -427,25 +429,135 @@ function HistoryTab({ venueId, tag, visits, notify }: Props & { visits: Visit[] 
 
 // ───── Promos ─────
 
-function PromosTab({ venueName }: Props) {
+function PromosTab({ venueId, venueName }: Props) {
+  const [promos, setPromos] = useState<Promo[] | null>(null);
+  useEffect(() => {
+    customerApi<Promo[]>(venueId, "/customer/promos").then(setPromos, () => setPromos([]));
+  }, [venueId]);
+  const until = (iso: string) => new Intl.DateTimeFormat("es-AR", { day: "numeric", month: "long" }).format(new Date(iso));
+
   return (
     <>
       <h1 className="text-2xl font-semibold">Promos</h1>
-      <p className="mt-4 rounded-3xl bg-white p-5 text-sm text-night/60 shadow-sm">
-        Cuando {venueName} publique promociones, las vas a ver acá.
-      </p>
+      <p className="mt-1 text-sm text-night/60">Lo que hay hoy en {venueName}.</p>
+      {promos === null ? (
+        <p className="mt-4 text-sm text-night/50">Cargando…</p>
+      ) : promos.length === 0 ? (
+        <p className="mt-4 rounded-3xl bg-white p-5 text-sm text-night/60 shadow-sm">
+          Cuando {venueName} publique promociones, las vas a ver acá.
+        </p>
+      ) : (
+        <ul className="mt-4 space-y-3">
+          {promos.map((p, i) => (
+            <li key={p.id} className={`rounded-3xl p-5 shadow-sm ${i === 0 ? "bg-night text-white" : "bg-white"}`}>
+              <span className={`inline-block rounded-full px-2.5 py-1 text-xs font-semibold ${i === 0 ? "bg-brand text-white" : "bg-brand/10 text-brand-dark"}`}>
+                Promo
+              </span>
+              <h2 className="mt-2 text-lg font-semibold">{p.title}</h2>
+              <p className={`mt-1 text-sm whitespace-pre-line ${i === 0 ? "text-white/70" : "text-night/70"}`}>{p.body}</p>
+              {p.endsAt && <p className={`mt-2 text-xs ${i === 0 ? "text-white/50" : "text-night/50"}`}>Hasta el {until(p.endsAt)}</p>}
+            </li>
+          ))}
+        </ul>
+      )}
     </>
+  );
+}
+
+/** Opt-in explícito y separado por canal; nada viene activado */
+function NotificationsSection({ venueId, venueName, notify }: Props & { notify: (t: string) => void }) {
+  const [prefs, setPrefs] = useState<NotificationPrefs | null>(null);
+  const [support, setSupport] = useState<PushSupport>("unsupported");
+  const [busy, setBusy] = useState(false);
+
+  const load = useCallback(async () => {
+    setSupport(pushSupport());
+    try {
+      setPrefs(await loadNotificationPrefs(venueId));
+    } catch {
+      /* sin conexión: la sección queda oculta */
+    }
+  }, [venueId]);
+  useEffect(() => {
+    void load();
+  }, [load]);
+
+  if (!prefs) return null;
+
+  const toggleEmail = async () => {
+    setBusy(true);
+    try {
+      await customerApi(venueId, "/customer/notifications/email", { method: "PUT", body: { enabled: !prefs.emailOptIn } });
+      await load();
+    } catch {
+      notify("No se pudo guardar.");
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const togglePush = async () => {
+    setBusy(true);
+    try {
+      if (prefs.thisDevice) {
+        await disablePush(prefs.tenantId);
+      } else if ((await enablePush(venueId, prefs.vapidPublicKey)) === "denied") {
+        notify("El navegador bloqueó las notificaciones. Activalas en los ajustes del sitio.");
+      }
+      await load();
+    } catch {
+      notify("No se pudieron activar las notificaciones.");
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const pushHint: Record<PushSupport, string | null> = {
+    ok: null,
+    insecure: "Las notificaciones necesitan la carta por HTTPS (no por la IP de la red local).",
+    unsupported: "Este navegador no soporta notificaciones.",
+    "ios-needs-home-screen": "En iPhone: tocá Compartir → \"Agregar a inicio\" y abrí la carta desde ahí para activarlas.",
+  };
+
+  return (
+    <section className="mt-4 overflow-hidden rounded-3xl bg-white shadow-sm" aria-label="Avisos">
+      <h2 className="px-5 pt-4 text-sm font-semibold text-night/60">Avisos de {venueName}</h2>
+      <p className="px-5 pt-1 text-xs text-night/50">Máximo 1 por semana. Te das de baja en un toque desde cada aviso.</p>
+      <PrefRow label="Promos por email" checked={prefs.emailOptIn} disabled={busy} onChange={() => void toggleEmail()} />
+      <PrefRow
+        label="Notificaciones en este celular"
+        checked={prefs.thisDevice}
+        disabled={busy || (support !== "ok" && !prefs.thisDevice)}
+        onChange={() => void togglePush()}
+        hint={pushHint[support]}
+      />
+    </section>
+  );
+}
+
+function PrefRow({ label, checked, disabled, onChange, hint }: { label: string; checked: boolean; disabled?: boolean; onChange: () => void; hint?: string | null }) {
+  return (
+    <div className="border-t border-night/5 px-5 py-3 first-of-type:border-t-0">
+      <button role="switch" aria-label={label} aria-checked={checked} disabled={disabled} onClick={onChange} className="flex min-h-11 w-full items-center justify-between gap-3 text-left disabled:opacity-50">
+        <span>{label}</span>
+        <span className={`relative h-7 w-12 shrink-0 rounded-full transition ${checked ? "bg-brand" : "bg-night/15"}`}>
+          <span className={`absolute top-1 h-5 w-5 rounded-full bg-white shadow transition-all ${checked ? "left-6" : "left-1"}`} />
+        </span>
+      </button>
+      {hint && <p className="mt-1 text-xs text-night/50">{hint}</p>}
+    </div>
   );
 }
 
 // ───── Perfil ─────
 
-function ProfileTab({ venueId, me, onSaved, onLogout, notify }: Props & {
+function ProfileTab({ me, onSaved, onLogout, notify, ...props }: Props & {
   me: Me | null;
   onSaved: () => Promise<void>;
   onLogout: () => void;
   notify: (t: string) => void;
 }) {
+  const { venueId } = props;
   const [name, setName] = useState(me?.name ?? "");
   const [confirmDelete, setConfirmDelete] = useState(false);
   useEffect(() => setName(me?.name ?? ""), [me?.name]);
@@ -509,6 +621,8 @@ function ProfileTab({ venueId, me, onSaved, onLogout, notify }: Props & {
           </button>
         </div>
       </section>
+
+      <NotificationsSection {...props} notify={notify} />
 
       <section className="mt-4 overflow-hidden rounded-3xl bg-white shadow-sm">
         <h2 className="px-5 pt-4 text-sm font-semibold text-night/60">Tus datos</h2>

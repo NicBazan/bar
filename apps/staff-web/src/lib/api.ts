@@ -212,6 +212,24 @@ export type AdminLoyalty = {
   stats: { customers: number; redeemed: number };
 };
 
+export type AdminPromotion = {
+  id: string;
+  title: string;
+  body: string;
+  startsAt: string | null;
+  endsAt: string | null;
+  active: boolean;
+  createdAt: string;
+};
+
+type AudienceCount = { customers: number; email: number; push: number };
+
+export type AdminCampaigns = {
+  campaigns: Array<{ id: string; title: string; body: string; segment: "ALL" | "INACTIVE_30"; pushSent: number; emailSent: number; createdAt: string }>;
+  nextAllowedAt: string | null;
+  audience: { ALL: AudienceCount; INACTIVE_30: AudienceCount };
+};
+
 /** Cliente con "Mi cuenta" sentado en una mesa (panel del mozo) */
 export type TableCustomer = {
   id: string;
