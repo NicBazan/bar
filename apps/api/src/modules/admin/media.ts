@@ -26,11 +26,11 @@ import { HttpError, notFound } from "../../shared/errors.js";
 export type MediaKind = "PHOTO" | "GLB_LOD0" | "USDZ";
 
 const TYPES = {
-  jpg: { mime: "image/jpeg", max: 5 * 1024 * 1024 },
-  png: { mime: "image/png", max: 5 * 1024 * 1024 },
-  webp: { mime: "image/webp", max: 5 * 1024 * 1024 },
-  glb: { mime: "model/gltf-binary", max: 25 * 1024 * 1024 },
-  usdz: { mime: "model/vnd.usdz+zip", max: 25 * 1024 * 1024 },
+  jpg: { mime: "image/jpeg", max: 4 * 1024 * 1024 },
+  png: { mime: "image/png", max: 4 * 1024 * 1024 },
+  webp: { mime: "image/webp", max: 4 * 1024 * 1024 },
+  glb: { mime: "model/gltf-binary", max: 4 * 1024 * 1024 },
+  usdz: { mime: "model/vnd.usdz+zip", max: 4 * 1024 * 1024 },
 } as const;
 type Ext = keyof typeof TYPES;
 

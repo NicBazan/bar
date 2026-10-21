@@ -1,3 +1,5 @@
+import { optimizeUploadFile } from "./image-compress";
+
 // Cliente HTTP del staff. Token Bearer guardado en localStorage del dispositivo del local.
 // Por defecto "" → llama a /v1/* en el mismo dominio y next.config.ts lo reenvía a la API
 const API_URL = (process.env.NEXT_PUBLIC_API_URL ?? "").replace(/\/+$/, "");
@@ -121,10 +123,11 @@ export function minutesSince(iso: string) {
   return Math.max(0, Math.floor((Date.now() - new Date(iso).getTime()) / 60000));
 }
 
-/** Sube un archivo (foto o modelo 3D) a un endpoint multipart del admin */
-export function upload<T>(path: string, file: File): Promise<T> {
+/** Sube un archivo (foto o modelo 3D) a un endpoint multipart del admin, optimizándolo antes */
+export async function upload<T>(path: string, file: File): Promise<T> {
+  const readyFile = await optimizeUploadFile(file);
   const form = new FormData();
-  form.append("file", file);
+  form.append("file", readyFile);
   return api<T>(path, { method: "POST", form });
 }
 

@@ -50,8 +50,8 @@ export async function buildApp(opts: { logger?: boolean } = {}) {
   // Límite global por dispositivo/usuario (token válido) o por IP; las rutas sensibles definen el suyo.
   // Ver shared/rate-limit/keys.ts. TODO(escala): store en Redis para compartirlo entre instancias.
   await app.register(rateLimit, { max: 300, timeWindow: "1 minute", keyGenerator: deviceOrIpKey });
-  // Subidas del admin: 1 archivo por request, hasta 25 MB (los límites por tipo están en media.ts)
-  await app.register(multipart, { limits: { fileSize: 25 * 1024 * 1024, files: 1, fields: 5 } });
+  // Subidas del admin: 1 archivo por request, hasta 4 MB (límite seguro para Vercel Serverless)
+  await app.register(multipart, { limits: { fileSize: 4 * 1024 * 1024, files: 1, fields: 5 } });
 
   app.addHook("onSend", async (req, reply) => {
     reply.header("X-Content-Type-Options", "nosniff");
