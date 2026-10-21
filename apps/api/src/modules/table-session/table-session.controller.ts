@@ -25,6 +25,22 @@ export const NfcQuery = z.object({
 
 export type NfcQuery = z.infer<typeof NfcQuery>;
 
+/** Una mesa "esperando al mozo" que nadie abrió en este tiempo se descarta al próximo escaneo */
+export const PENDING_TTL_MS = 30 * 60 * 1000;
+/** Una mesa abierta sin pedidos ni celulares nuevos en este tiempo se cierra al próximo escaneo */
+export const IDLE_TTL_MS = 12 * 60 * 60 * 1000;
+
+async function isAbandoned(tx: Prisma.TransactionClient, s: { id: string; status: string; openedAt: Date }): Promise<boolean> {
+  const now = Date.now();
+  if (s.status === "PENDING") return now - s.openedAt.getTime() > PENDING_TTL_MS;
+  const [lastOrder, lastDevice] = await Promise.all([
+    tx.order.findFirst({ where: { sessionId: s.id }, orderBy: { createdAt: "desc" }, select: { createdAt: true } }),
+    tx.guestDevice.findFirst({ where: { sessionId: s.id }, orderBy: { joinedAt: "desc" }, select: { joinedAt: true } }),
+  ]);
+  const last = Math.max(s.openedAt.getTime(), lastOrder?.createdAt.getTime() ?? 0, lastDevice?.joinedAt.getTime() ?? 0);
+  return now - last > IDLE_TTL_MS;
+}
+
 /** Intentos de PIN incorrectos permitidos por sesión antes de bloquear el ingreso por PIN */
 export const PIN_MAX_FAILURES = 8;
 
@@ -165,6 +181,13 @@ export async function joinTableSession(req: FastifyRequest, reply: FastifyReply)
       let session = await tx.tableSession.findFirst({
         where: { tableId: table.id, status: { in: [...ACTIVE_SESSION_STATUSES] } },
       });
+
+      // Sesión abandonada (alguien escaneó y se fue, o el mozo se olvidó de cerrar):
+      // se cierra sola para que el próximo cliente de la mesa no se encuentre con un PIN ajeno
+      if (session && (await isAbandoned(tx, session))) {
+        await tx.tableSession.update({ where: { id: session.id }, data: { status: "CLOSED", closedAt: new Date() } });
+        session = null;
+      }
 
       if (!session) {
         // Validación de cuota Freemium antes de abrir la mesa

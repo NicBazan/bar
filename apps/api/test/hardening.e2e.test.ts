@@ -184,3 +184,24 @@ describe("Rate limit sin depender de la IP", () => {
     await probe.close();
   });
 });
+
+describe("Sesiones abandonadas", () => {
+  it("una mesa que quedó esperando al mozo hace más de 30 min no le pide PIN al próximo cliente", async () => {
+    const first = await join(otherTag.code, `dev-${randomUUID()}`);
+    const oldId = first.json().session.id;
+    // Simula que quedó abandonada hace 31 minutos
+    await prisma.tableSession.update({ where: { id: oldId }, data: { openedAt: new Date(Date.now() - 31 * 60 * 1000) } });
+
+    const next = await join(otherTag.code, `dev-${randomUUID()}`);
+    expect(next.statusCode).toBe(200);
+    expect(next.json().session.id).not.toBe(oldId);
+    const old = await prisma.tableSession.findUniqueOrThrow({ where: { id: oldId } });
+    expect(old.status).toBe("CLOSED");
+  });
+
+  it("una mesa reciente sigue pidiendo PIN", async () => {
+    await join(otherTag.code, `dev-${randomUUID()}`);
+    const stranger = await join(otherTag.code, `dev-${randomUUID()}`);
+    expect(stranger.json().error).toBe("PIN_REQUIRED");
+  });
+});
