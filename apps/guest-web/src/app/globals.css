@@ -11,6 +11,11 @@
   --color-amber-ink: #2a1a05;
   --color-ok: #6fcf97;
   --color-warn: #f2994a;
+  /* "Mi cuenta": paleta ZainSoft (Enterprice-portafolio/src/app/globals.css) */
+  --color-brand: #f05a28;
+  --color-brand-dark: #c8431a;
+  --color-night: #0f1115;
+  --color-paper: #faf8f5;
   --font-display: "Fraunces", Georgia, serif;
   --font-sans: "Inter", system-ui, sans-serif;
 }

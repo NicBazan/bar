@@ -25,7 +25,7 @@ export async function deviceOrIpKey(req: FastifyRequest): Promise<string> {
   const token = rawToken(req);
   if (token) {
     const claims = await verifyToken(token);
-    if (claims) return claims.typ === "guest" ? `guest:${claims.did}` : `staff:${claims.sub}`;
+    if (claims) return claims.typ === "guest" ? `guest:${claims.did}` : `${claims.typ}:${claims.sub}`;
   }
   return `ip:${req.ip}`;
 }
@@ -34,6 +34,14 @@ export async function deviceOrIpKey(req: FastifyRequest): Promise<string> {
 export function loginKey(req: FastifyRequest): string {
   const email = (req.body as { email?: unknown } | undefined)?.email;
   return typeof email === "string" ? `login:${hash(email.trim().toLowerCase())}` : `login-ip:${req.ip}`;
+}
+
+/** Códigos de "Mi cuenta": por email y bar (cambiar de IP no da más intentos) */
+export function customerCodeKey(req: FastifyRequest): string {
+  const b = req.body as { email?: unknown; venueId?: unknown } | undefined;
+  return typeof b?.email === "string"
+    ? `ccode:${hash(`${String(b.venueId)}|${b.email.trim().toLowerCase()}`)}`
+    : `ccode-ip:${req.ip}`;
 }
 
 /** Tope global para endpoints de alta (registro de bares): no se puede saltear cambiando de IP */

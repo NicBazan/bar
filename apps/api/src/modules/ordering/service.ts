@@ -21,7 +21,7 @@ export async function createOrder(guest: GuestClaims, idempotencyKey: string, bo
   if (session.status !== "OPEN") throw conflict("SESSION_NOT_OPEN", "El mozo todavía no abrió la mesa");
 
   const dishIds = [...new Set(body.items.map((i) => i.dishId))];
-  const [dishes, venueMenu, stations] = await Promise.all([
+  const [dishes, venueMenu, stations, device] = await Promise.all([
     prisma.dish.findMany({
       where: {
         id: { in: dishIds },
@@ -33,6 +33,8 @@ export async function createOrder(guest: GuestClaims, idempotencyKey: string, bo
     }),
     prisma.venueMenu.findFirst({ where: { venueId: guest.vid, active: true }, include: { overrides: true } }),
     prisma.kitchenStation.findMany({ where: { venueId: guest.vid } }),
+    // Si el cliente se identificó desde este celular ("Mi cuenta"), el pedido queda en su historial
+    prisma.guestDevice.findUnique({ where: { id: guest.did }, select: { customerId: true } }),
   ]);
   const dishMap = new Map(dishes.map((d) => [d.id, d]));
   const overrides = new Map((venueMenu?.overrides ?? []).map((o) => [o.dishId, o]));
@@ -96,6 +98,7 @@ export async function createOrder(guest: GuestClaims, idempotencyKey: string, bo
           venueId: guest.vid,
           sessionId: guest.sid,
           deviceId: guest.did,
+          customerId: device?.customerId ?? null,
           idempotencyKey,
           note: body.note,
           totalCents,

@@ -82,11 +82,13 @@ export default async function VenueMenuPage({ params, searchParams }: MenuPagePr
             <span className="text-xs font-medium tracking-wide text-muted">Mesa Conectada</span>
           </div>
 
-          {tag && (
-            <span className="rounded-full border border-line bg-surface-2 px-3 py-1 font-mono text-xs font-medium text-amber">
-              Tag #{tag}
-            </span>
-          )}
+          <Link
+            href={`/v/${venueId}/cuenta${tag ? `?tag=${tag}` : ""}`}
+            className="flex h-11 items-center gap-2 rounded-full bg-brand pr-4 pl-1.5 text-xs font-semibold text-white"
+          >
+            <span aria-hidden className="grid h-8 w-8 place-items-center rounded-full bg-white/20">👤</span>
+            Mi cuenta
+          </Link>
         </div>
 
         <div className="mt-3 flex items-center gap-3">
@@ -124,7 +126,7 @@ export default async function VenueMenuPage({ params, searchParams }: MenuPagePr
       </Link>
 
       {/* Estado en vivo de la mesa: PIN, esperando al mozo, pedidos, llamar al mozo / cuenta */}
-      <TableLiveBar tag={tag} currency={menu.venue.currency} />
+      <TableLiveBar tag={tag} currency={menu.venue.currency} venueId={venueId} />
 
       {/* Navegación horizontal de categorías sticky */}
       <MenuCategoryNav categories={navCategories} />

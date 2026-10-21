@@ -29,6 +29,7 @@ model Tenant {
   staffUsers   StaffUser[]
   menus        Menu[]
   subscription Subscription?
+  customers    Customer[]
 }
 
 enum SubscriptionPlan {
@@ -348,10 +349,15 @@ model GuestDevice {
   fingerprint String? // hash liviano, solo para correlacionar abuso
   joinedAt    DateTime @default(now())
 
-  session TableSession @relation(fields: [sessionId], references: [id])
-  orders  Order[]
+  // Cliente que se identificó desde este celular en esta visita ("Mi cuenta")
+  customerId  String?  @db.Uuid
+
+  session  TableSession @relation(fields: [sessionId], references: [id])
+  customer Customer?    @relation(fields: [customerId], references: [id], onDelete: SetNull)
+  orders   Order[]
 
   @@unique([sessionId, deviceKey])
+  @@index([customerId])
 }
 
 // ───────────── Pedidos ─────────────
@@ -370,6 +376,7 @@ model Order {
   venueId        String      @db.Uuid
   sessionId      String      @db.Uuid
   deviceId       String?     @db.Uuid
+  customerId     String?     @db.Uuid // cliente identificado ("Mi cuenta"); null = anónimo
   idempotencyKey String
   status         OrderStatus @default(PENDING_APPROVAL)
   note           String?
@@ -382,11 +389,13 @@ model Order {
   venue      Venue        @relation(fields: [venueId], references: [id])
   session    TableSession @relation(fields: [sessionId], references: [id])
   device     GuestDevice? @relation(fields: [deviceId], references: [id])
+  customer   Customer?    @relation(fields: [customerId], references: [id], onDelete: SetNull)
   approvedBy StaffUser?   @relation("OrderApprovedBy", fields: [approvedById], references: [id])
   items      OrderItem[]
 
   @@unique([sessionId, idempotencyKey])
   @@index([venueId, status])
+  @@index([customerId, createdAt])
 }
 
 enum OrderItemStatus {
@@ -422,6 +431,39 @@ model OrderItem {
   station KitchenStation? @relation(fields: [stationId], references: [id])
 
   @@index([stationId, status])
+}
+
+// ───────────── Clientes ("Mi cuenta") ─────────────
+
+// Una cuenta por bar: el mismo email en dos bares son dos clientes distintos (cada bar es dueño de sus datos)
+model Customer {
+  id                String    @id @default(uuid()) @db.Uuid
+  tenantId          String    @db.Uuid
+  email             String // normalizado: trim + minúsculas
+  name              String?
+  privacyAcceptedAt DateTime // consentimiento informado (Ley 25.326) al crear la cuenta
+  createdAt         DateTime  @default(now())
+  lastLoginAt       DateTime?
+
+  tenant  Tenant        @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  devices GuestDevice[]
+  orders  Order[]
+
+  @@unique([tenantId, email])
+}
+
+// Código de 6 dígitos por email (sin contraseña). Se guarda solo el hash; vence y tiene tope de intentos
+model CustomerLoginCode {
+  id        String    @id @default(uuid()) @db.Uuid
+  tenantId  String    @db.Uuid
+  email     String
+  codeHash  String
+  attempts  Int       @default(0)
+  expiresAt DateTime
+  usedAt    DateTime?
+  createdAt DateTime  @default(now())
+
+  @@index([tenantId, email, createdAt])
 }
 
 // ───────────── Llamados ─────────────

@@ -30,6 +30,11 @@ export function FloatingCart({ currency = "ARS", tag }: FloatingCartProps) {
     if (tag) bindToTable(tag);
   }, [tag, bindToTable]);
 
+  // "Pedir lo mismo" desde Mi cuenta llega con ?cart=1: se abre el carrito ya cargado
+  useEffect(() => {
+    if (new URLSearchParams(window.location.search).get("cart") === "1") setIsOpen(true);
+  }, []);
+
   // TableLiveBar avisa si la mesa ya está abierta (hasta que el mozo la abra no se puede enviar)
   const [sessionOpen, setSessionOpen] = useState<boolean | null>(null);
   useEffect(() => {

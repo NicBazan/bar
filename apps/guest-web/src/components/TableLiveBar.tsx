@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useEffect, useState } from "react";
 import { OrdersSheet } from "@/features/ordering/OrdersSheet";
 import { useLiveTable } from "@/features/ordering/useLiveTable";
+import { getCustomerToken, linkVisitIfLoggedIn } from "@/lib/customer";
 import { Toasts } from "./Sheet";
 
 /**
@@ -11,8 +12,10 @@ import { Toasts } from "./Sheet";
  * pedidos con su estado en vivo y botones de llamar al mozo / pedir la cuenta.
  * Expone el estado de la sesión al carrito vía evento para que no deje enviar con la mesa cerrada.
  */
-export function TableLiveBar({ tag, currency }: { tag?: string; currency: string }) {
+export function TableLiveBar({ tag, currency, venueId }: { tag?: string; currency: string; venueId: string }) {
   const live = useLiveTable(tag);
+  const [hasAccount, setHasAccount] = useState(true); // true hasta leer el almacenamiento: evita parpadeos
+  const [dismissed, setDismissed] = useState(false);
   const [showOrders, setShowOrders] = useState(false);
   const [showWifi, setShowWifi] = useState(false);
   const s = live.session;
@@ -24,6 +27,13 @@ export function TableLiveBar({ tag, currency }: { tag?: string; currency: string
     if (!sessionStatus) return;
     window.dispatchEvent(new CustomEvent("bar:session", { detail: { open: isOpen } }));
   }, [sessionStatus, isOpen]);
+
+  // Cliente con cuenta en este bar: la visita se suma sola a su historial
+  const sessionId = s?.id;
+  useEffect(() => {
+    setHasAccount(Boolean(getCustomerToken(venueId)));
+    if (tag && sessionId) void linkVisitIfLoggedIn(venueId, tag);
+  }, [venueId, tag, sessionId]);
 
   // El carrito avisa cuando envió un pedido: refrescar para que aparezca en "Pedidos"
   const { refresh } = live;
@@ -91,6 +101,20 @@ export function TableLiveBar({ tag, currency }: { tag?: string; currency: string
             </div>
           )}
           <Pin pin={s.pin} compact />
+        </div>
+      )}
+
+      {/* Al pedir la cuenta: invitación (opcional) a guardar la visita. Nadie está obligado a registrarse */}
+      {s.status === "BILL_REQUESTED" && !hasAccount && !dismissed && (
+        <div className="mb-4 rounded-2xl bg-night p-4 text-white ring-1 ring-brand/40">
+          <p className="font-semibold">⭐ Guardá tus puntos</p>
+          <p className="mt-1 text-xs text-white/70">Con tu email sumás esta visita y la próxima pedís lo mismo en un toque. Sin contraseña.</p>
+          <div className="mt-3 grid grid-cols-[1fr_auto] gap-2">
+            <Link href={`/v/${venueId}/cuenta?tag=${tag}`} className="grid h-11 place-items-center rounded-xl bg-brand text-sm font-semibold">
+              Guardar mi visita
+            </Link>
+            <button onClick={() => setDismissed(true)} className="h-11 rounded-xl px-3 text-xs text-white/60">Ahora no</button>
+          </div>
         </div>
       )}
 

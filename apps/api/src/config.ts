@@ -32,5 +32,14 @@ export const config = {
   cloudinary: parseCloudinaryUrl(process.env.CLOUDINARY_URL),
   guestTokenTtl: "12h",
   staffTokenTtl: "12h",
+  // "Mi cuenta": el celular queda reconocido por 90 días (se revoca al borrar la cuenta)
+  customerTokenTtl: "90d",
+  // Envío de emails (códigos de ingreso y promos): "console" en local (se ve en el log de la API)
+  // o "resend" en producción (RESEND_API_KEY + EMAIL_FROM con un dominio verificado)
+  email: {
+    provider: (process.env.EMAIL_PROVIDER ?? (process.env.RESEND_API_KEY ? "resend" : "console")) as "console" | "resend",
+    resendApiKey: process.env.RESEND_API_KEY ?? "",
+    from: process.env.EMAIL_FROM ?? "Bar <no-reply@example.com>",
+  },
   serviceCallCooldownSec: 60,
 };

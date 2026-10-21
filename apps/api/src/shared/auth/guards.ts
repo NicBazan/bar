@@ -1,7 +1,7 @@
 import type { FastifyRequest } from "fastify";
 import { prisma } from "../db/index.js";
 import { HttpError, forbidden } from "../errors.js";
-import { type GuestClaims, type StaffClaims, type StaffRole, verifyToken } from "./tokens.js";
+import { type CustomerClaims, type GuestClaims, type StaffClaims, type StaffRole, verifyToken } from "./tokens.js";
 
 export const GUEST_COOKIE = "bar_guest";
 export const STAFF_COOKIE = "bar_staff";
@@ -21,6 +21,24 @@ export async function requireGuest(req: FastifyRequest): Promise<GuestClaims> {
   if (claims.typ !== "guest") throw forbidden();
   await assertTenantActive(claims.tid);
   return claims;
+}
+
+/**
+ * Cliente con "Mi cuenta" (solo Bearer: el token vive en el celular del cliente).
+ * Se consulta la base en cada request: una cuenta borrada pierde el acceso al instante.
+ */
+export async function requireCustomer(req: FastifyRequest): Promise<CustomerClaims & { email: string; name: string | null }> {
+  const header = req.headers.authorization;
+  const claims = header?.startsWith("Bearer ") ? await verifyToken(header.slice(7)) : null;
+  if (!claims) throw new HttpError(401, "UNAUTHENTICATED");
+  if (claims.typ !== "customer") throw forbidden();
+  const customer = await prisma.customer.findFirst({
+    where: { id: claims.sub, tenantId: claims.tid },
+    select: { email: true, name: true },
+  });
+  if (!customer) throw new HttpError(401, "CUSTOMER_GONE");
+  await assertTenantActive(claims.tid);
+  return { ...claims, ...customer };
 }
 
 // ───── Bar suspendido ─────

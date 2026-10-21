@@ -7,6 +7,7 @@ import { config } from "./config.js";
 import { adminRoutes } from "./modules/admin/routes.js";
 import { mediaRoutes } from "./modules/admin/media.js";
 import { catalogRoutes } from "./modules/catalog/routes.js";
+import { customerRoutes } from "./modules/customers/routes.js";
 import { kitchenRoutes } from "./modules/kitchen/routes.js";
 import { onboardingRoutes } from "./modules/onboarding/routes.js";
 import { orderingRoutes } from "./modules/ordering/routes.js";
@@ -58,7 +59,7 @@ export async function buildApp(opts: { logger?: boolean } = {}) {
     reply.header("Referrer-Policy", "strict-origin-when-cross-origin");
     reply.header("X-Frame-Options", "DENY");
     // Respuestas con datos de staff/admin nunca quedan en cachés intermedios
-    if (/^\/v1\/(staff|admin|superadmin|session|state)/.test(req.url)) {
+    if (/^\/v1\/(staff|admin|superadmin|session|state|customer)/.test(req.url)) {
       reply.header("Cache-Control", "no-store");
     }
   });
@@ -80,6 +81,7 @@ export async function buildApp(opts: { logger?: boolean } = {}) {
       await v1.register(kitchenRoutes);
       await v1.register(staffRoutes);
       await v1.register(realtimeRoutes);
+      await v1.register(customerRoutes);
     },
     { prefix: "/v1" },
   );

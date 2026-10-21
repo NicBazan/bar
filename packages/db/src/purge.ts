@@ -13,6 +13,8 @@ export async function purgeTenant(prisma: PrismaClient, tenantId: string) {
     prisma.order.deleteMany({ where: t }),
     prisma.serviceCall.deleteMany({ where: t }),
     prisma.guestDevice.deleteMany({ where: t }),
+    prisma.customerLoginCode.deleteMany({ where: t }),
+    prisma.customer.deleteMany({ where: t }),
     prisma.tableSession.deleteMany({ where: t }),
     prisma.tableTag.deleteMany({ where: t }),
     prisma.diningTable.deleteMany({ where: t }),

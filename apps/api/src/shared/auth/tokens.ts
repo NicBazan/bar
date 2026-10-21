@@ -20,21 +20,34 @@ export type StaffClaims = {
   role: StaffRole;
 };
 
-export type Claims = GuestClaims | StaffClaims;
+/** Cliente identificado por email ("Mi cuenta"): una cuenta por bar, por eso lleva el tenant */
+export type CustomerClaims = {
+  typ: "customer";
+  sub: string; // customer
+  tid: string; // tenant
+};
+
+export type Claims = GuestClaims | StaffClaims | CustomerClaims;
+
+const TTL: Record<Claims["typ"], string> = {
+  guest: config.guestTokenTtl,
+  staff: config.staffTokenTtl,
+  customer: config.customerTokenTtl,
+};
 
 export async function signToken(claims: Claims): Promise<string> {
   const { typ, ...rest } = claims;
   return new SignJWT({ typ, ...rest })
     .setProtectedHeader({ alg: "HS256" })
     .setIssuedAt()
-    .setExpirationTime(typ === "guest" ? config.guestTokenTtl : config.staffTokenTtl)
+    .setExpirationTime(TTL[typ])
     .sign(config.jwtSecret);
 }
 
 export async function verifyToken(token: string): Promise<Claims | null> {
   try {
     const { payload } = await jwtVerify(token, config.jwtSecret, { algorithms: ["HS256"] });
-    if (payload.typ === "guest" || payload.typ === "staff") return payload as unknown as Claims;
+    if (payload.typ === "guest" || payload.typ === "staff" || payload.typ === "customer") return payload as unknown as Claims;
     return null;
   } catch {
     return null;
