@@ -33,7 +33,7 @@ export function SudokuGame({ backHref }: { backHref: string }) {
   }, [selectedCell, selectCell, inputNumber, eraseCell]);
 
   return (
-    <main className="relative mx-auto flex h-dvh max-w-md flex-col overflow-hidden bg-ink px-4 pt-[max(1rem,env(safe-area-inset-top))] pb-[max(1rem,env(safe-area-inset-bottom))]">
+    <main className="relative mx-auto flex h-dvh max-w-md flex-col overflow-hidden bg-paper px-4 pt-[max(1rem,env(safe-area-inset-top))] pb-[max(1rem,env(safe-area-inset-bottom))]">
       {/* Brillos radiales, como en la carta */}
       <div className="pointer-events-none absolute -top-24 left-1/2 -z-0 h-72 w-72 -translate-x-1/2 rounded-full bg-amber/10 blur-[100px]" />
       <div className="pointer-events-none absolute -bottom-32 -left-16 h-64 w-64 rounded-full bg-amber/5 blur-[90px]" />

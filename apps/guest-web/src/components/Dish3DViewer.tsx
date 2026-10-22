@@ -96,10 +96,10 @@ export function Dish3DViewer({
       </model-viewer>
 
       {/* Badge informativo de modo interactivo 3D */}
-      <div className="pointer-events-none absolute top-3 left-3 z-10 flex items-center gap-1.5 rounded-full border border-white/10 bg-black/50 px-3 py-1 text-[11px] font-medium tracking-wide text-cream/80 backdrop-blur-md">
+      <div className="pointer-events-none absolute top-3 left-3 z-10 flex items-center gap-1.5 rounded-full border border-white/10 bg-black/50 px-3 py-1 text-[11px] font-medium tracking-wide text-white/90 backdrop-blur-md">
         <span>3D</span>
-        <span className="text-muted/60">·</span>
-        <span className="text-muted">Girá con el dedo</span>
+        <span className="text-white/50">·</span>
+        <span className="text-white/75">Girá con el dedo</span>
       </div>
     </div>
   );

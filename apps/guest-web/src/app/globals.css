@@ -1,22 +1,26 @@
 @import "tailwindcss";
 
+/*
+ * Paleta ZainSoft (Enterprice-portafolio/src/app/globals.css) en toda la carta: fondo claro,
+ * tarjetas blancas y naranja de marca. Los nombres viejos (surface, cream, amber…) se mantienen
+ * para no tocar cada componente: solo cambia su valor.
+ */
 @theme {
-  --color-ink: #14110f;
-  --color-surface: #1e1a17;
-  --color-surface-2: #2a2420;
-  --color-line: #3a322c;
-  --color-cream: #f5ede3;
-  --color-muted: #a89a8c;
-  --color-amber: #f0a43a;
-  --color-amber-ink: #2a1a05;
-  --color-ok: #6fcf97;
-  --color-warn: #f2994a;
-  /* "Mi cuenta": paleta ZainSoft (Enterprice-portafolio/src/app/globals.css) */
+  --color-ink: #0f1115; /* texto oscuro sobre botones claros (ok/warn) */
+  --color-surface: #ffffff; /* tarjetas */
+  --color-surface-2: #f2eee9; /* chips, inputs, botones secundarios */
+  --color-line: #e6e0d9; /* bordes */
+  --color-cream: #0f1115; /* texto principal */
+  --color-muted: #6b6f76; /* texto secundario */
+  --color-amber: #f05a28; /* acento = brand */
+  --color-amber-ink: #ffffff; /* texto sobre el acento */
+  --color-ok: #1f9d55;
+  --color-warn: #d97706;
   --color-brand: #f05a28;
   --color-brand-dark: #c8431a;
   --color-night: #0f1115;
   --color-paper: #faf8f5;
-  --font-display: "Fraunces", Georgia, serif;
+  --font-display: var(--font-sans);
   --font-sans: "Inter", system-ui, sans-serif;
 }
 
@@ -24,8 +28,8 @@ html,
 body {
   max-width: 100%;
   overflow-x: clip; /* lección de taller: evita scroll horizontal en mobile */
-  background: var(--color-ink);
-  color: var(--color-cream);
+  background: var(--color-paper);
+  color: var(--color-night);
   -webkit-tap-highlight-color: transparent;
 }
 

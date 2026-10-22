@@ -166,7 +166,7 @@ export function DishCard({
   }
 
   return (
-    <article className="group flex flex-col overflow-hidden rounded-3xl border border-line/70 bg-surface/90 shadow-lg shadow-black/40 transition-all duration-300 hover:border-amber/40 hover:shadow-amber/5">
+    <article className="group flex flex-col overflow-hidden rounded-3xl border border-line/70 bg-surface/90 shadow-sm shadow-night/5 transition-all duration-300 hover:border-amber/40 hover:shadow-amber/5">
       {/* Cabecera visual: Visor 3D interactivo si tiene GLB, o imagen/poster */}
       {glbUrl ? (
         <div className="h-[250px] w-full">
