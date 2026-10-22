@@ -54,7 +54,7 @@ export default function SuperAdminPage() {
 
         <div className="flex flex-wrap items-center gap-2">
           {(["bares", "auditoria"] as const).map((t) => (
-            <button key={t} onClick={() => setTab(t)} className={`rounded-full px-4 py-1.5 text-sm ${tab === t ? "bg-cream text-ink" : "bg-surface-2 text-muted"}`}>
+            <button key={t} onClick={() => setTab(t)} className={`rounded-full px-4 py-1.5 text-sm ${tab === t ? "bg-amber text-amber-ink" : "bg-surface-2 text-muted"}`}>
               {t === "bares" ? "Bares" : "Auditoría"}
             </button>
           ))}

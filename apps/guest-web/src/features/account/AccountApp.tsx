@@ -85,7 +85,8 @@ export function AccountApp(props: Props) {
 
   return (
     <div className="min-h-dvh bg-paper text-night">
-      <main className="mx-auto max-w-md px-5 pt-6 pb-32">
+      {/* PC: barra lateral fija a la izquierda (md+) y contenido más ancho */}
+      <main className="mx-auto max-w-md px-5 pt-6 pb-32 md:ml-72 md:max-w-5xl md:px-10 md:pt-10 md:pb-12 xl:mx-auto xl:pl-80">
         {tab === "home" && <HomeTab {...props} me={me} visits={visits} loyalty={loyalty} go={setTab} openRewards={() => setShowRewards(true)} />}
         {tab === "history" && <HistoryTab {...props} visits={visits} notify={notify} />}
         {tab === "promos" && <PromosTab {...props} />}
@@ -100,14 +101,21 @@ export function AccountApp(props: Props) {
 
       {showRewards && loyalty?.active && <RewardsSheet loyalty={loyalty} onClose={() => setShowRewards(false)} />}
 
-      <BottomNav tab={tab} setTab={setTab} />
+      <BottomNav tab={tab} setTab={setTab} venueName={props.venueName} logoUrl={props.logoUrl} menuHref={tag ? `/v/${venueId}/menu?tag=${tag}` : `/v/${venueId}/menu`} />
     </div>
   );
 }
 
 // ───── Piezas comunes ─────
 
-function BottomNav({ tab, setTab }: { tab: Tab; setTab: (t: Tab) => void }) {
+/** Celular: menú inferior oscuro. PC (md+): la misma barra, vertical a la izquierda con etiquetas */
+function BottomNav({ tab, setTab, venueName, logoUrl, menuHref }: {
+  tab: Tab;
+  setTab: (t: Tab) => void;
+  venueName: string;
+  logoUrl: string | null;
+  menuHref: string;
+}) {
   const items: Array<{ id: Tab; label: string; icon: string }> = [
     { id: "home", label: "Inicio", icon: "⌂" },
     { id: "history", label: "Historial", icon: "☰" },
@@ -115,8 +123,20 @@ function BottomNav({ tab, setTab }: { tab: Tab; setTab: (t: Tab) => void }) {
     { id: "profile", label: "Perfil", icon: "◯" },
   ];
   return (
-    <nav aria-label="Secciones de Mi cuenta" className="fixed inset-x-0 bottom-0 z-40 px-4 pb-[max(0.75rem,env(safe-area-inset-bottom))]">
-      <div className="mx-auto flex max-w-md items-center justify-between rounded-[28px] bg-night p-2 shadow-2xl">
+    <nav
+      aria-label="Secciones de Mi cuenta"
+      className="fixed inset-x-0 bottom-0 z-40 px-4 pb-[max(0.75rem,env(safe-area-inset-bottom))] md:inset-y-6 md:right-auto md:left-6 md:w-60 md:p-0"
+    >
+      <div className="mx-auto flex max-w-md items-center justify-between rounded-[28px] bg-night p-2 shadow-2xl md:h-full md:max-w-none md:flex-col md:items-stretch md:justify-start md:gap-1 md:p-4">
+        <div className="hidden items-center gap-3 px-2 pt-2 pb-6 md:flex">
+          <span className="grid h-11 w-11 shrink-0 place-items-center overflow-hidden rounded-2xl bg-white/10 text-lg text-white">
+            {logoUrl ? <img src={logoUrl} alt="" className="h-full w-full object-contain p-1" /> : "🍸"}
+          </span>
+          <span className="min-w-0">
+            <span className="block text-xs text-white/50">Mi cuenta en</span>
+            <span className="block truncate text-sm font-semibold text-white">{venueName}</span>
+          </span>
+        </div>
         {items.map((it) => {
           const active = tab === it.id;
           return (
@@ -124,16 +144,18 @@ function BottomNav({ tab, setTab }: { tab: Tab; setTab: (t: Tab) => void }) {
               key={it.id}
               onClick={() => setTab(it.id)}
               aria-current={active ? "page" : undefined}
-              className={`flex h-12 min-w-12 items-center justify-center gap-2 rounded-full px-4 text-sm font-medium transition ${
-                active ? "bg-brand text-white" : "text-white/60"
+              className={`flex h-12 min-w-12 items-center justify-center gap-2 rounded-full px-4 text-sm font-medium transition md:justify-start md:gap-3 ${
+                active ? "bg-brand text-white" : "text-white/60 hover:text-white md:hover:bg-white/5"
               }`}
             >
-              <span aria-hidden className="text-base">{it.icon}</span>
-              {active && <span>{it.label}</span>}
-              {!active && <span className="sr-only">{it.label}</span>}
+              <span aria-hidden className="text-base md:w-5 md:text-center">{it.icon}</span>
+              <span className={active ? "" : "sr-only md:not-sr-only"}>{it.label}</span>
             </button>
           );
         })}
+        <a href={menuHref} className="mt-auto hidden h-12 items-center gap-3 rounded-full px-4 text-sm font-medium text-white/60 hover:bg-white/5 hover:text-white md:flex">
+          <span aria-hidden className="w-5 text-center">🍽</span> Volver a la carta
+        </a>
       </div>
     </nav>
   );
@@ -187,13 +209,16 @@ function HomeTab({ venueId, venueName, currency, tag, me, visits, loyalty, go, o
         <Avatar name={me?.name ?? null} email={me?.email} />
       </header>
 
+      {/* PC: tarjeta, accesos y próximo premio a la izquierda; actividad a la derecha */}
+      <div className="md:mt-2 md:grid md:grid-cols-2 md:items-start md:gap-8">
+      <div>
       <section className="mt-5 rounded-[28px] bg-night p-6 text-white shadow-xl" aria-label={card ? "Tu tarjeta de fidelización" : "Tus visitas"}>
         <div className="flex items-center justify-between text-xs text-white/60">
           <span>{venueName}</span>
           <span className="rounded-full bg-white/10 px-2.5 py-1">{card ? (card.mode === "STAMPS" ? "Tarjeta de sellos" : "Puntos") : "Mi cuenta"}</span>
         </div>
         <p className="mt-4 text-sm text-white/60">{card ? `Tus ${unitLabel(card.mode, 2)}` : "Tus visitas"}</p>
-        <p className="text-5xl font-semibold tracking-tight">{card ? card.balance : (me?.stats.visits ?? "–")}</p>
+        <p className="text-5xl font-semibold tracking-tight">{card ? Math.max(0, card.balance) : (me?.stats.visits ?? "–")}</p>
         <p className="mt-2 text-sm">
           <span className="rounded-full bg-brand px-2.5 py-1 text-xs font-semibold">+{card ? card.earnedThisMonth : monthVisits} este mes</span>
           <span className="ml-2 text-white/60">
@@ -223,8 +248,9 @@ function HomeTab({ venueId, venueName, currency, tag, me, visits, loyalty, go, o
       </section>
 
       {card?.next && <NextReward card={card} currency={currency} />}
+      </div>
 
-      <section className="mt-6">
+      <section className="mt-6 md:mt-5">
         <div className="flex items-center justify-between">
           <h2 className="text-lg font-semibold">Actividad reciente</h2>
           {visits && visits.length > 0 && (
@@ -259,6 +285,7 @@ function HomeTab({ venueId, venueName, currency, tag, me, visits, loyalty, go, o
           </ul>
         )}
       </section>
+      </div>
     </>
   );
 }
@@ -279,7 +306,7 @@ type Card = Extract<Loyalty, { active: true }>;
 
 function NextReward({ card, currency }: { card: Card; currency: string }) {
   const next = card.next!;
-  const have = Math.min(card.balance, next.cost);
+  const have = Math.max(0, Math.min(card.balance, next.cost));
   return (
     <section className="mt-5 rounded-3xl bg-white p-5 shadow-sm" aria-label="Próximo premio">
       <div className="flex items-start justify-between gap-3">
@@ -307,9 +334,9 @@ function NextReward({ card, currency }: { card: Card; currency: string }) {
 
 function RewardsSheet({ loyalty, onClose }: { loyalty: Card; onClose: () => void }) {
   return (
-    <div className="fixed inset-0 z-50 flex items-end justify-center" role="dialog" aria-modal="true" aria-label="Premios">
+    <div className="fixed inset-0 z-50 flex items-end justify-center md:items-center" role="dialog" aria-modal="true" aria-label="Premios">
       <button aria-label="Cerrar" className="absolute inset-0 bg-night/50" onClick={onClose} />
-      <div className="animate-sheet relative w-full max-w-md rounded-t-[28px] bg-paper p-5 pb-[max(1.25rem,env(safe-area-inset-bottom))]">
+      <div className="animate-sheet relative w-full max-w-md rounded-t-[28px] bg-paper p-5 md:rounded-[28px] pb-[max(1.25rem,env(safe-area-inset-bottom))]">
         <div className="flex items-center justify-between">
           <h2 className="text-xl font-semibold">Premios</h2>
           <button onClick={onClose} className="h-11 rounded-full px-4 text-sm text-night/60">Cerrar</button>
@@ -447,7 +474,7 @@ function PromosTab({ venueId, venueName }: Props) {
           Cuando {venueName} publique promociones, las vas a ver acá.
         </p>
       ) : (
-        <ul className="mt-4 space-y-3">
+        <ul className="mt-4 space-y-3 md:grid md:grid-cols-2 md:gap-4 md:space-y-0">
           {promos.map((p, i) => (
             <li key={p.id} className={`rounded-3xl p-5 shadow-sm ${i === 0 ? "bg-night text-white" : "bg-white"}`}>
               <span className={`inline-block rounded-full px-2.5 py-1 text-xs font-semibold ${i === 0 ? "bg-brand text-white" : "bg-brand/10 text-brand-dark"}`}>

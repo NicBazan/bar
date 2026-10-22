@@ -57,7 +57,7 @@ export function LoginScreen({ venueId, venueName, logoUrl, tag, onDone }: {
   };
 
   return (
-    <main className="mx-auto flex min-h-dvh max-w-md flex-col bg-paper px-5 pt-10 pb-8 text-night">
+    <main className="mx-auto flex min-h-dvh max-w-md flex-col bg-paper px-5 pt-10 pb-8 text-night md:my-12 md:min-h-0 md:rounded-[32px] md:bg-white md:px-10 md:py-10 md:shadow-xl">
       <div className="flex items-center gap-3">
         <span className="grid h-12 w-12 place-items-center overflow-hidden rounded-2xl bg-night text-xl text-white">
           {logoUrl ? <img src={logoUrl} alt="" className="h-full w-full object-contain p-1" /> : "🍸"}

@@ -79,3 +79,20 @@ body {
 @media (prefers-reduced-motion: reduce) {
   .animate-sudoku-win, .animate-sudoku-win > button, .animate-sudoku-shake, .animate-sudoku-pop { animation: none; }
 }
+
+/* Checklist de UI/UX Pro Max: foco visible con teclado, cursor de mano y menos movimiento si se pide */
+:where(a, button, [role="button"], [role="switch"], input, select, textarea, summary):focus-visible {
+  outline: 2px solid var(--color-brand);
+  outline-offset: 2px;
+}
+:where(a[href], button:not(:disabled), [role="button"], [role="switch"], summary, label:has(input[type="checkbox"])) {
+  cursor: pointer;
+}
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}

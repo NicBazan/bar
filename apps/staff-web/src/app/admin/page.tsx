@@ -48,12 +48,12 @@ export default function AdminPage() {
   return (
     <main>
       <StaffHeader user={user} title="Admin" />
-      <nav className="no-scrollbar sticky top-[61px] z-10 flex gap-1 overflow-x-auto border-b border-line bg-ink/95 px-4 py-2 backdrop-blur print:hidden">
+      <nav className="no-scrollbar sticky top-[61px] z-10 flex gap-1 overflow-x-auto border-b border-line bg-paper/95 px-4 py-2 backdrop-blur print:hidden">
         {TABS.map(([id, label]) => (
           <button
             key={id}
             onClick={() => go(id)}
-            className={`shrink-0 rounded-full px-4 py-1.5 text-sm transition ${tab === id ? "bg-cream text-ink" : "bg-surface-2 text-muted"}`}
+            className={`shrink-0 rounded-full px-4 py-1.5 text-sm transition ${tab === id ? "bg-amber text-amber-ink" : "bg-surface-2 text-muted"}`}
           >
             {label}
           </button>

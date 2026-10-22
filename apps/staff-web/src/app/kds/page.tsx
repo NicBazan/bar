@@ -150,7 +150,7 @@ export default function KdsPage() {
 
 function Chip({ on, onClick, children }: { on: boolean; onClick: () => void; children: React.ReactNode }) {
   return (
-    <button onClick={onClick} className={`rounded-full px-3 py-1 ${on ? "bg-cream text-ink" : "bg-surface-2 text-muted"}`}>
+    <button onClick={onClick} className={`rounded-full px-3 py-1 ${on ? "bg-amber text-amber-ink" : "bg-surface-2 text-muted"}`}>
       {children}
     </button>
   );
@@ -158,7 +158,7 @@ function Chip({ on, onClick, children }: { on: boolean; onClick: () => void; chi
 
 function SmallBtn({ primary, onClick, children }: { primary?: boolean; onClick: () => void; children: React.ReactNode }) {
   return (
-    <button onClick={onClick} className={`shrink-0 rounded-full px-3 py-1.5 text-sm font-semibold ${primary ? "bg-ok text-ink" : "bg-cream/10 text-cream"}`}>
+    <button onClick={onClick} className={`shrink-0 rounded-full px-3 py-1.5 text-sm font-semibold ${primary ? "bg-ok text-ink" : "bg-surface-2 text-cream"}`}>
       {children}
     </button>
   );

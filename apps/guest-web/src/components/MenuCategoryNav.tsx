@@ -41,7 +41,7 @@ export function MenuCategoryNav({ categories }: MenuCategoryNavProps) {
   }, [categories]);
 
   return (
-    <nav className="sticky top-0 z-30 -mx-4 border-b border-line/60 bg-paper/90 px-4 py-3 backdrop-blur-xl">
+    <nav className="sticky top-0 z-30 -mx-4 border-b md:-mx-8 md:px-8 border-line/60 bg-paper/90 px-4 py-3 backdrop-blur-xl">
       <div className="flex gap-2 overflow-x-auto no-scrollbar py-0.5">
         {categories.map((cat) => {
           const isActive = activeId === cat.id;

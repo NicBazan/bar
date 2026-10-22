@@ -12,6 +12,7 @@ const HOME_BY_ROLE: Record<StaffUser["role"], string> = {
   CASHIER: "/waiter",
 };
 
+/** Ingreso del staff con el mismo lenguaje visual que "Mi cuenta": tarjeta oscura + formulario claro */
 export default function LoginPage() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -33,24 +34,44 @@ export default function LoginPage() {
     }
   };
 
+  const input = "h-12 w-full rounded-2xl border border-line bg-white px-4 text-base outline-none transition focus:border-amber";
+
   return (
-    <main className="grid min-h-dvh place-items-center px-4">
-      <form onSubmit={submit} className="w-full max-w-sm rounded-3xl border border-line bg-surface p-6">
-        <p className="text-sm text-muted">Panel del local</p>
-        <h1 className="mb-6 font-display text-3xl">Ingresar</h1>
-        <label className="mb-3 block">
-          <span className="mb-1 block text-sm text-muted">Email</span>
-          <input type="email" required autoComplete="username" value={email} onChange={(e) => setEmail(e.target.value)} className="w-full rounded-xl border border-line bg-surface-2 px-3 py-2.5 outline-none focus:border-amber" />
-        </label>
-        <label className="mb-4 block">
-          <span className="mb-1 block text-sm text-muted">Contraseña</span>
-          <input type="password" required autoComplete="current-password" value={password} onChange={(e) => setPassword(e.target.value)} className="w-full rounded-xl border border-line bg-surface-2 px-3 py-2.5 outline-none focus:border-amber" />
-        </label>
-        {error && <p className="mb-3 text-sm text-warn">{error}</p>}
-        <button disabled={busy} className="h-11 w-full rounded-full bg-amber font-semibold text-amber-ink disabled:opacity-50">
-          {busy ? "Ingresando…" : "Ingresar"}
-        </button>
-      </form>
+    <main className="grid min-h-dvh place-items-center px-4 py-8">
+      <div className="grid w-full max-w-md overflow-hidden rounded-[32px] bg-white shadow-xl md:max-w-4xl md:grid-cols-2">
+        <section className="flex flex-col justify-between gap-8 bg-night p-8 text-white md:p-10">
+          <div className="flex items-center gap-3">
+            <span className="grid h-11 w-11 place-items-center rounded-2xl bg-amber text-lg">🍸</span>
+            <span className="text-sm font-semibold">Panel del local</span>
+          </div>
+          <div>
+            <h1 className="text-3xl leading-tight font-semibold md:text-4xl">Tu salón, tu cocina y tus clientes en un solo lugar.</h1>
+            <p className="mt-3 text-sm text-white/60">Mozos, cocina, dueño y administración de la plataforma entran por acá.</p>
+          </div>
+          <div className="hidden gap-2 md:flex" aria-hidden>
+            {["Salón", "Cocina", "Admin"].map((t, i) => (
+              <span key={t} className={`rounded-full px-3 py-1 text-xs ${i === 0 ? "bg-amber text-white" : "bg-white/10 text-white/70"}`}>{t}</span>
+            ))}
+          </div>
+        </section>
+
+        <form onSubmit={submit} className="p-8 md:p-10">
+          <p className="text-sm text-muted">Bienvenido</p>
+          <h2 className="mb-6 text-2xl font-semibold">Ingresar</h2>
+          <label className="mb-4 block">
+            <span className="mb-1.5 block text-sm font-medium">Email</span>
+            <input type="email" required autoComplete="username" value={email} onChange={(e) => setEmail(e.target.value)} className={input} />
+          </label>
+          <label className="mb-5 block">
+            <span className="mb-1.5 block text-sm font-medium">Contraseña</span>
+            <input type="password" required autoComplete="current-password" value={password} onChange={(e) => setPassword(e.target.value)} className={input} />
+          </label>
+          {error && <p role="alert" className="mb-4 rounded-2xl bg-amber/10 px-4 py-3 text-sm text-brand-dark">{error}</p>}
+          <button disabled={busy} className="h-12 w-full rounded-2xl bg-amber font-semibold text-amber-ink transition hover:bg-brand-dark disabled:opacity-50">
+            {busy ? "Ingresando…" : "Ingresar"}
+          </button>
+        </form>
+      </div>
     </main>
   );
 }

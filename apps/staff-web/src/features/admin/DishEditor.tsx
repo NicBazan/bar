@@ -183,7 +183,7 @@ export function DishEditor({
             key={id}
             disabled={isNew && id !== "datos"}
             onClick={() => setTab(id)}
-            className={`shrink-0 rounded-full px-3 py-1.5 text-sm disabled:opacity-30 ${tab === id ? "bg-cream text-ink" : "bg-surface-2 text-muted"}`}
+            className={`shrink-0 rounded-full px-3 py-1.5 text-sm disabled:opacity-30 ${tab === id ? "bg-amber text-amber-ink" : "bg-surface-2 text-muted"}`}
           >
             {label}
           </button>

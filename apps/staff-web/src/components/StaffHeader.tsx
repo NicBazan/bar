@@ -20,7 +20,7 @@ export function StaffHeader({ user, title, online, audioOn, onStart, children }:
   const canSwitch = user.role === "OWNER" || user.role === "MANAGER";
 
   return (
-    <header className="sticky top-0 z-20 flex flex-wrap items-center gap-3 border-b border-line bg-ink/95 px-4 py-3 backdrop-blur">
+    <header className="sticky top-0 z-20 flex flex-wrap items-center gap-3 border-b border-line bg-paper/95 px-4 py-3 backdrop-blur">
       <h1 className="font-display text-2xl">{title}</h1>
       {online !== undefined && (
         <span className={`flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs ${online ? "bg-ok/15 text-ok" : "bg-warn/15 text-warn"}`}>

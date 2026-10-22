@@ -80,7 +80,7 @@ export default async function VenueMenuPage({ params, searchParams }: MenuPagePr
   }));
 
   return (
-    <main className="relative mx-auto min-h-dvh max-w-md px-4 pb-28">
+    <main className="relative mx-auto min-h-dvh max-w-md px-4 pb-28 md:max-w-3xl md:px-8 lg:max-w-6xl">
       {/* Glow ambiental superior */}
       <div className="pointer-events-none absolute top-0 left-1/2 -z-10 h-64 w-64 -translate-x-1/2 rounded-full bg-amber/10 blur-[90px]"></div>
 
@@ -167,7 +167,13 @@ export default async function VenueMenuPage({ params, searchParams }: MenuPagePr
               <span className="text-xs text-muted/70">{cat.dishes.length} platos</span>
             </div>
 
-            <div className={layout === "list" ? "rounded-3xl bg-surface/60 px-4" : layout === "reels" ? "grid gap-6" : "grid gap-4"}>
+            <div className={
+                layout === "list"
+                  ? "rounded-3xl bg-surface/60 px-4 md:grid md:grid-cols-2 md:gap-x-8"
+                  : layout === "reels"
+                    ? "mx-auto grid max-w-md gap-6"
+                    : "grid items-start gap-4 md:grid-cols-2 lg:grid-cols-3"
+              }>
               {cat.dishes.map((dish) => (
                 <DishCard
                   key={dish.id}
