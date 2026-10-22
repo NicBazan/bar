@@ -13,8 +13,11 @@ import { audit, requireAdmin } from "../admin/context.js";
 export const CAMPAIGN_INTERVAL_MS = 7 * 24 * 60 * 60 * 1000;
 const INACTIVE_DAYS = 30;
 
+// Una sola línea: el título va al asunto del email (un salto de línea ahí permite inyectar encabezados)
+const Title = z.string().trim().min(1).max(80).regex(/^[^\r\n]*$/, "El título va en una sola línea");
+
 const PromoBody = z.object({
-  title: z.string().trim().min(1).max(80),
+  title: Title,
   body: z.string().trim().min(1).max(500),
   startsAt: z.coerce.date().nullable().optional(),
   endsAt: z.coerce.date().nullable().optional(),
@@ -25,7 +28,7 @@ const DATES_MSG = { message: "La fecha de fin tiene que ser posterior a la de in
 
 const CampaignBody = z.object({
   promotionId: z.uuid().optional(),
-  title: z.string().trim().min(1).max(80),
+  title: Title,
   body: z.string().trim().min(1).max(300),
   segment: z.enum(["ALL", "INACTIVE_30"]),
 });
@@ -180,9 +183,13 @@ export async function promotionRoutes(app: FastifyInstance) {
   app.patch("/admin/promotions/:id", async (req) => {
     const ctx = await requireAdmin(req);
     const { id } = z.object({ id: z.uuid() }).parse(req.params);
-    const body = PromoBody.partial().refine(datesOk, DATES_MSG).parse(req.body);
-    const upd = await prisma.promotion.updateMany({ where: { id, tenantId: ctx.tenantId }, data: body });
-    if (upd.count === 0) throw notFound("Promoción");
+    const body = PromoBody.partial().parse(req.body);
+    const current = await prisma.promotion.findFirst({ where: { id, tenantId: ctx.tenantId }, select: { startsAt: true, endsAt: true } });
+    if (!current) throw notFound("Promoción");
+    // Las fechas se validan contra las que ya tiene (el PATCH puede traer solo una)
+    const merged = { startsAt: body.startsAt === undefined ? current.startsAt : body.startsAt, endsAt: body.endsAt === undefined ? current.endsAt : body.endsAt };
+    if (!datesOk(merged)) throw new HttpError(400, "DATES_INVALID", DATES_MSG.message);
+    await prisma.promotion.update({ where: { id }, data: body });
     return { ok: true };
   });
 

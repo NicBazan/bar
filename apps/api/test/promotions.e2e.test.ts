@@ -79,6 +79,14 @@ describe("promociones", () => {
     expect(live.map((p: { title: string }) => p.title)).toEqual(["2x1 en pintas"]);
 
     const id = ok.json().id;
+    // PATCH con una sola fecha: se valida contra la que ya tenía
+    await app.inject({ method: "PATCH", url: `/v1/admin/promotions/${id}`, headers: auth(A.token), payload: { startsAt: "2026-12-10" } });
+    const badPatch = await app.inject({ method: "PATCH", url: `/v1/admin/promotions/${id}`, headers: auth(A.token), payload: { endsAt: "2026-12-01" } });
+    expect(badPatch.json().error).toBe("DATES_INVALID");
+    await app.inject({ method: "PATCH", url: `/v1/admin/promotions/${id}`, headers: auth(A.token), payload: { startsAt: null } });
+    // El título va al asunto del email: nada de saltos de línea
+    const inject = await app.inject({ method: "POST", url: "/v1/admin/promotions", headers: auth(A.token), payload: { title: "Hola\r\nBcc: x@y.z", body: "x" } });
+    expect(inject.statusCode).toBe(400);
     expect((await app.inject({ method: "PATCH", url: `/v1/admin/promotions/${id}`, headers: auth(B.token), payload: { active: false } })).statusCode).toBe(404);
     expect((await app.inject({ method: "DELETE", url: `/v1/admin/promotions/${id}`, headers: auth(B.token) })).statusCode).toBe(404);
     expect((await app.inject({ url: `/v1/venues/${B.venueId}/promos` })).json()).toHaveLength(0);
