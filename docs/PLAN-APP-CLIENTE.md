@@ -1,6 +1,6 @@
 # 📱 Plan: "Mi cuenta" del cliente (historial, fidelización y notificaciones)
 
-> Estado: **decisiones tomadas (21/10/2026), sin implementar.** Para retomar en un chat nuevo. Contexto del proyecto: [PLAN-MAESTRO.md](../PLAN-MAESTRO.md).
+> Estado: **Fases A, B y C implementadas (21/10/2026).** Detalle de la API en [PLAN-MAESTRO §10](../PLAN-MAESTRO.md#10-api-implementada) y seguridad en [SEGURIDAD.md](SEGURIDAD.md) (puntos 18 a 24). Ajustes respecto de este plan: "Mi QR" y "Reservar" de los accesos rápidos se cambiaron por "Repetir" y "Premios" (el mozo identifica al cliente por la mesa, sin QR), y la fidelización suma al cerrar la mesa. Contexto del proyecto: [PLAN-MAESTRO.md](../PLAN-MAESTRO.md).
 
 ## 1. La idea
 Una sección para el **cliente del bar** (no para el staff), con el estilo de la imagen de referencia (app tipo billetera: saludo, tarjeta destacada oscura, accesos rápidos en círculos, barra de progreso, "actividad reciente" y menú inferior):

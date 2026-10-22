@@ -23,6 +23,13 @@ Revisión hecha sobre todo el monorepo (API, carta, panel, scripts) antes de dej
 | 15 | Exposición de la API | En el MVP local la API escuchaba en todas las interfaces | ✅ `HOST=127.0.0.1`: solo la ven los front de la PC | `start-mvp.ps1` |
 | 16 | Secretos | `JWT_SECRET` y `NFC_MASTER_KEY` con valores de desarrollo | ✅ En producción la API no arranca sin ellos; el script del MVP los genera al azar en `.env` (ignorado por git) | `config.ts` |
 | 17 | Hashes | Que ningún endpoint devuelva `passwordHash` | ✅ `select` explícito en staff/admin/superadmin | `admin.e2e`: "no expone hashes de contraseñas" |
+| 18 | "Mi cuenta": ingreso | (nuevo, 21/10) Código de 6 dígitos por email | ✅ Se guarda solo un HMAC del código; vence a los 10 min; 5 intentos; consumo atómico (dos verificaciones simultáneas: gana una); un código nuevo invalida el anterior; 1 email cada 30 s y 5 cada 15 min por email y bar; misma respuesta exista o no la cuenta | `customer.e2e`: "el código vence y se bloquea tras 5 intentos", "pedir códigos seguidos no manda un email por cada pedido" |
+| 19 | "Mi cuenta": aislamiento | Una cuenta por bar | ✅ El token del cliente lleva su tenant y la API lo consulta en cada request (una cuenta borrada pierde el acceso al instante); un token de mesa de otro bar no se vincula; los tokens de cliente, mesa y staff no se intercambian | `customer.e2e`: "una cuenta por bar…", "un token de cliente no sirve como token de mesa" |
+| 20 | Datos personales (Ley 25.326) | Consentimiento, acceso y supresión | ✅ Consentimiento explícito al crear la cuenta (fecha guardada) y política en `/privacidad`; exportar en JSON y borrar desde el perfil (los pedidos quedan anónimos); el mozo ve el email enmascarado | `customer.e2e`: "exportar y borrar la cuenta" |
+| 21 | Fidelización | Canjes dobles y canjes a distancia | ✅ Bloqueo de fila del cliente (`FOR UPDATE`) al canjear; solo se canjea a un cliente identificado en esa mesa; la visita suma una sola vez (único por cliente y visita) | `loyalty.e2e`: "dos canjes simultáneos, solo uno pasa", "no puede canjear a un cliente que no está en esa mesa" |
+| 22 | Web Push | La API hace POST al endpoint que manda el navegador (riesgo de SSRF) | ✅ Solo servicios de push reales por HTTPS y puerto estándar (FCM, Mozilla, Windows, Apple); el service worker solo abre URLs del propio sitio | `promotions.e2e`: "push solo a servicios reales" |
+| 23 | Avisos y emails | Spam y bajas | ✅ Opt-in separado por canal, nunca preseleccionado; 1 aviso por semana por bar con lock (dos envíos simultáneos: sale uno); baja en un toque desde cada email (token firmado que solo sirve para eso, `List-Unsubscribe` one-click) y desde cada notificación (solo de ese bar) | `promotions.e2e` |
+| 24 | Emails | Inyección de encabezados / HTML | ✅ El título (asunto) no admite saltos de línea; el cuerpo HTML se escapa | `promotions.e2e`: "nada de saltos de línea" |
 
 ## Lo que ya estaba bien (revisado)
 
@@ -44,5 +51,9 @@ Revisión hecha sobre todo el monorepo (API, carta, panel, scripts) antes de dej
 | Una sola `NFC_MASTER_KEY` para todos los chips | El UID está ligado a la mesa, así que una firma de otro chip no sirve | Claves diversificadas por chip (AN10922) |
 | Onboarding abierto (cualquiera crea un bar) | Tope global de 30 altas por hora | Captcha (Turnstile) y verificación de email |
 | Sin 2FA para super admin | MVP | TOTP para SUPER_ADMIN |
-| Autoridad local de Caddy para el HTTPS del MVP | Solo para la demo; la clave privada queda en `.mvp/caddy` (ignorado por git) y solo se publica el certificado público | Quitar el certificado del celular al terminar las pruebas; en producción, HTTPS real (Vercel) |
+| ~~Autoridad local de Caddy para el HTTPS del MVP~~ | **Quitado (21/10):** el arranque ya no usa Caddy | Si se instaló el certificado `bar-mvp-ca` en un celular, quitarlo desde Ajustes → Seguridad → Credenciales. Se pueden borrar `.mvp/caddy` y `.mvp/ca` |
+| Token del cliente ("Mi cuenta") en `localStorage` por 90 días | Mismo análisis que el del staff (sin XSS conocido, CSP); la API revisa en cada request que la cuenta exista | Cookie `HttpOnly` por bar cuando haya dominio propio |
+| Campañas enviadas dentro del request del admin | Pocos clientes por bar en el piloto | Encolar el envío en un worker (BullMQ/Redis) con reintentos |
+| Claves VAPID derivadas de `JWT_SECRET` si no hay `VAPID_*` | Cómodo en local y estable entre reinicios | En producción definir `VAPID_PUBLIC_KEY`/`VAPID_PRIVATE_KEY` (rotar `JWT_SECRET` cortaría las suscripciones) |
+| Pedir códigos para emails ajenos | Tope por email y bar; el email no dice nada si no se pidió | Captcha (Turnstile) en el pedido de código si se abusa |
 | Usuarios demo con contraseñas conocidas | Solo en la base local | No correr el seed en producción; usar `create-superadmin` |

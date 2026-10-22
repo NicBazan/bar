@@ -2,7 +2,7 @@
 
 Base de conocimiento del proyecto **bar**: une una carta interactiva 3D/AR con sistema operativo gastronómico (estilo *Menuly*) y un hub en mesa "zero-install" con NFC + QR (estilo *Candour*).
 
-> **Estado (21/10/2026): MVP completo andando en local.** Con `INICIAR-MVP.cmd` arranca todo y se abre desde el celular (Wi-Fi o HTTPS). Hay carta 3D/AR, pedidos, mozo, KDS, **admin del bar** (carta, agotados, fotos/3D, mesas y QR, equipo, Wi-Fi, reseñas), **super admin** de la plataforma, Sudoku para la espera y una auditoría de seguridad hecha ([docs/SEGURIDAD.md](docs/SEGURIDAD.md)). Falta el deploy en la nube. Ver [§11](#11-estado-actual-qué-está-hecho-y-qué-falta).
+> **Estado (21/10/2026): MVP completo andando en local.** Con `INICIAR-MVP.cmd` arranca todo y se abre desde el celular (Wi-Fi o HTTPS). Hay carta 3D/AR (Clásico, Reels o Lista), pedidos, mozo, KDS, **"Mi cuenta" del cliente** (código por email, historial, "Pedir lo mismo", sellos o puntos, promos y avisos), **admin del bar** (carta, agotados, fotos/3D, mesas y QR, equipo, Wi-Fi, reseñas), **super admin** de la plataforma, Sudoku para la espera y una auditoría de seguridad hecha ([docs/SEGURIDAD.md](docs/SEGURIDAD.md)). Falta el deploy en la nube. Ver [§11](#11-estado-actual-qué-está-hecho-y-qué-falta).
 >
 > Este documento es la fuente de verdad: cada decisión nueva se agrega acá o como ADR en `docs/adr/`. Repo: https://github.com/NicBazan/bar
 
@@ -302,13 +302,17 @@ Leyenda: ✅ hecho · 🟡 a medias · ⬜ pendiente
 - ✅ **Admin del bar**: carta (categorías, platos, tamaños, opciones, agotado/oculto, foto y 3D), mesas con QR imprimible y NFC, equipo con roles, Wi-Fi y reseñas
 - ✅ **Super admin**: bares, planes y cuota, suspensión, alta para clientes, contraseña temporal, auditoría
 - ✅ Auditoría de seguridad ([docs/SEGURIDAD.md](docs/SEGURIDAD.md))
+- ✅ **"Mi cuenta" del cliente** ([docs/PLAN-APP-CLIENTE.md](docs/PLAN-APP-CLIENTE.md)): cuenta por bar con código de 6 dígitos por email, historial por visita, "Pedir lo mismo", exportar y borrar (Ley 25.326)
 - ⬜ PWA offline (Service Worker con la carta cacheada)
 - ⬜ RLS en Postgres como segunda barrera de aislamiento
 - ⬜ Analítica base (aperturas 3D → pedidos)
 
 ### Fase 2: diferenciación
-- ⬜ Chef IA y layouts Clásico/Reels/Lista en vivo
-- 🟡 Hub en mesa: ✅ Wi-Fi para mesas abiertas, ✅ link de reseñas, ✅ Sudoku para la espera · ⬜ sellos + Wallet, feedback con fotos, más juegos
+- ✅ Layouts Clásico/Reels/Lista: la carta usa el que elige el dueño en Admin → Local
+- ✅ Fidelización configurable por bar (sellos por visita o puntos por gasto), premios y canje desde el panel del mozo
+- ✅ Promociones del bar + Web Push (VAPID) + emails segmentados ("no venís hace 30 días"), opt-in por canal, 1 aviso por semana, baja en un toque
+- ⬜ Chef IA
+- 🟡 Hub en mesa: ✅ Wi-Fi para mesas abiertas, ✅ link de reseñas, ✅ Sudoku para la espera, ✅ sellos/puntos (sin Wallet: decidido el 21/10) · ⬜ feedback con fotos, más juegos
 - ⬜ App Clip v1 (Wi-Fi + push efímera) y pipeline 3D semiautomático
 
 ### Fase 3: sistema operativo del local
@@ -415,16 +419,21 @@ corepack pnpm db:seed                           # SOLO si querés resetear el de
 corepack pnpm --filter @bar/api dev             # API        http://localhost:4000
 corepack pnpm --filter @bar/guest-web dev       # Carta      http://localhost:3000/t/{code}
 corepack pnpm --filter @bar/staff-web dev       # Panel      http://localhost:3001/login
-corepack pnpm --filter @bar/api test            # 46 tests
+corepack pnpm --filter @bar/api test            # 71 tests
 node scripts/mvp/smoke.mjs                      # prueba de humo contra el MVP arrancado
 ```
 No mezclar: si el MVP está andando, los puertos 3000/3001/4000 están ocupados (primero `DETENER-MVP.cmd`).
 
 ### Celular
-- **En el Wi-Fi de casa, con HTTPS (recomendado):** `https://192.168.100.25:3443/t/{code}`. Lo sirve Caddy con una autoridad local. Hay que instalar **una sola vez** en el celular el certificado `http://192.168.100.25:3480/bar-mvp-ca.crt`; los pasos están en `.mvp/LINKS.html`. Así hay cámara y secure context sin túnel ni internet.
+- **Sin HTTPS local:** se decidió no instalar certificados en el celular (el arranque ya no levanta Caddy). Para cámara, AR y notificaciones push se usa el túnel HTTPS con datos móviles.
 - **En el Wi-Fi de casa, sin instalar nada:** `http://192.168.100.25:3000/t/{code}`. Funciona todo menos la cámara/AR.
 - **Con datos móviles:** el link `https://….trycloudflare.com` del túnel. Funciona todo, incluida la AR. En el Wi-Fi de casa no abre porque el router bloquea `trycloudflare.com` (ver §12).
 - **Producción:** [DEPLOY.md](DEPLOY.md).
+
+### "Mi cuenta" en local
+- **Emails:** con `EMAIL_PROVIDER` sin definir se usa el adaptador **consola**: el código de ingreso y los emails de promos se escriben en `.mvp/logs/api.log` (no sale nada a internet). En producción: `EMAIL_PROVIDER=resend`, `RESEND_API_KEY` y `EMAIL_FROM` con un dominio verificado.
+- **Web Push:** claves VAPID en `VAPID_PUBLIC_KEY` / `VAPID_PRIVATE_KEY` (y `VAPID_SUBJECT=mailto:…`). Si no están, se derivan de `JWT_SECRET` (estables entre reinicios). Push solo anda en contexto seguro: `localhost` en la PC o el túnel HTTPS; por `http://192.168.x.x` el perfil lo explica y no lo ofrece. En iPhone, solo con la carta agregada a la pantalla de inicio (iOS 16.4+).
+- **Seed:** el bar demo arranca con sellos por visita ("Café o cerveza gratis" a los 5, "Postre gratis" a los 10).
 
 ### ADRs
 - ~~0001: NestJS vs Fastify~~ → **Fastify** (más liviano; los módulos son plugins por dominio)
@@ -455,6 +464,30 @@ No mezclar: si el MVP está andando, los puertos 3000/3001/4000 están ocupados 
 | GET | `/staff/kitchen/items` · PATCH `/staff/order-items/:id/status` | cocina / mozo | KDS |
 | GET | `/staff/service-calls` · POST `/staff/service-calls/:id/ack\|resolve` | mozo | Atender llamados |
 
+### Cliente: "Mi cuenta" (`/v1/customer`, token de cliente por Bearer, una cuenta por bar)
+
+| Método | Ruta | Qué hace |
+| :-- | :-- | :-- |
+| POST | `/customer/auth/request-code` | `{venueId, email}` → código de 6 dígitos por email (vence a los 10 min; 1 cada 30 s; 5 cada 15 min por email y bar). Misma respuesta exista o no la cuenta |
+| POST | `/customer/auth/verify` | `{venueId, email, code, name?, acceptPrivacy?, guestToken?}` → token de 90 días. La primera vez exige `acceptPrivacy`. Con `guestToken` vincula la visita actual. 5 intentos por código |
+| POST | `/customer/link` | Vincula la mesa actual (`guestToken` del mismo bar) a la cuenta; si la mesa ya cerró, suma los sellos |
+| GET/PATCH | `/customer/me` | Perfil y estadísticas (visitas, gasto) / cambiar el nombre |
+| GET | `/customer/me/history` | Visitas (sesiones de mesa) con sus pedidos |
+| GET | `/customer/me/orders/:id/reorder` | "Pedir lo mismo": el pedido traducido a la carta de hoy (ids actuales; lo agotado vuelve marcado) |
+| GET | `/customer/me/loyalty` | Tarjeta: modo, saldo, sumados este mes, premios, próximo premio y movimientos |
+| GET · DELETE | `/customer/me/export` · `/customer/me` | Exportar todos los datos (JSON) · borrar la cuenta (los pedidos quedan anónimos) |
+| GET | `/customer/promos` · `/venues/:venueId/promos` (público) | Promos vigentes |
+| GET · PUT | `/customer/notifications[?endpoint=]` · `/customer/notifications/email` | Preferencias de avisos · opt-in de promos por email |
+| POST | `/customer/push/subscribe` · `/customer/push/unsubscribe` | Suscripción Web Push del celular para este bar (solo servicios de push reales) · baja (sin login, por endpoint y bar) |
+| POST | `/customer/unsubscribe?t=` | Baja de promos por email en un toque (token firmado del email; acepta el POST one-click de los clientes de correo) |
+
+### Mozo: fidelización
+
+| Ruta | Qué hace |
+| :-- | :-- |
+| GET `/staff/sessions/:id/customers` | Clientes con cuenta en la mesa (nombre, email enmascarado, saldo y premios) |
+| POST `/staff/loyalty/redeem` | Canje `{sessionId, customerId, rewardId}`: el cliente tiene que estar en la mesa; bloqueo de fila contra canjes simultáneos |
+
 ### Admin del bar (`/v1/admin`, OWNER y MANAGER)
 
 | Ruta | Qué hace |
@@ -471,6 +504,9 @@ No mezclar: si el MVP está andando, los puertos 3000/3001/4000 están ocupados 
 | POST `/admin/areas` | Áreas del salón |
 | GET/POST/PATCH `/admin/staff[/:id]` | Equipo con matriz de roles |
 | GET/PATCH `/admin/venue` · POST/DELETE `/admin/venue/logo` | Nombre, logo, dirección, Instagram, layout, Wi-Fi de invitados, link de reseñas |
+| GET/PUT `/admin/loyalty` | Programa de fidelización: activo, sellos o puntos (`centsPerPoint`), premios (hasta 10) y estadísticas |
+| GET/POST/PATCH/DELETE `/admin/promotions[/:id]` | Promociones con vigencia opcional |
+| GET/POST `/admin/campaigns` | Avisos (push + email) a `ALL` o `INACTIVE_30`; audiencia por canal; máximo 1 por semana por bar (429 `CAMPAIGN_WEEKLY_LIMIT`) |
 
 ### Super admin (`/v1/superadmin`, SUPER_ADMIN del tenant de la plataforma)
 
@@ -490,7 +526,9 @@ No mezclar: si el MVP está andando, los puertos 3000/3001/4000 están ocupados 
 - **NFC SUN:** algoritmo de NXP con AES-CMAC propio, UID ligado a la mesa y anti-replay atómico.
 - **Estado vivo del staff:** `requireStaff` mira la base (caché de 10 s). Las bajas, los cambios de rol y las suspensiones aplican enseguida.
 - **Cuota FREE:** se consume cuando la mesa se abre (mozo o NFC), no al escanear.
-- **Rate limit:** por dispositivo/usuario con token válido, o por IP; login por cuenta; onboarding con tope global.
+- **Rate limit:** por dispositivo/usuario con token válido, o por IP; login por cuenta; onboarding con tope global; códigos de "Mi cuenta" por email y bar.
+- **Fidelización:** libro de movimientos (`LoyaltyEvent`); el saldo es la suma en la unidad vigente. La visita suma al cerrar la mesa (mozo, o cierre automático por abandono) y es idempotente por cliente y visita. Si el bar cambia de sellos a puntos, el saldo empieza de cero en la unidad nueva.
+- **Push por bar:** el navegador tiene un solo endpoint por sitio, así que `PushSubscription` es única por (cliente, endpoint): el mismo celular puede recibir avisos de varios bares y darse de baja de uno solo.
 
 ---
 
@@ -499,16 +537,19 @@ No mezclar: si el MVP está andando, los puertos 3000/3001/4000 están ocupados 
 ### ✅ Funciona hoy (tests + navegador + prueba de humo en producción local)
 | Área | Qué hay |
 | :-- | :-- |
-| Comensal | QR/NFC → carta → plato con opciones → carrito por mesa → pedido → estado en vivo, PIN, Mozo / Cuenta / Pedidos, Wi-Fi, reseña |
+| Comensal | QR/NFC → carta (Clásico, Reels o Lista) → plato con opciones → carrito por mesa → pedido → estado en vivo, PIN, Mozo / Cuenta / Pedidos, Wi-Fi, reseña, promo vigente |
+| Mi cuenta | Código por email (sin contraseña), "Guardá tus puntos" al pedir la cuenta (opcional), historial, "Pedir lo mismo", tarjeta de sellos/puntos con próximo premio, promos, avisos (email y push) con opt-in, exportar y borrar |
+| Fidelización | Sellos o puntos por bar, premios, canje desde el mozo con aviso en vivo al cliente |
+| Promos y avisos | Promos del dueño, campañas push + email segmentadas, 1 por semana, baja en un toque |
 | Espera | 🕹️ Sudoku con solución única, 3 niveles, partida guardada, animación al ganar |
 | 3D / AR | `<model-viewer>` servido desde el propio sitio, botón "Ver en tu mesa", plato demo Tostada de palta (Avocado de Khronos, CC0) |
 | Mozo | Mesas (abrir, PIN, PIN nuevo, cerrar), pedidos, llamados, listos para llevar |
 | Cocina | KDS por estación con tiempos, sonido y pantalla encendida |
 | Dueño (admin) | Carta completa, agotados en un toque, fotos y 3D, mesas y QR imprimibles, NFC, equipo, Wi-Fi y reseñas |
 | Plataforma (super admin) | Métricas, bares, planes, suspensión, altas, contraseñas temporales, auditoría |
-| Seguridad | [docs/SEGURIDAD.md](docs/SEGURIDAD.md): 17 puntos revisados, `pnpm audit` limpio |
+| Seguridad | [docs/SEGURIDAD.md](docs/SEGURIDAD.md): 24 puntos revisados, `pnpm audit` limpio |
 | Infra | MVP con un clic, Docker de producción, `render.yaml`, build de producción con CSP |
-| Calidad | 46 tests de la API, typecheck de las 4 apps, `scripts/mvp/smoke.mjs` |
+| Calidad | 71 tests de la API, typecheck de las 4 apps, build de producción, `scripts/mvp/smoke.mjs` |
 
 ### ⬜ Falta, en orden de prioridad
 1. **Deploy en la nube** ([DEPLOY.md](DEPLOY.md)): Neon + Upstash + Render (Starter, por el disco de fotos) + Vercel. Con eso hay links fijos y HTTPS sin túnel.
@@ -518,7 +559,8 @@ No mezclar: si el MVP está andando, los puertos 3000/3001/4000 están ocupados 
 5. **Tiempo real con push** (SSE o Ably) en lugar de polling, cuando haya varios locales.
 6. **Endurecer para producción:** cookie HttpOnly para el staff, CSP con nonces, rate limit en Redis, RLS en Postgres, 2FA para super admin, captcha en el registro (detalle en SEGURIDAD.md).
 7. **PWA offline y analítica** (aperturas 3D → pedidos).
-8. **Fase 2 y siguientes:** Chef IA, sellos/Wallet, feedback con fotos, reservas, caja, facturas con IA.
+8. **"Mi cuenta" en producción:** dominio verificado en Resend, claves VAPID propias, probar push en un Android y un iPhone reales (en el navegador de Claude los permisos de notificación están bloqueados) y mandar las campañas desde un worker en lugar del request.
+9. **Fase 2 y siguientes:** Chef IA, feedback con fotos, reservas, caja, facturas con IA.
 
 ---
 
@@ -527,14 +569,15 @@ No mezclar: si el MVP está andando, los puertos 3000/3001/4000 están ocupados 
 | Síntoma | Causa | Solución |
 | :-- | :-- | :-- |
 | El celular dice "no se puede acceder" con el link `trycloudflare.com` | El DNS del router (`192.168.100.1`) bloquea **todo** `trycloudflare.com` (verificado: el dominio raíz y los subdominios fallan; google.com anda) | En el celular: datos móviles, o Android → Ajustes → DNS privado → `one.one.one.one`. O cambiar el DNS del router. En el Wi-Fi, usar el link `http://192.168.100.25:3000` |
-| "Ver en tu mesa" no abre la AR en Android con el HTTPS local | Scene Viewer (la app de AR de Google) puede no confiar en certificados instalados por el usuario | Usar el link del túnel con datos móviles para la AR; el visor 3D y la cámara web andan igual |
-| El celular avisa "conexión no privada" en `https://192.168.100.25:3443` | Falta instalar el certificado del MVP | Abrir `http://192.168.100.25:3480/bar-mvp-ca.crt` e instalarlo como certificado CA (pasos en LINKS.html) |
 | `cloudflared` no arranca: `lookup api.trycloudflare.com: no such host` | Mismo bloqueo, en la PC | Ya se cambió el DNS de la PC a 1.1.1.1 / 8.8.8.8 (IPv4 e IPv6). Para volver: `Set-DnsClientServerAddress -InterfaceAlias "Ethernet 2" -ResetServerAddresses` |
 | `EADDRINUSE` en 3000 / 3001 / 4000 | El MVP (u otro server) ya está corriendo | `DETENER-MVP.cmd`, o `Get-NetTCPConnection -LocalPort 3000,3001,4000 -State Listen \| % { Stop-Process -Id $_.OwningProcess -Force }` |
 | "Error de conexión" en el celular por `http://192.168.x.x` | `crypto.randomUUID()` no existe fuera de HTTPS | Resuelto: `uuid()` de `lib/storage.ts` |
 | "El mozo todavía no abrió la mesa" | Protección contra pedidos falsos | El mozo toca **Abrir mesa** (o se entra por NFC) |
 | Pide PIN al entrar | La mesa ya tiene sesión desde otro dispositivo (otro navegador u otro dominio cuenta como otro dispositivo) | Ver el PIN en el panel del mozo; si se bloqueó, **PIN nuevo** |
 | El 3D se queda en "Cargando 3D…" en el panel del navegador de Claude | El panel oculto no pinta y `<model-viewer>` espera a estar visible | No pasa en un navegador normal |
+| No llega el código de "Mi cuenta" | En local no se mandan emails (adaptador consola) | Buscar `[EMAIL]` en `.mvp/logs/api.log`. En producción: `EMAIL_PROVIDER=resend` |
+| "Notificaciones en este celular" aparece desactivado | Por `http://192.168.x.x` no hay contexto seguro; en iPhone hace falta agregar la carta a inicio | Usar el túnel HTTPS (datos móviles). En iPhone: Compartir → Agregar a inicio |
+| "Podés mandar 1 aviso por semana" | Tope por bar (Ley 25.326 y para no quemar la base) | Esperar la fecha que muestra el admin. En la base local de pruebas: borrar la fila de `Campaign` |
 | `sharp` / `gltf-transform`: `colourspace: parameter space not set` | libvips roto en esta PC | Comprimir modelos en Linux o en CI |
 | En PowerShell 5.1, `psql -c "... \"Tabla\" ..."` falla | PowerShell 5.1 rompe las comillas dobles al pasarlas a un .exe | Pasar el SQL por stdin (como hace `start-mvp.ps1`) |
 | Después de `db:seed` los links de las mesas cambian | El seed regenera los códigos QR | Usar los links nuevos (están en `.mvp/LINKS.html` al arrancar) |
@@ -554,5 +597,10 @@ No mezclar: si el MVP está andando, los puertos 3000/3001/4000 están ocupados 
 | 20/10/2026 | `d1086eb` | Paneles de admin y super admin |
 | 21/10/2026 | `edb7ddd` | Auditoría: rate limit sin depender de la IP, CSP, dependencias; MVP con un clic |
 | 21/10/2026 | (este) | Documentación final: SEGURIDAD.md, plan y deploy actualizados |
+| 21/10/2026 | `3e81a62` | "Mi cuenta" (Fase A): cuenta por bar, código por email, historial, "Pedir lo mismo", exportar y borrar |
+| 21/10/2026 | `8f9679b` | Fidelización (Fase B): sellos o puntos por bar, premios, canje desde el mozo |
+| 21/10/2026 | `fd06713` | Promos y avisos (Fase C): promociones, Web Push VAPID, emails segmentados con opt-in y baja |
+| 21/10/2026 | `63a06c8` | La carta usa el layout elegido (Clásico/Reels/Lista); el MVP ya no usa Caddy |
+| 21/10/2026 | `1df8f0d` | Auditoría final: lockfile, asunto de email sin saltos de línea, fechas de promos |
 
 La sesión autónoma que armó el MVP está descripta en [docs/MISION-MVP.md](docs/MISION-MVP.md).
