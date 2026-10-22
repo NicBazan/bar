@@ -13,6 +13,13 @@ export function useStaffAuth(roles: StaffRole[]) {
       return;
     }
     setUser(auth.user);
+    // La sesión se comparte entre pestañas: si en otra se entra con otro usuario (o se sale),
+    // esta pestaña se recarga para no seguir mostrando "Mozo" con el token de "Cocina"
+    const onStorage = (e: StorageEvent) => {
+      if (e.key === null || e.key === "bar.staff.token") window.location.reload();
+    };
+    window.addEventListener("storage", onStorage);
+    return () => window.removeEventListener("storage", onStorage);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
   return user;
