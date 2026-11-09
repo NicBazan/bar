@@ -176,3 +176,11 @@ body {
 }
 :root[data-theme="dark"] .logo-on-light { display: none; }
 :root[data-theme="dark"] .logo-on-dark { display: inline-block; }
+
+/* Cambio de tema: la vista nueva se revela con un círculo desde el botón (ThemeToggle).
+   Se apaga la animación por defecto (fundido) para que solo se vea el círculo. */
+::view-transition-old(root),
+::view-transition-new(root) {
+  animation: none;
+  mix-blend-mode: normal;
+}
