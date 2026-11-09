@@ -1,0 +1,44 @@
+# Integración continua: tipos de todo el monorepo + tests de la API contra un Postgres real y descartable.
+# Corre en cada push y pull request. No despliega nada.
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    services:
+      postgres:
+        image: postgres:17-alpine
+        env:
+          POSTGRES_USER: bar
+          POSTGRES_PASSWORD: bar_dev_password
+          POSTGRES_DB: bar
+        # Mismo puerto que el docker-compose local: vitest.config.ts apunta a localhost:5433
+        ports: ["5433:5432"]
+        options: >-
+          --health-cmd "pg_isready -U bar -d bar"
+          --health-interval 5s
+          --health-retries 10
+    env:
+      DATABASE_URL: postgresql://bar:bar_dev_password@localhost:5433/bar?schema=public
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - name: Tipos
+        run: pnpm typecheck
+      - name: Migraciones y datos de prueba
+        run: |
+          pnpm db:deploy
+          pnpm db:seed
+      - name: Tests de la API
+        run: pnpm --filter @bar/api test
