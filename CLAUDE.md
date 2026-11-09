@@ -11,7 +11,7 @@
 - **Stack:** monorepo pnpm + Turborepo · `apps/api` Fastify 5 + Zod 4 + jose · `packages/db` Prisma 6 + Postgres 16 · `apps/guest-web` (carta) y `apps/staff-web` (paneles) en Next 16 + Tailwind v4 · `apps/workers`.
 - **Dónde corre:** local con `INICIAR-MVP.cmd` (Docker: Postgres en 5433 + Redis); prototipo en la nube según `DEPLOY.md` (webs en Vercel, API en Render/Vercel, base en Neon).
 - **Datos sensibles:** dinero (pedidos, caja), datos personales de clientes (email), credenciales del staff.
-- **Documentos vivos:** `PLAN-MAESTRO.md`, `docs/SEGURIDAD.md`, `docs/PLAN-APP-CLIENTE.md`, `docs/DIAGNOSTICO-2026-11.md`, `DEPLOY.md`.
+- **Documentos vivos:** `PLAN-MAESTRO.md` (estrategia y hitos), `docs/ARQUITECTURA.md`, `docs/DESARROLLO-LOCAL.md`, `docs/SEGURIDAD.md`, `docs/PLAN-APP-CLIENTE.md`, `docs/DIAGNOSTICO-2026-11.md`, `DEPLOY.md`.
 
 ## 1. Antes de empezar
 

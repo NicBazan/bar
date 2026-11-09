@@ -1,28 +1,35 @@
-# 🍸 Bar: plataforma de experiencia en mesa
+# Bar: plataforma de servicio en mesa
 
-Carta 3D/AR + pedidos desde la mesa + panel del mozo + KDS de cocina + admin del bar + super admin de la plataforma. Se usa escaneando un QR o tocando un NFC, sin instalar apps.
+Carta digital con 3D y realidad aumentada, pedidos desde la mesa con aprobación del mozo, cocina por estaciones, fidelización de clientes y administración multi-local. El comensal escanea un QR o toca un NFC y no instala nada.
 
-## Arrancar
+## Probarlo en local
 
-**Doble clic en `INICIAR-MVP.cmd`.** Abre `.mvp/LINKS.html` con los links y QR para el celular.
-Para apagarlo: `DETENER-MVP.cmd`.
+Requisitos: Windows con Docker Desktop y Node 22.
+
+1. Doble clic en `INICIAR-MVP.cmd`. Se abre `.mvp/LINKS.html` con los links y los QR para el celular.
+2. Para apagarlo: `DETENER-MVP.cmd`.
+
+Usuarios de demostración (solo desarrollo; nunca se cargan en producción):
 
 | Rol | Email | Contraseña |
 | :-- | :-- | :-- |
-| Dueño (admin) | `dueno@bardemo.test` | `demo1234` |
+| Dueño | `dueno@bardemo.test` | `demo1234` |
 | Mozo | `mozo@bardemo.test` | `demo1234` |
 | Cocina | `cocina@bardemo.test` | `demo1234` |
 | Super admin | `superadmin@bar.test` | `superadmin1234` |
 
-*Contraseñas solo de desarrollo: no usar en producción.*
-
 ## Documentación
 
-- 📘 [PLAN-MAESTRO.md](PLAN-MAESTRO.md): arquitectura, estado, pendientes (§11) y problemas conocidos (§12)
-- 🛡️ [docs/SEGURIDAD.md](docs/SEGURIDAD.md): auditoría de seguridad
-- 🚀 [DEPLOY.md](DEPLOY.md): pasar a la nube (Neon, Upstash, Render, Vercel)
-- 🎯 [docs/MISION-MVP.md](docs/MISION-MVP.md): el encargo de la sesión que armó el MVP
+| Documento | Contenido |
+| :-- | :-- |
+| [PLAN-MAESTRO.md](PLAN-MAESTRO.md) | Estrategia, modelo de negocio, alcance y hoja de ruta |
+| [docs/ARQUITECTURA.md](docs/ARQUITECTURA.md) | Componentes, datos, tiempo real y referencia de la API |
+| [docs/SEGURIDAD.md](docs/SEGURIDAD.md) | Auditoría de seguridad y riesgos pendientes |
+| [docs/DESARROLLO-LOCAL.md](docs/DESARROLLO-LOCAL.md) | Modo desarrollo, pruebas desde el celular y problemas conocidos |
+| [DEPLOY.md](DEPLOY.md) | Pase a la nube (Neon, Upstash, Render, Vercel, Cloudinary) |
+| [docs/DIAGNOSTICO-2026-11.md](docs/DIAGNOSTICO-2026-11.md) | Diagnóstico técnico y deuda priorizada |
+| [CLAUDE.md](CLAUDE.md) | Reglas de trabajo para el código |
 
-## Estructura
+## Calidad
 
-`apps/` (guest-web: carta · staff-web: mozo, KDS, admin y super admin · api · workers) · `packages/` (db, shared-types, config) · `infra/` · `scripts/mvp/` · `docs/`
+`corepack pnpm typecheck` · `corepack pnpm --filter @bar/api test` · CI en GitHub Actions en cada push.
