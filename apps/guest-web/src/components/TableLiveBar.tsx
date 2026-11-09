@@ -49,7 +49,7 @@ export function TableLiveBar({ tag, currency, venueId }: { tag?: string; currenc
     return (
       <div className="mb-4 rounded-2xl border border-line bg-surface p-4 text-sm">
         <p className="text-cream">{live.status === "closed" ? "Esta mesa ya se cerró. ¡Gracias por venir!" : "Estás viendo la carta."}</p>
-        <Link href={`/t/${tag}`} className="mt-2 inline-block font-semibold text-amber">
+        <Link href={`/t/${tag}`} className="mt-2 inline-block font-semibold text-brand-dark">
           {live.status === "closed" ? "Volver a sentarme →" : "Unirme a la mesa para pedir →"}
         </Link>
       </div>
@@ -65,7 +65,7 @@ export function TableLiveBar({ tag, currency, venueId }: { tag?: string; currenc
 
       {s.status === "PENDING" ? (
         <div className="mb-4 rounded-2xl border border-amber/40 bg-amber/10 p-4 text-sm">
-          <p className="font-semibold text-amber">Esperando que el mozo abra la mesa {s.table.label}</p>
+          <p className="font-semibold text-brand-dark">Esperando que el mozo abra la mesa {s.table.label}</p>
           <p className="mt-1 text-cream/80">Mientras tanto mirá la carta y armá tu pedido.</p>
           <Pin pin={s.pin} />
         </div>
@@ -106,14 +106,14 @@ export function TableLiveBar({ tag, currency, venueId }: { tag?: string; currenc
 
       {/* Al pedir la cuenta: invitación (opcional) a guardar la visita. Nadie está obligado a registrarse */}
       {s.status === "BILL_REQUESTED" && !hasAccount && !dismissed && (
-        <div className="mb-4 rounded-2xl bg-night p-4 text-white ring-1 ring-brand/40">
-          <p className="font-semibold">⭐ Guardá tus puntos</p>
-          <p className="mt-1 text-xs text-white/70">Con tu email sumás esta visita y la próxima pedís lo mismo en un toque. Sin contraseña.</p>
+        <div className="mb-4 rounded-2xl border border-line border-l-4 border-l-amber bg-surface p-4 text-cream">
+          <p className="font-semibold">Guardá tus puntos</p>
+          <p className="mt-1 text-xs text-muted">Con tu email sumás esta visita y la próxima pedís lo mismo en un toque. Sin contraseña.</p>
           <div className="mt-3 grid grid-cols-[1fr_auto] gap-2">
-            <Link href={`/v/${venueId}/cuenta?tag=${tag}`} className="grid h-11 place-items-center rounded-xl bg-brand text-sm font-semibold">
+            <Link href={`/v/${venueId}/cuenta?tag=${tag}`} className="grid h-11 place-items-center rounded-xl bg-amber text-sm font-semibold text-amber-ink">
               Guardar mi visita
             </Link>
-            <button onClick={() => setDismissed(true)} className="h-11 rounded-xl px-3 text-xs text-white/60">Ahora no</button>
+            <button onClick={() => setDismissed(true)} className="h-11 rounded-xl px-3 text-xs text-muted">Ahora no</button>
           </div>
         </div>
       )}

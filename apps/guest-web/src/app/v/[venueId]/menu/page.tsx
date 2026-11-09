@@ -82,7 +82,6 @@ export default async function VenueMenuPage({ params, searchParams }: MenuPagePr
   return (
     <main className="relative mx-auto min-h-dvh max-w-md px-4 pb-28 md:max-w-3xl md:px-8 lg:max-w-6xl">
       {/* Glow ambiental superior */}
-      <div className="pointer-events-none absolute top-0 left-1/2 -z-10 h-64 w-64 -translate-x-1/2 rounded-full bg-amber/10 blur-[90px]"></div>
 
       {/* Header del Local y Mesa */}
       <header className="pt-8 pb-4">
@@ -94,9 +93,9 @@ export default async function VenueMenuPage({ params, searchParams }: MenuPagePr
 
           <Link
             href={`/v/${venueId}/cuenta${tag ? `?tag=${tag}` : ""}`}
-            className="flex h-11 items-center gap-2 rounded-full bg-brand pr-4 pl-1.5 text-xs font-semibold text-white"
+            className="flex h-11 items-center gap-2 rounded-full border border-line bg-surface pr-4 pl-1.5 text-xs font-semibold text-cream"
           >
-            <span aria-hidden className="grid h-8 w-8 place-items-center rounded-full bg-white/20">👤</span>
+            <span aria-hidden className="grid h-8 w-8 place-items-center rounded-full bg-surface-2">👤</span>
             Mi cuenta
           </Link>
         </div>
@@ -111,7 +110,7 @@ export default async function VenueMenuPage({ params, searchParams }: MenuPagePr
           <p className="mt-1 flex flex-wrap gap-x-3 text-xs text-muted">
             {menu.venue.address && <span>📍 {menu.venue.address}</span>}
             {menu.venue.instagramUrl && (
-              <a href={menu.venue.instagramUrl} target="_blank" rel="noopener noreferrer" className="text-amber">
+              <a href={menu.venue.instagramUrl} target="_blank" rel="noopener noreferrer" className="text-brand-dark underline">
                 Instagram
               </a>
             )}
@@ -126,12 +125,12 @@ export default async function VenueMenuPage({ params, searchParams }: MenuPagePr
       {promos[0] && (
         <Link
           href={`/v/${venueId}/cuenta?tab=promos${tag ? `&tag=${tag}` : ""}`}
-          className="mb-4 flex items-center gap-3 rounded-2xl bg-brand p-4 text-white shadow-lg shadow-brand/20 active:bg-brand-dark"
+          className="mb-4 flex items-center gap-3 rounded-2xl border border-line border-l-4 border-l-amber bg-surface p-4 text-cream active:bg-surface-2"
         >
-          <span aria-hidden className="grid h-11 w-11 shrink-0 place-items-center rounded-full bg-white/20 text-lg font-bold">%</span>
+          <span aria-hidden className="grid h-11 w-11 shrink-0 place-items-center rounded-full bg-amber text-lg font-bold text-amber-ink">%</span>
           <span className="min-w-0 flex-1">
             <span className="block text-sm font-semibold">{promos[0].title}</span>
-            <span className="block truncate text-xs text-white/80">{promos[0].body}</span>
+            <span className="block truncate text-xs text-muted">{promos[0].body}</span>
           </span>
           {promos.length > 1 && <span className="text-xs font-semibold whitespace-nowrap">+{promos.length - 1}</span>}
         </Link>
@@ -140,14 +139,14 @@ export default async function VenueMenuPage({ params, searchParams }: MenuPagePr
       {/* Gamificación: algo para hacer mientras llega la comida */}
       <Link
         href={`/v/${venueId}/play/sudoku${tag ? `?tag=${tag}` : ""}`}
-        className="group relative mb-4 flex items-center gap-3 overflow-hidden rounded-2xl border border-amber/40 bg-gradient-to-r from-amber/15 via-surface to-surface p-4 shadow-lg shadow-amber/5 transition active:scale-[0.98]"
+        className="group relative mb-4 flex items-center gap-3 overflow-hidden rounded-2xl border border-line border-l-4 border-l-amber bg-surface p-4 shadow-amber/5 transition active:scale-[0.98]"
       >
         <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-amber/15 text-2xl transition-transform group-hover:rotate-6">🕹️</span>
         <span className="min-w-0 flex-1">
           <span className="block text-sm font-semibold text-cream">¿Esperando tu comida? Jugá un Sudoku</span>
           <span className="block text-xs text-muted">Tres niveles · tu partida se guarda si volvés a la carta</span>
         </span>
-        <span className="text-amber transition-transform group-hover:translate-x-1">→</span>
+        <span className="text-brand-dark transition-transform group-hover:translate-x-1">→</span>
       </Link>
 
       {/* Estado en vivo de la mesa: PIN, esperando al mozo, pedidos, llamar al mozo / cuenta */}

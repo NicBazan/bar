@@ -41,7 +41,7 @@ export function SudokuBoard({ board, initialBoard, selectedCell, conflicts, won,
           ].join(" ");
 
           const bg = isSel ? "bg-amber/20" : sameNumber ? "bg-amber/10" : related ? "bg-cream/[0.04]" : "";
-          const color = conflict ? "text-warn" : fixed ? "text-cream" : "text-amber";
+          const color = conflict ? "text-warn" : fixed ? "text-cream" : "text-brand-dark";
 
           return (
             <button

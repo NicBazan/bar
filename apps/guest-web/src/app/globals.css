@@ -1,27 +1,39 @@
 @import "tailwindcss";
 
 /*
- * Paleta ZainSoft (Enterprice-portafolio/src/app/globals.css) en toda la carta: fondo claro,
- * tarjetas blancas y naranja de marca. Los nombres viejos (surface, cream, amber…) se mantienen
- * para no tocar cada componente: solo cambia su valor.
+ * Carta del cliente: misma paleta que el panel («Naranja señal», base de conocimientos), pero de cara
+ * al público: radios algo más suaves. Claro y minimalista: grises fríos, tarjetas blancas, UN acento
+ * naranja. Sin sombras ni degradados. Texto sobre el naranja = oscuro (blanco no pasa AA: L-075).
+ * Los nombres viejos (surface, cream, amber…) se mantienen para no tocar cada componente.
  */
 @theme {
-  --color-ink: #0f1115; /* texto oscuro sobre botones claros (ok/warn) */
+  --color-ink: #16181d; /* tinta */
   --color-surface: #ffffff; /* tarjetas */
-  --color-surface-2: #f2eee9; /* chips, inputs, botones secundarios */
-  --color-line: #e6e0d9; /* bordes */
-  --color-cream: #0f1115; /* texto principal */
-  --color-muted: #6b6f76; /* texto secundario */
-  --color-amber: #f05a28; /* acento = brand */
-  --color-amber-ink: #ffffff; /* texto sobre el acento */
-  --color-ok: #1f9d55;
-  --color-warn: #d97706;
-  --color-brand: #f05a28;
-  --color-brand-dark: #c8431a;
-  --color-night: #0f1115;
-  --color-paper: #faf8f5;
+  --color-surface-2: #eef0f2; /* chips, inputs, botones secundarios */
+  --color-line: #e3e5e8; /* bordes de 1 px */
+  --color-cream: #16181d; /* texto principal */
+  --color-muted: #5b616b; /* texto secundario (6,2:1) */
+  --color-amber: #e8590c; /* acento (relleno) */
+  --color-amber-ink: #16181d; /* texto SOBRE el acento */
+  --color-ok: #1f7a4d;
+  --color-warn: #b42318;
+  --color-brand: #e8590c;
+  --color-brand-dark: #c2410c; /* acento como texto sobre claro (5,2:1) */
+  --color-night: #16181d;
+  --color-paper: #f4f5f6;
   --font-display: var(--font-sans);
-  --font-sans: "Inter", system-ui, sans-serif;
+  --font-sans: var(--font-plex), system-ui, sans-serif;
+
+  --radius-xl: 10px;
+  --radius-2xl: 14px;
+  --radius-3xl: 18px;
+  --shadow-2xs: 0 0 #0000;
+  --shadow-xs: 0 0 #0000;
+  --shadow-sm: 0 0 #0000;
+  --shadow-md: 0 0 #0000;
+  --shadow-lg: 0 0 #0000;
+  --shadow-xl: 0 0 #0000;
+  --shadow-2xl: 0 0 #0000;
 }
 
 html,
@@ -82,7 +94,7 @@ body {
 
 /* Checklist de UI/UX Pro Max: foco visible con teclado, cursor de mano y menos movimiento si se pide */
 :where(a, button, [role="button"], [role="switch"], input, select, textarea, summary):focus-visible {
-  outline: 2px solid var(--color-brand);
+  outline: 2px solid var(--color-brand-dark);
   outline-offset: 2px;
 }
 :where(a[href], button:not(:disabled), [role="button"], [role="switch"], summary, label:has(input[type="checkbox"])) {

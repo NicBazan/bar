@@ -41,7 +41,7 @@ export function Dish3DViewer({
 
   return (
     <div
-      className={`relative h-full w-full overflow-hidden rounded-2xl bg-[radial-gradient(ellipse_at_center,_var(--color-surface-2)_0%,_var(--color-ink)_100%)] ${className}`}
+      className={`relative h-full w-full overflow-hidden rounded-2xl bg-surface-2 ${className}`}
     >
       {/* Visor 3D y WebAR */}
       <model-viewer

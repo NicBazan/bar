@@ -139,7 +139,7 @@ export function FloatingCart({ currency = "ARS", tag }: FloatingCartProps) {
         <aside className="fixed right-0 bottom-4 left-0 z-40 mx-auto max-w-md px-4">
           <div className="flex items-center justify-between rounded-2xl border border-line bg-surface/95 p-3.5 shadow-2xl backdrop-blur-xl">
             <div className="flex items-center gap-3">
-              <div className="relative flex h-10 w-10 items-center justify-center rounded-xl bg-amber/10 text-xl text-amber">
+              <div className="relative flex h-10 w-10 items-center justify-center rounded-xl bg-amber/10 text-xl text-brand-dark">
                 🛒
                 <span className="absolute -top-1.5 -right-1.5 flex h-5 w-5 items-center justify-center rounded-full bg-amber text-[10px] font-bold text-amber-ink shadow-sm">
                   {totalItems}
@@ -156,7 +156,7 @@ export function FloatingCart({ currency = "ARS", tag }: FloatingCartProps) {
             <button
               type="button"
               onClick={() => setIsOpen(true)}
-              className="group flex items-center gap-2 rounded-xl bg-gradient-to-r from-amber to-warn px-5 py-2.5 text-xs font-semibold text-amber-ink shadow-md shadow-amber/20 transition-all duration-200 active:scale-95"
+              className="group flex items-center gap-2 rounded-xl bg-amber px-5 py-2.5 text-xs font-semibold text-amber-ink shadow-md shadow-amber/20 transition-all duration-200 active:scale-95"
             >
               <span>Ver orden</span>
               <span className="transition-transform group-hover:translate-x-1">→</span>
@@ -216,7 +216,7 @@ export function FloatingCart({ currency = "ARS", tag }: FloatingCartProps) {
                         {[item.modifierNames.join(", "), item.note && `“${item.note}”`].filter(Boolean).join(" · ")}
                       </p>
                     )}
-                    <p className="mt-0.5 text-xs text-amber font-display">
+                    <p className="mt-0.5 text-xs text-brand-dark font-display">
                       {formatMoney(item.priceCents * item.quantity, currency)}
                     </p>
                   </div>
@@ -277,7 +277,7 @@ export function FloatingCart({ currency = "ARS", tag }: FloatingCartProps) {
             <div className="mt-5 border-t border-line/60 pt-4">
               <div className="mb-4 flex items-center justify-between">
                 <span className="text-sm font-medium text-muted">Total a abonar</span>
-                <span className="font-display text-2xl font-semibold text-amber">
+                <span className="font-display text-2xl font-semibold text-brand-dark">
                   {formatMoney(totalPrice, currency)}
                 </span>
               </div>
@@ -286,7 +286,7 @@ export function FloatingCart({ currency = "ARS", tag }: FloatingCartProps) {
                 type="button"
                 onClick={() => void handleSendOrder()}
                 disabled={isSubmitting || items.length === 0 || waitingForWaiter}
-                className="flex w-full items-center justify-center gap-2 rounded-2xl bg-gradient-to-r from-amber to-warn py-4 text-sm font-semibold text-amber-ink shadow-lg shadow-amber/25 transition-all duration-200 active:scale-95 disabled:opacity-40"
+                className="flex w-full items-center justify-center gap-2 rounded-2xl bg-amber py-4 text-sm font-semibold text-amber-ink shadow-lg shadow-amber/25 transition-all duration-200 active:scale-95 disabled:opacity-40"
               >
                 {isSubmitting ? (
                   <span className="flex items-center gap-2">

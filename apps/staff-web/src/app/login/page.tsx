@@ -12,7 +12,7 @@ const HOME_BY_ROLE: Record<StaffUser["role"], string> = {
   CASHIER: "/waiter",
 };
 
-/** Ingreso del staff con el mismo lenguaje visual que "Mi cuenta": tarjeta oscura + formulario claro */
+/** Ingreso del staff: panel claro con la barra naranja a la izquierda + formulario */
 export default function LoginPage() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -38,19 +38,19 @@ export default function LoginPage() {
 
   return (
     <main className="grid min-h-dvh place-items-center px-4 py-8">
-      <div className="grid w-full max-w-md overflow-hidden rounded-[32px] bg-white shadow-xl md:max-w-4xl md:grid-cols-2">
-        <section className="flex flex-col justify-between gap-8 bg-night p-8 text-white md:p-10">
+      <div className="grid w-full max-w-md overflow-hidden rounded-lg border border-line bg-surface md:max-w-4xl md:grid-cols-2">
+        <section className="flex flex-col justify-between gap-8 border-b border-line border-l-4 border-l-amber bg-paper p-8 text-cream md:border-r md:border-b-0 md:p-10">
           <div className="flex items-center gap-3">
-            <span className="grid h-11 w-11 place-items-center rounded-2xl bg-amber text-lg">🍸</span>
+            <span className="grid h-11 w-11 place-items-center rounded-lg border border-line bg-surface text-lg">🍸</span>
             <span className="text-sm font-semibold">Panel del local</span>
           </div>
           <div>
             <h1 className="text-3xl leading-tight font-semibold md:text-4xl">Tu salón, tu cocina y tus clientes en un solo lugar.</h1>
-            <p className="mt-3 text-sm text-white/60">Mozos, cocina, dueño y administración de la plataforma entran por acá.</p>
+            <p className="mt-3 text-sm text-muted">Mozos, cocina, dueño y administración de la plataforma entran por acá.</p>
           </div>
           <div className="hidden gap-2 md:flex" aria-hidden>
-            {["Salón", "Cocina", "Admin"].map((t, i) => (
-              <span key={t} className={`rounded-full px-3 py-1 text-xs ${i === 0 ? "bg-amber text-white" : "bg-white/10 text-white/70"}`}>{t}</span>
+            {["Salón", "Cocina", "Admin"].map((t) => (
+              <span key={t} className="rounded-lg border border-line bg-surface px-3 py-1 text-xs text-muted">{t}</span>
             ))}
           </div>
         </section>

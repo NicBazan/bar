@@ -45,7 +45,7 @@ export function TableCustomers({ sessionId, tableLabel, onClose }: { sessionId: 
               {c.loyalty.active ? (
                 <>
                   <p className="mt-2 text-sm">
-                    Saldo: <b className="text-amber">{c.loyalty.balance}</b> {c.loyalty.mode === "STAMPS" ? "sellos" : "puntos"}
+                    Saldo: <b className="text-brand-dark">{c.loyalty.balance}</b> {c.loyalty.mode === "STAMPS" ? "sellos" : "puntos"}
                   </p>
                   <div className="mt-3 grid gap-2">
                     {c.loyalty.rewards.map((r) => (

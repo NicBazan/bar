@@ -57,9 +57,9 @@ export function LoginScreen({ venueId, venueName, logoUrl, tag, onDone }: {
   };
 
   return (
-    <main className="mx-auto flex min-h-dvh max-w-md flex-col bg-paper px-5 pt-10 pb-8 text-night md:my-12 md:min-h-0 md:rounded-[32px] md:bg-white md:px-10 md:py-10 md:shadow-xl">
+    <main className="mx-auto flex min-h-dvh max-w-md flex-col bg-paper px-5 pt-10 pb-8 text-night md:my-12 md:min-h-0 md:rounded-2xl md:border md:border-line md:bg-white md:px-10 md:py-10">
       <div className="flex items-center gap-3">
-        <span className="grid h-12 w-12 place-items-center overflow-hidden rounded-2xl bg-night text-xl text-white">
+        <span className="grid h-12 w-12 place-items-center overflow-hidden rounded-2xl border border-line bg-surface text-xl">
           {logoUrl ? <img src={logoUrl} alt="" className="h-full w-full object-contain p-1" /> : "🍸"}
         </span>
         <div>
@@ -68,10 +68,10 @@ export function LoginScreen({ venueId, venueName, logoUrl, tag, onDone }: {
         </div>
       </div>
 
-      <section className="mt-8 rounded-[28px] bg-night p-6 text-white">
-        <p className="text-sm text-white/60">Sumá tus visitas</p>
+      <section className="mt-8 rounded-2xl border border-line border-l-4 border-l-amber bg-surface p-6 text-cream">
+        <p className="text-sm text-muted">Sumá tus visitas</p>
         <h1 className="mt-1 text-2xl leading-tight font-semibold">Guardá tus puntos, tu historial y pedí lo mismo de siempre en un toque.</h1>
-        <p className="mt-3 text-xs text-white/50">Sin contraseña ni app: te mandamos un código por email.</p>
+        <p className="mt-3 text-xs text-muted">Sin contraseña ni app: te mandamos un código por email.</p>
       </section>
 
       {step === "email" ? (
@@ -95,7 +95,7 @@ export function LoginScreen({ venueId, venueName, logoUrl, tag, onDone }: {
             placeholder="vos@email.com"
             className="h-12 w-full rounded-2xl border border-night/10 bg-white px-4 text-base outline-none focus:border-brand"
           />
-          <button disabled={busy || !email} className="h-12 w-full rounded-2xl bg-brand font-semibold text-white active:bg-brand-dark disabled:opacity-50">
+          <button disabled={busy || !email} className="h-12 w-full rounded-2xl bg-brand font-semibold text-amber-ink active:bg-brand-dark disabled:opacity-50">
             {busy ? "Enviando…" : "Mandame el código"}
           </button>
         </form>
@@ -142,7 +142,7 @@ export function LoginScreen({ venueId, venueName, logoUrl, tag, onDone }: {
               (solo hace falta la primera vez). {venueName} guarda tu email y tus pedidos para tu historial y tus puntos.
             </span>
           </label>
-          <button disabled={busy || code.length !== 6} className="h-12 w-full rounded-2xl bg-brand font-semibold text-white active:bg-brand-dark disabled:opacity-50">
+          <button disabled={busy || code.length !== 6} className="h-12 w-full rounded-2xl bg-brand font-semibold text-amber-ink active:bg-brand-dark disabled:opacity-50">
             {busy ? "Verificando…" : "Entrar"}
           </button>
           <button type="button" onClick={() => { setStep("email"); setCode(""); setError(null); }} className="h-11 w-full text-sm text-night/60">

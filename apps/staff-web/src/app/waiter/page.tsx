@@ -103,7 +103,7 @@ export default function WaiterPage() {
             <Card key={s.id} highlight>
               <div className="flex items-center justify-between">
                 <p className="text-lg font-semibold">Mesa {s.table.label}</p>
-                <span className="rounded-full bg-amber/20 px-2 py-0.5 text-xs text-amber">quiere abrir</span>
+                <span className="rounded-full bg-amber/20 px-2 py-0.5 text-xs text-brand-dark">quiere abrir</span>
               </div>
               <p className="mt-1 text-sm text-muted">
                 PIN <span className="font-mono font-semibold text-cream">{s.joinPin}</span> · {s._count.devices} celular(es) · hace {minutesSince(s.openedAt)} min
@@ -155,7 +155,7 @@ function OrderCard({ order, onApprove, onReject }: { order: Order; onApprove: ()
             <span className="font-semibold">{i.quantity}×</span> {i.nameSnapshot}
             {i.variantName && <span className="text-muted"> · {i.variantName}</span>}
             {i.modifiers.length > 0 && <span className="text-muted"> ({i.modifiers.map((m) => m.name).join(", ")})</span>}
-            {i.note && <span className="block pl-5 text-amber italic">“{i.note}”</span>}
+            {i.note && <span className="block pl-5 text-brand-dark italic">“{i.note}”</span>}
           </li>
         ))}
       </ul>
@@ -180,7 +180,7 @@ function OrderCard({ order, onApprove, onReject }: { order: Order; onApprove: ()
 }
 
 function Column({ title, count, accent, children }: { title: string; count: number; accent?: "warn" | "amber" | "ok"; children: React.ReactNode }) {
-  const badge = accent === "warn" ? "bg-warn text-ink" : accent === "amber" ? "bg-amber text-amber-ink" : accent === "ok" ? "bg-ok text-ink" : "bg-surface-2 text-cream";
+  const badge = accent === "warn" ? "bg-warn text-white" : accent === "amber" ? "bg-amber text-amber-ink" : accent === "ok" ? "bg-ok text-white" : "bg-surface-2 text-cream";
   return (
     <section className="min-w-0">
       <h2 className="mb-3 flex items-center gap-2 text-sm font-semibold uppercase tracking-wide text-muted">
@@ -199,7 +199,7 @@ function Card({ highlight, children }: { highlight?: boolean; children: React.Re
 }
 
 function Btn({ primary, danger, disabled, onClick, children }: { primary?: boolean; danger?: boolean; disabled?: boolean; onClick: () => void; children: React.ReactNode }) {
-  const cls = primary ? "bg-amber text-amber-ink font-semibold" : danger ? "bg-warn text-ink font-semibold" : "bg-surface-2 text-cream";
+  const cls = primary ? "bg-amber text-amber-ink font-semibold" : danger ? "bg-warn text-white font-semibold" : "bg-surface-2 text-cream";
   return (
     <button disabled={disabled} onClick={onClick} className={`rounded-full px-4 py-2 text-sm disabled:opacity-40 ${cls}`}>
       {children}

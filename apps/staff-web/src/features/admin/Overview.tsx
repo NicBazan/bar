@@ -70,11 +70,11 @@ export function Overview({ onGo }: { onGo: (tab: "carta" | "mesas" | "equipo" | 
       <Card>
         <h3 className="mb-2 font-display text-xl">Primeros pasos</h3>
         <ol className="grid gap-2 text-sm">
-          <li>1. <button className="text-amber underline" onClick={() => onGo("carta")}>Cargá tu carta</button>: categorías, platos, precios y fotos (y modelos 3D si tenés).</li>
-          <li>2. <button className="text-amber underline" onClick={() => onGo("mesas")}>Imprimí los QR</button> y pegalos en cada mesa.</li>
-          <li>3. <button className="text-amber underline" onClick={() => onGo("equipo")}>Sumá a tu equipo</button>: mozos y cocina, cada uno con su usuario.</li>
-          <li>4. <button className="text-amber underline" onClick={() => onGo("local")}>Configurá el Wi-Fi y el link de reseñas</button>.</li>
-          <li>5. En el turno: mozos en <a className="text-amber underline" href="/waiter">Salón</a>, cocina en <a className="text-amber underline" href="/kds">KDS</a>.</li>
+          <li>1. <button className="text-brand-dark underline" onClick={() => onGo("carta")}>Cargá tu carta</button>: categorías, platos, precios y fotos (y modelos 3D si tenés).</li>
+          <li>2. <button className="text-brand-dark underline" onClick={() => onGo("mesas")}>Imprimí los QR</button> y pegalos en cada mesa.</li>
+          <li>3. <button className="text-brand-dark underline" onClick={() => onGo("equipo")}>Sumá a tu equipo</button>: mozos y cocina, cada uno con su usuario.</li>
+          <li>4. <button className="text-brand-dark underline" onClick={() => onGo("local")}>Configurá el Wi-Fi y el link de reseñas</button>.</li>
+          <li>5. En el turno: mozos en <a className="text-brand-dark underline" href="/waiter">Salón</a>, cocina en <a className="text-brand-dark underline" href="/kds">KDS</a>.</li>
         </ol>
       </Card>
     </div>

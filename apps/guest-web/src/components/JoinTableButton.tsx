@@ -116,7 +116,7 @@ export function JoinTableButton({ code, venueId, tableLabel, nfc }: JoinTableBut
         <p className="mt-3 text-sm leading-relaxed text-muted">
           El sistema digital de este local se encuentra temporalmente en mantenimiento.
         </p>
-        <div className="mt-4 rounded-2xl border border-line bg-surface-2 p-3 text-xs font-medium text-amber">
+        <div className="mt-4 rounded-2xl border border-line bg-surface-2 p-3 text-xs font-medium text-brand-dark">
           Por favor, realizá tu pedido directamente con el mozo.
         </div>
       </div>
@@ -134,7 +134,7 @@ export function JoinTableButton({ code, venueId, tableLabel, nfc }: JoinTableBut
       <button
         onClick={() => void handleJoin()}
         disabled={loading}
-        className="group relative flex w-full items-center justify-center gap-3 overflow-hidden rounded-2xl bg-gradient-to-r from-amber to-warn py-4 px-6 font-semibold text-amber-ink shadow-lg shadow-amber/20 transition-all duration-200 active:scale-95 disabled:opacity-50"
+        className="group relative flex w-full items-center justify-center gap-3 overflow-hidden rounded-2xl bg-amber py-4 px-6 font-semibold text-amber-ink shadow-lg shadow-amber/20 transition-all duration-200 active:scale-95 disabled:opacity-50"
       >
         {loading ? (
           <span className="flex items-center gap-2">

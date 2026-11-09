@@ -120,7 +120,7 @@ export function Promotions() {
           <Audience label="No vienen hace 30 días" a={camp.audience.INACTIVE_30} />
         </div>
         {blocked && (
-          <p className="mt-3 rounded-xl bg-amber/10 px-3 py-2 text-sm text-amber">Próximo aviso disponible el {day(camp.nextAllowedAt)}.</p>
+          <p className="mt-3 rounded-xl bg-amber/10 px-3 py-2 text-sm text-brand-dark">Próximo aviso disponible el {day(camp.nextAllowedAt)}.</p>
         )}
         {camp.campaigns.length > 0 && (
           <ul className="mt-4 grid gap-1 text-sm">

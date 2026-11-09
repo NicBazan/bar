@@ -18,7 +18,7 @@ export function UnsubscribeButton({ token }: { token: string }) {
   if (state === "done") return <p className="mt-5 rounded-2xl bg-paper p-4 text-sm font-medium">Listo, no te mandamos más promos por email. ✅</p>;
   return (
     <>
-      <button onClick={() => void go()} disabled={state === "busy"} className="mt-5 h-12 w-full rounded-2xl bg-brand font-semibold text-white active:bg-brand-dark disabled:opacity-50">
+      <button onClick={() => void go()} disabled={state === "busy"} className="mt-5 h-12 w-full rounded-2xl bg-brand font-semibold text-amber-ink active:bg-brand-dark disabled:opacity-50">
         {state === "busy" ? "Un momento…" : "Darme de baja"}
       </button>
       {state === "error" && <p className="mt-3 text-sm text-brand-dark">El link no es válido o venció.</p>}

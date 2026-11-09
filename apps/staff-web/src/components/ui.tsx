@@ -76,7 +76,7 @@ export function Badge({ children, tone = "muted" }: { children: ReactNode; tone?
     muted: "bg-surface-2 text-muted",
     ok: "bg-ok/15 text-ok",
     warn: "bg-warn/15 text-warn",
-    amber: "bg-amber/15 text-amber",
+    amber: "bg-amber/15 text-brand-dark",
   }[tone];
   return <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-[11px] font-medium ${t}`}>{children}</span>;
 }
@@ -152,7 +152,7 @@ export function useToasts() {
   const view = (
     <div className="pointer-events-none fixed inset-x-0 top-3 z-[60] flex flex-col items-center gap-2 px-4" aria-live="polite">
       {toasts.map((t) => (
-        <div key={t.id} className={`rounded-2xl px-4 py-2.5 text-sm font-medium shadow-lg ${t.tone === "ok" ? "bg-ok text-ink" : "bg-warn text-ink"}`}>
+        <div key={t.id} className={`rounded-2xl px-4 py-2.5 text-sm font-medium shadow-lg ${t.tone === "ok" ? "bg-ok text-white" : "bg-warn text-white"}`}>
           {t.text}
         </div>
       ))}

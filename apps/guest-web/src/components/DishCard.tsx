@@ -107,7 +107,7 @@ export function DishCard({
             {!available && <span className="ml-2 text-[10px] font-semibold text-warn">Agotado</span>}
           </h3>
           {description && <p className="truncate text-xs text-muted">{description}</p>}
-          <p className="mt-0.5 text-sm font-semibold text-amber">{price}</p>
+          <p className="mt-0.5 text-sm font-semibold text-brand-dark">{price}</p>
         </div>
         <button
           type="button"
@@ -115,7 +115,7 @@ export function DishCard({
           disabled={!available}
           aria-label={`${addLabel}: ${name}`}
           className={`grid h-11 w-11 shrink-0 place-items-center rounded-full text-lg font-bold transition active:scale-95 disabled:opacity-40 ${
-            added ? "bg-ok text-ink" : "bg-amber text-amber-ink"
+            added ? "bg-ok text-white" : "bg-amber text-amber-ink"
           }`}
         >
           {added ? "✓" : "+"}
@@ -149,12 +149,12 @@ export function DishCard({
           {description && <p className="mt-1 line-clamp-3 text-sm text-muted">{description}</p>}
           {allergens.length > 0 && <p className="mt-1 text-[11px] text-warn/80">Contiene {allergens.join(", ")}</p>}
           <div className="mt-4 flex items-center justify-between gap-3">
-            <span className="font-display text-2xl font-semibold text-amber">{price}</span>
+            <span className="font-display text-2xl font-semibold text-brand-dark">{price}</span>
             <button
               type="button"
               onClick={handleAdd}
               disabled={!available}
-              className={`h-12 rounded-2xl px-5 text-sm font-semibold transition active:scale-95 disabled:opacity-40 ${added ? "bg-ok text-ink" : "bg-amber text-amber-ink"}`}
+              className={`h-12 rounded-2xl px-5 text-sm font-semibold transition active:scale-95 disabled:opacity-40 ${added ? "bg-ok text-white" : "bg-amber text-amber-ink"}`}
             >
               {!available ? "Agotado" : added ? "✓ ¡Agregado!" : `+ ${addLabel}`}
             </button>
@@ -184,7 +184,6 @@ export function DishCard({
             alt={name}
             className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
           />
-          <div className="absolute inset-0 bg-gradient-to-t from-surface to-transparent"></div>
         </div>
       ) : null}
 
@@ -195,7 +194,7 @@ export function DishCard({
           {(tags.length > 0 || allergens.length > 0 || glbUrl) && (
             <div className="mb-2.5 flex flex-wrap gap-1.5">
               {glbUrl && (
-                <span className="rounded-full border border-amber/40 bg-amber/10 px-2 py-0.5 text-[10px] font-semibold text-amber">
+                <span className="rounded-full border border-amber/40 bg-amber/10 px-2 py-0.5 text-[10px] font-semibold text-brand-dark">
                   ✨ 3D / AR
                 </span>
               )}
@@ -241,7 +240,7 @@ export function DishCard({
         <div className="mt-5 flex items-center justify-between gap-3 border-t border-line/40 pt-3">
           <div>
             <span className="text-[10px] tracking-wider text-muted uppercase">Precio</span>
-            <div className="font-display text-lg font-semibold text-amber">
+            <div className="font-display text-lg font-semibold text-brand-dark">
               {price}
             </div>
           </div>
@@ -252,8 +251,8 @@ export function DishCard({
             disabled={!available}
             className={`flex items-center gap-2 rounded-2xl px-4 py-2.5 text-xs font-semibold transition-all duration-200 active:scale-95 disabled:cursor-not-allowed disabled:opacity-40 ${
               added
-                ? "bg-ok text-ink shadow-md shadow-ok/20 scale-105"
-                : "border border-line bg-surface-2 text-cream hover:border-amber hover:bg-surface hover:text-amber"
+                ? "bg-ok text-white shadow-md shadow-ok/20 scale-105"
+                : "border border-line bg-surface-2 text-cream hover:border-amber hover:bg-surface hover:text-brand-dark"
             }`}
           >
             {added ? (

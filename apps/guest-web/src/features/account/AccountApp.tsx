@@ -94,7 +94,7 @@ export function AccountApp(props: Props) {
       </main>
 
       {toast && (
-        <div role="status" className="fixed inset-x-0 top-3 z-50 mx-auto w-fit max-w-[90%] rounded-2xl bg-night px-4 py-2.5 text-sm text-white shadow-lg">
+        <div role="status" className="fixed inset-x-0 top-3 z-50 mx-auto w-fit max-w-[90%] rounded-2xl border border-line bg-surface px-4 py-2.5 text-sm text-cream">
           {toast}
         </div>
       )}
@@ -127,14 +127,14 @@ function BottomNav({ tab, setTab, venueName, logoUrl, menuHref }: {
       aria-label="Secciones de Mi cuenta"
       className="fixed inset-x-0 bottom-0 z-40 px-4 pb-[max(0.75rem,env(safe-area-inset-bottom))] md:inset-y-6 md:right-auto md:left-6 md:w-60 md:p-0"
     >
-      <div className="mx-auto flex max-w-md items-center justify-between rounded-[28px] bg-night p-2 shadow-2xl md:h-full md:max-w-none md:flex-col md:items-stretch md:justify-start md:gap-1 md:p-4">
+      <div className="mx-auto flex max-w-md items-center justify-between rounded-2xl border border-line bg-surface p-2 md:h-full md:max-w-none md:flex-col md:items-stretch md:justify-start md:gap-1 md:p-4">
         <div className="hidden items-center gap-3 px-2 pt-2 pb-6 md:flex">
-          <span className="grid h-11 w-11 shrink-0 place-items-center overflow-hidden rounded-2xl bg-white/10 text-lg text-white">
+          <span className="grid h-11 w-11 shrink-0 place-items-center overflow-hidden rounded-2xl bg-surface-2 text-lg text-cream">
             {logoUrl ? <img src={logoUrl} alt="" className="h-full w-full object-contain p-1" /> : "🍸"}
           </span>
           <span className="min-w-0">
-            <span className="block text-xs text-white/50">Mi cuenta en</span>
-            <span className="block truncate text-sm font-semibold text-white">{venueName}</span>
+            <span className="block text-xs text-muted">Mi cuenta en</span>
+            <span className="block truncate text-sm font-semibold text-cream">{venueName}</span>
           </span>
         </div>
         {items.map((it) => {
@@ -145,7 +145,7 @@ function BottomNav({ tab, setTab, venueName, logoUrl, menuHref }: {
               onClick={() => setTab(it.id)}
               aria-current={active ? "page" : undefined}
               className={`flex h-12 min-w-12 items-center justify-center gap-2 rounded-full px-4 text-sm font-medium transition md:justify-start md:gap-3 ${
-                active ? "bg-brand text-white" : "text-white/60 hover:text-white md:hover:bg-white/5"
+                active ? "bg-amber text-amber-ink" : "text-muted hover:text-cream md:hover:bg-surface-2"
               }`}
             >
               <span aria-hidden className="text-base md:w-5 md:text-center">{it.icon}</span>
@@ -153,7 +153,7 @@ function BottomNav({ tab, setTab, venueName, logoUrl, menuHref }: {
             </button>
           );
         })}
-        <a href={menuHref} className="mt-auto hidden h-12 items-center gap-3 rounded-full px-4 text-sm font-medium text-white/60 hover:bg-white/5 hover:text-white md:flex">
+        <a href={menuHref} className="mt-auto hidden h-12 items-center gap-3 rounded-full px-4 text-sm font-medium text-muted hover:bg-surface-2 hover:text-cream md:flex">
           <span aria-hidden className="w-5 text-center">🍽</span> Volver a la carta
         </a>
       </div>
@@ -164,7 +164,7 @@ function BottomNav({ tab, setTab, venueName, logoUrl, menuHref }: {
 function Avatar({ name, email }: { name: string | null; email?: string }) {
   const letter = (name || email || "?").trim().charAt(0).toUpperCase();
   return (
-    <span aria-hidden className="grid h-12 w-12 shrink-0 place-items-center rounded-full bg-brand text-lg font-bold text-white ring-4 ring-white">
+    <span aria-hidden className="grid h-12 w-12 shrink-0 place-items-center rounded-full bg-amber text-lg font-bold text-amber-ink ring-4 ring-white">
       {letter}
     </span>
   );
@@ -212,23 +212,23 @@ function HomeTab({ venueId, venueName, currency, tag, me, visits, loyalty, go, o
       {/* PC: tarjeta, accesos y próximo premio a la izquierda; actividad a la derecha */}
       <div className="md:mt-2 md:grid md:grid-cols-2 md:items-start md:gap-8">
       <div>
-      <section className="mt-5 rounded-[28px] bg-night p-6 text-white shadow-xl" aria-label={card ? "Tu tarjeta de fidelización" : "Tus visitas"}>
-        <div className="flex items-center justify-between text-xs text-white/60">
+      <section className="mt-5 rounded-2xl border border-line border-l-4 border-l-amber bg-surface p-6 text-cream" aria-label={card ? "Tu tarjeta de fidelización" : "Tus visitas"}>
+        <div className="flex items-center justify-between text-xs text-muted">
           <span>{venueName}</span>
           <span className="rounded-full bg-white/10 px-2.5 py-1">{card ? (card.mode === "STAMPS" ? "Tarjeta de sellos" : "Puntos") : "Mi cuenta"}</span>
         </div>
-        <p className="mt-4 text-sm text-white/60">{card ? `Tus ${unitLabel(card.mode, 2)}` : "Tus visitas"}</p>
+        <p className="mt-4 text-sm text-muted">{card ? `Tus ${unitLabel(card.mode, 2)}` : "Tus visitas"}</p>
         <p className="text-5xl font-semibold tracking-tight">{card ? Math.max(0, card.balance) : (me?.stats.visits ?? "–")}</p>
         <p className="mt-2 text-sm">
-          <span className="rounded-full bg-brand px-2.5 py-1 text-xs font-semibold">+{card ? card.earnedThisMonth : monthVisits} este mes</span>
-          <span className="ml-2 text-white/60">
+          <span className="rounded-full bg-amber px-2.5 py-1 text-xs font-semibold text-amber-ink">+{card ? card.earnedThisMonth : monthVisits} este mes</span>
+          <span className="ml-2 text-muted">
             {card ? plural(me?.stats.visits ?? 0, "visita", "visitas") : `${formatMoney(me?.stats.spentCents ?? 0, currency)} en total`}
           </span>
         </p>
         {card?.mode === "STAMPS" && card.next && card.next.cost <= 12 && (
           <div className="mt-4 flex flex-wrap gap-1.5" aria-hidden>
             {Array.from({ length: card.next.cost }, (_, i) => (
-              <span key={i} className={`grid h-7 w-7 place-items-center rounded-full text-xs ${i < card.balance ? "bg-brand text-white" : "bg-white/10 text-white/30"}`}>
+              <span key={i} className={`grid h-7 w-7 place-items-center rounded-full text-xs ${i < card.balance ? "bg-amber text-amber-ink" : "bg-surface-2 text-muted"}`}>
                 ★
               </span>
             ))}
@@ -260,13 +260,13 @@ function HomeTab({ venueId, venueName, currency, tag, me, visits, loyalty, go, o
         {visits === null ? (
           <p className="mt-3 text-sm text-night/50">Cargando…</p>
         ) : visits.length === 0 ? (
-          <div className="mt-3 rounded-3xl bg-white p-5 text-sm text-night/60 shadow-sm">
+          <div className="mt-3 rounded-3xl bg-white p-5 text-sm text-night/60 border border-line">
             Todavía no hay visitas. La próxima vez que pidas desde la mesa con tu cuenta, aparece acá.
           </div>
         ) : (
           <ul className="mt-2 space-y-2">
             {visits.slice(0, 5).map((v) => (
-              <li key={v.sessionId} className="flex items-center gap-3 rounded-3xl bg-white p-4 shadow-sm">
+              <li key={v.sessionId} className="flex items-center gap-3 rounded-3xl bg-white p-4 border border-line">
                 <span aria-hidden className="grid h-11 w-11 shrink-0 place-items-center rounded-full bg-paper text-lg">🍽</span>
                 <div className="min-w-0 flex-1">
                   <p className="truncate font-medium">{v.venue.name} · Mesa {v.tableLabel}</p>
@@ -293,7 +293,7 @@ function HomeTab({ venueId, venueName, currency, tag, me, visits, loyalty, go, o
 function QuickAction({ href, onClick, icon, label }: { href?: string; onClick?: () => void; icon: string; label: string }) {
   const circle = (
     <>
-      <span aria-hidden className="mx-auto grid h-14 w-14 place-items-center rounded-full bg-brand text-xl text-white shadow-md shadow-brand/30 transition active:bg-brand-dark">
+      <span aria-hidden className="mx-auto grid h-14 w-14 place-items-center rounded-full bg-amber text-xl text-amber-ink transition active:bg-brand-dark">
         {icon}
       </span>
       <span className="mt-1.5 block text-xs leading-tight text-night/70">{label}</span>
@@ -308,7 +308,7 @@ function NextReward({ card, currency }: { card: Card; currency: string }) {
   const next = card.next!;
   const have = Math.max(0, Math.min(card.balance, next.cost));
   return (
-    <section className="mt-5 rounded-3xl bg-white p-5 shadow-sm" aria-label="Próximo premio">
+    <section className="mt-5 rounded-3xl bg-white p-5 border border-line" aria-label="Próximo premio">
       <div className="flex items-start justify-between gap-3">
         <div>
           <p className="text-xs text-night/50">Próximo premio</p>
@@ -336,7 +336,7 @@ function RewardsSheet({ loyalty, onClose }: { loyalty: Card; onClose: () => void
   return (
     <div className="fixed inset-0 z-50 flex items-end justify-center md:items-center" role="dialog" aria-modal="true" aria-label="Premios">
       <button aria-label="Cerrar" className="absolute inset-0 bg-night/50" onClick={onClose} />
-      <div className="animate-sheet relative w-full max-w-md rounded-t-[28px] bg-paper p-5 md:rounded-[28px] pb-[max(1.25rem,env(safe-area-inset-bottom))]">
+      <div className="animate-sheet relative w-full max-w-md rounded-t-2xl bg-paper p-5 md:rounded-2xl pb-[max(1.25rem,env(safe-area-inset-bottom))]">
         <div className="flex items-center justify-between">
           <h2 className="text-xl font-semibold">Premios</h2>
           <button onClick={onClose} className="h-11 rounded-full px-4 text-sm text-night/60">Cerrar</button>
@@ -346,8 +346,8 @@ function RewardsSheet({ loyalty, onClose }: { loyalty: Card; onClose: () => void
         </p>
         <ul className="mt-4 space-y-2">
           {loyalty.rewards.map((r) => (
-            <li key={r.id} className="flex items-center gap-3 rounded-3xl bg-white p-4 shadow-sm">
-              <span aria-hidden className={`grid h-11 w-11 place-items-center rounded-full text-lg ${r.canRedeem ? "bg-brand text-white" : "bg-paper text-night/40"}`}>★</span>
+            <li key={r.id} className="flex items-center gap-3 rounded-3xl bg-white p-4 border border-line">
+              <span aria-hidden className={`grid h-11 w-11 place-items-center rounded-full text-lg ${r.canRedeem ? "bg-amber text-amber-ink" : "bg-paper text-night/40"}`}>★</span>
               <div className="flex-1">
                 <p className="font-medium">{r.name}</p>
                 <p className="text-xs text-night/50">{plural(r.cost, unitLabel(loyalty.mode, 1), unitLabel(loyalty.mode, 2))}</p>
@@ -405,13 +405,13 @@ function HistoryTab({ venueId, tag, visits, notify }: Props & { visits: Visit[] 
       {visits === null ? (
         <p className="mt-4 text-sm text-night/50">Cargando…</p>
       ) : visits.length === 0 ? (
-        <p className="mt-4 rounded-3xl bg-white p-5 text-sm text-night/60 shadow-sm">Todavía no hay visitas guardadas.</p>
+        <p className="mt-4 rounded-3xl bg-white p-5 text-sm text-night/60 border border-line">Todavía no hay visitas guardadas.</p>
       ) : (
         <ul className="mt-4 space-y-3">
           {visits.map((v) => {
             const expanded = open === v.sessionId;
             return (
-              <li key={v.sessionId} className="rounded-3xl bg-white shadow-sm">
+              <li key={v.sessionId} className="rounded-3xl bg-white border border-line">
                 <button onClick={() => setOpen(expanded ? null : v.sessionId)} aria-expanded={expanded} className="flex min-h-16 w-full items-center gap-3 p-4 text-left">
                   <div className="min-w-0 flex-1">
                     <p className="font-medium">{fmtDate(v.date)}</p>
@@ -437,7 +437,7 @@ function HistoryTab({ venueId, tag, visits, notify }: Props & { visits: Visit[] 
                         <button
                           onClick={() => void reorder(o.id)}
                           disabled={busy === o.id}
-                          className="mt-2 h-11 w-full rounded-2xl bg-brand text-sm font-semibold text-white active:bg-brand-dark disabled:opacity-50"
+                          className="mt-2 h-11 w-full rounded-2xl bg-brand text-sm font-semibold text-amber-ink active:bg-brand-dark disabled:opacity-50"
                         >
                           {busy === o.id ? "Armando…" : "↺ Pedir lo mismo"}
                         </button>
@@ -470,19 +470,19 @@ function PromosTab({ venueId, venueName }: Props) {
       {promos === null ? (
         <p className="mt-4 text-sm text-night/50">Cargando…</p>
       ) : promos.length === 0 ? (
-        <p className="mt-4 rounded-3xl bg-white p-5 text-sm text-night/60 shadow-sm">
+        <p className="mt-4 rounded-3xl bg-white p-5 text-sm text-night/60 border border-line">
           Cuando {venueName} publique promociones, las vas a ver acá.
         </p>
       ) : (
         <ul className="mt-4 space-y-3 md:grid md:grid-cols-2 md:gap-4 md:space-y-0">
           {promos.map((p, i) => (
-            <li key={p.id} className={`rounded-3xl p-5 shadow-sm ${i === 0 ? "bg-night text-white" : "bg-white"}`}>
-              <span className={`inline-block rounded-full px-2.5 py-1 text-xs font-semibold ${i === 0 ? "bg-brand text-white" : "bg-brand/10 text-brand-dark"}`}>
+            <li key={p.id} className={`rounded-3xl p-5 ${i === 0 ? "border border-line border-l-4 border-l-amber bg-white" : "border border-line bg-white"}`}>
+              <span className={`inline-block rounded-full px-2.5 py-1 text-xs font-semibold ${i === 0 ? "bg-amber text-amber-ink" : "bg-brand/10 text-brand-dark"}`}>
                 Promo
               </span>
               <h2 className="mt-2 text-lg font-semibold">{p.title}</h2>
-              <p className={`mt-1 text-sm whitespace-pre-line ${i === 0 ? "text-white/70" : "text-night/70"}`}>{p.body}</p>
-              {p.endsAt && <p className={`mt-2 text-xs ${i === 0 ? "text-white/50" : "text-night/50"}`}>Hasta el {until(p.endsAt)}</p>}
+              <p className={`mt-1 text-sm whitespace-pre-line ${"text-night/70"}`}>{p.body}</p>
+              {p.endsAt && <p className={`mt-2 text-xs ${"text-night/50"}`}>Hasta el {until(p.endsAt)}</p>}
             </li>
           ))}
         </ul>
@@ -547,7 +547,7 @@ function NotificationsSection({ venueId, venueName, notify }: Props & { notify: 
   };
 
   return (
-    <section className="mt-4 overflow-hidden rounded-3xl bg-white shadow-sm" aria-label="Avisos">
+    <section className="mt-4 overflow-hidden rounded-3xl bg-white border border-line" aria-label="Avisos">
       <h2 className="px-5 pt-4 text-sm font-semibold text-night/60">Avisos de {venueName}</h2>
       <p className="px-5 pt-1 text-xs text-night/50">Máximo 1 por semana. Te das de baja en un toque desde cada aviso.</p>
       <PrefRow label="Promos por email" checked={prefs.emailOptIn} disabled={busy} onChange={() => void toggleEmail()} />
@@ -568,7 +568,7 @@ function PrefRow({ label, checked, disabled, onChange, hint }: { label: string; 
       <button role="switch" aria-label={label} aria-checked={checked} disabled={disabled} onClick={onChange} className="flex min-h-11 w-full items-center justify-between gap-3 text-left disabled:opacity-50">
         <span>{label}</span>
         <span className={`relative h-7 w-12 shrink-0 rounded-full transition ${checked ? "bg-brand" : "bg-night/15"}`}>
-          <span className={`absolute top-1 h-5 w-5 rounded-full bg-white shadow transition-all ${checked ? "left-6" : "left-1"}`} />
+          <span className={`absolute top-1 h-5 w-5 rounded-full bg-white transition-all ${checked ? "left-6" : "left-1"}`} />
         </span>
       </button>
       {hint && <p className="mt-1 text-xs text-night/50">{hint}</p>}
@@ -633,7 +633,7 @@ function ProfileTab({ me, onSaved, onLogout, notify, ...props }: Props & {
         </div>
       </header>
 
-      <section className="mt-6 rounded-3xl bg-white p-5 shadow-sm">
+      <section className="mt-6 rounded-3xl bg-white p-5 border border-line">
         <label htmlFor="name" className="text-sm font-medium">Nombre</label>
         <div className="mt-2 flex gap-2">
           <input
@@ -643,7 +643,7 @@ function ProfileTab({ me, onSaved, onLogout, notify, ...props }: Props & {
             onChange={(e) => setName(e.target.value)}
             className="h-12 min-w-0 flex-1 rounded-2xl border border-night/10 px-4 text-base outline-none focus:border-brand"
           />
-          <button onClick={() => void saveName()} disabled={!name.trim()} className="h-12 rounded-2xl bg-brand px-5 text-sm font-semibold text-white active:bg-brand-dark disabled:opacity-50">
+          <button onClick={() => void saveName()} disabled={!name.trim()} className="h-12 rounded-2xl bg-brand px-5 text-sm font-semibold text-amber-ink active:bg-brand-dark disabled:opacity-50">
             Guardar
           </button>
         </div>
@@ -651,7 +651,7 @@ function ProfileTab({ me, onSaved, onLogout, notify, ...props }: Props & {
 
       <NotificationsSection {...props} notify={notify} />
 
-      <section className="mt-4 overflow-hidden rounded-3xl bg-white shadow-sm">
+      <section className="mt-4 overflow-hidden rounded-3xl bg-white border border-line">
         <h2 className="px-5 pt-4 text-sm font-semibold text-night/60">Tus datos</h2>
         <button onClick={() => void exportData()} className="flex min-h-14 w-full items-center justify-between px-5 text-left">
           <span>Descargar mis datos</span><span aria-hidden className="text-night/40">↓</span>
@@ -664,7 +664,7 @@ function ProfileTab({ me, onSaved, onLogout, notify, ...props }: Props & {
         </button>
       </section>
 
-      <section className="mt-4 rounded-3xl bg-white p-5 shadow-sm">
+      <section className="mt-4 rounded-3xl bg-white p-5 border border-line">
         {confirmDelete ? (
           <>
             <p className="text-sm">
@@ -672,7 +672,7 @@ function ProfileTab({ me, onSaved, onLogout, notify, ...props }: Props & {
             </p>
             <div className="mt-3 grid grid-cols-2 gap-2">
               <button onClick={() => setConfirmDelete(false)} className="h-12 rounded-2xl border border-night/10 text-sm">Cancelar</button>
-              <button onClick={() => void deleteAccount()} className="h-12 rounded-2xl bg-red-600 text-sm font-semibold text-white">Sí, borrar</button>
+              <button onClick={() => void deleteAccount()} className="h-12 rounded-2xl bg-warn text-sm font-semibold text-white">Sí, borrar</button>
             </div>
           </>
         ) : (

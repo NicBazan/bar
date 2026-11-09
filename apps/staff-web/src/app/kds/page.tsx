@@ -102,7 +102,7 @@ export default function KdsPage() {
             <article key={order.id} className={`flex flex-col rounded-2xl border-2 p-4 ${tone}`}>
               <header className="mb-3 flex items-baseline justify-between">
                 <h2 className="font-display text-3xl">Mesa {order.session.table.label}</h2>
-                <span className={`font-mono text-lg ${mins >= 20 ? "text-warn" : mins >= 10 ? "text-amber" : "text-muted"}`}>{mins}′</span>
+                <span className={`font-mono text-lg ${mins >= 20 ? "text-warn" : mins >= 10 ? "text-brand-dark" : "text-muted"}`}>{mins}′</span>
               </header>
               <ul className="grid flex-1 gap-2">
                 {its.map((i) => (
@@ -113,7 +113,7 @@ export default function KdsPage() {
                         {i.variantName && <span className="font-normal text-muted"> · {i.variantName}</span>}
                       </p>
                       {i.modifiers.length > 0 && <p className="text-sm text-cream/80">{i.modifiers.map((m) => m.name).join(" · ")}</p>}
-                      {i.note && <p className="text-sm font-semibold text-amber">⚠ {i.note}</p>}
+                      {i.note && <p className="text-sm font-semibold text-brand-dark">⚠ {i.note}</p>}
                       {!station && i.station && <p className="text-xs text-muted">{i.station.name}</p>}
                     </div>
                     {i.status === "FIRED" && <SmallBtn onClick={() => move([i.id], "IN_PROGRESS")}>Empezar</SmallBtn>}
@@ -158,7 +158,7 @@ function Chip({ on, onClick, children }: { on: boolean; onClick: () => void; chi
 
 function SmallBtn({ primary, onClick, children }: { primary?: boolean; onClick: () => void; children: React.ReactNode }) {
   return (
-    <button onClick={onClick} className={`shrink-0 rounded-full px-3 py-1.5 text-sm font-semibold ${primary ? "bg-ok text-ink" : "bg-surface-2 text-cream"}`}>
+    <button onClick={onClick} className={`shrink-0 rounded-full px-3 py-1.5 text-sm font-semibold ${primary ? "bg-ok text-white" : "bg-surface-2 text-cream"}`}>
       {children}
     </button>
   );

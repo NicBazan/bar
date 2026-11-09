@@ -60,17 +60,12 @@ export default async function TableWelcomePage({ params, searchParams }: TableWe
 
   return (
     <main className="relative mx-auto flex min-h-dvh max-w-md flex-col justify-between overflow-hidden px-6 py-12 text-center">
-      {/* Glow ambiental decorativo */}
-      <div className="pointer-events-none absolute -top-24 left-1/2 -z-10 h-72 w-72 -translate-x-1/2 rounded-full bg-amber/10 blur-[100px]"></div>
-
       {/* Cabecera / Identidad */}
       <header className="flex flex-col items-center pt-8">
-        <div className="mb-6 flex h-20 w-20 items-center justify-center rounded-3xl border border-line/60 bg-gradient-to-br from-surface-2 to-surface text-4xl shadow-2xl ring-1 ring-night/5">
+        <div className="mb-6 flex h-20 w-20 items-center justify-center rounded-3xl border border-line/60 bg-surface text-4xl">
           {venue.logoUrl ? <img src={venue.logoUrl} alt={venue.name} className="h-full w-full rounded-3xl object-contain p-1" /> : "🍸"}
         </div>
-        <span className="text-xs font-semibold tracking-widest text-amber uppercase">
-          Bienvenidos a
-        </span>
+        <span className="text-sm text-muted">Bienvenidos a</span>
         <h1 className="mt-2 font-display text-4xl font-normal tracking-tight text-cream">
           {venue.name}
         </h1>
@@ -78,14 +73,14 @@ export default async function TableWelcomePage({ params, searchParams }: TableWe
 
       {/* Tarjeta de Mesa Central */}
       <section className="my-auto flex flex-col items-center py-6">
-        <div className="inline-flex items-center gap-2 rounded-full border border-line bg-surface/60 px-5 py-2 shadow-inner backdrop-blur-md">
+        <div className="inline-flex items-center gap-2 rounded-full border border-line bg-surface px-5 py-2">
           <span className="h-2 w-2 rounded-full bg-ok animate-pulse"></span>
           <span className="text-sm font-medium tracking-wide text-cream/90">
             Mesa activa
           </span>
         </div>
 
-        <div className="mt-4 font-display text-6xl font-light tracking-tight text-amber">
+        <div className="mt-4 font-display text-6xl font-light tracking-tight text-brand-dark">
           {table.label}
         </div>
         <p className="mt-2 text-xs text-muted">

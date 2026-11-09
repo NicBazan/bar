@@ -16,7 +16,7 @@ const ITEM_LABEL: Record<string, { text: string; cls: string }> = {
   PENDING_APPROVAL: { text: "por confirmar", cls: "bg-surface-2 text-muted" },
   APPROVED: { text: "confirmado", cls: "bg-surface-2 text-cream" },
   FIRED: { text: "en cola", cls: "bg-surface-2 text-cream" },
-  IN_PROGRESS: { text: "preparando", cls: "bg-amber/20 text-amber" },
+  IN_PROGRESS: { text: "preparando", cls: "bg-amber/20 text-brand-dark" },
   READY: { text: "¡listo!", cls: "bg-ok/20 text-ok" },
   SERVED: { text: "servido", cls: "bg-ok/10 text-ok/80" },
   REJECTED: { text: "rechazado", cls: "bg-warn/20 text-warn" },

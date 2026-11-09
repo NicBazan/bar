@@ -76,7 +76,7 @@ export function SudokuNumpad({ counts, disabled, difficulty, onNumber, onErase, 
         <button
           type="button"
           onClick={() => setPicking(true)}
-          className="mt-3 h-12 w-full rounded-2xl border border-amber/40 bg-amber/10 text-sm font-semibold text-amber transition active:scale-95"
+          className="mt-3 h-12 w-full rounded-2xl border border-amber/40 bg-amber/10 text-sm font-semibold text-brand-dark transition active:scale-95"
         >
           🔄 Nuevo juego
         </button>

@@ -1,8 +1,9 @@
 import type { Metadata, Viewport } from "next";
-import { Inter } from "next/font/google";
+import { IBM_Plex_Sans } from "next/font/google";
 import "./globals.css";
 
-const sans = Inter({ subsets: ["latin"], variable: "--font-sans", display: "swap" });
+// IBM Plex Sans (base de conocimientos: Inter delata UI generica); autoalojada por next/font, sin pedir a Google en runtime
+const sans = IBM_Plex_Sans({ subsets: ["latin"], weight: ["300", "400", "500", "600", "700"], variable: "--font-plex", display: "swap" });
 
 export const metadata: Metadata = {
   title: "Carta",
@@ -15,7 +16,7 @@ export const viewport: Viewport = {
   width: "device-width",
   initialScale: 1,
   viewportFit: "cover",
-  themeColor: "#faf8f5",
+  themeColor: "#f4f5f6",
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {

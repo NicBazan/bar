@@ -46,7 +46,7 @@ export function Toasts({ items }: { items: Array<{ id: number; text: string; ton
         <div
           key={n.id}
           className={`max-w-sm rounded-2xl px-4 py-2.5 text-sm font-medium shadow-lg ${
-            n.tone === "success" ? "bg-ok text-ink" : n.tone === "warn" ? "bg-warn text-ink" : "bg-surface-2 text-cream"
+            n.tone === "success" ? "bg-ok text-white" : n.tone === "warn" ? "bg-warn text-white" : "bg-surface-2 text-cream"
           }`}
         >
           {n.text}
