@@ -62,6 +62,8 @@ model Venue {
   currency  String   @default("ARS") @db.Char(3)
   // Secuencia monotónica para catch-up de tiempo real (GET /state?since=seq)
   eventSeq  BigInt   @default(0)
+  // Último número de comprobante emitido (correlativo por local; se toma con UPDATE ... RETURNING)
+  receiptSeq Int     @default(0)
   layout    Json?    // tema: { mode: "classic" | "reels" | "list", colors, fonts }
   // Hub en mesa: Wi-Fi de invitados (solo se muestra a mesas abiertas) y link de reseñas
   wifiSsid        String?
@@ -332,6 +334,10 @@ model TableSession {
   approvedById String?            @db.Uuid
   openedAt     DateTime           @default(now())
   closedAt     DateTime?
+  // Comprobante de consumo emitido al cerrar la mesa: número correlativo del local y copia fija
+  // de lo que se cobró (si mañana cambia el nombre del local o de un plato, el comprobante no cambia)
+  receiptNumber Int?
+  receipt       Json?
 
   venue        Venue         @relation(fields: [venueId], references: [id])
   table        DiningTable   @relation(fields: [tableId], references: [id])
@@ -340,6 +346,7 @@ model TableSession {
   orders       Order[]
   serviceCalls ServiceCall[]
 
+  @@unique([venueId, receiptNumber])
   @@index([tableId, status])
 }
 

@@ -2,7 +2,8 @@ import { CreateOrderBody, RejectOrderBody } from "@bar/shared-types";
 import type { FastifyInstance } from "fastify";
 import { z } from "zod";
 import { FLOOR_ROLES, requireGuest, requireStaff, staffScope } from "../../shared/auth/guards.js";
-import { prisma } from "../../shared/db/index.js";
+import type { StaffClaims } from "../../shared/auth/tokens.js";
+import { prisma, type Tx } from "../../shared/db/index.js";
 import { deviceOrIpKey } from "../../shared/rate-limit/keys.js";
 import { HttpError, conflict, notFound } from "../../shared/errors.js";
 import { channels, emit } from "../../shared/outbox/outbox.js";
@@ -16,16 +17,9 @@ export async function orderingRoutes(app: FastifyInstance) {
   // ───── Comensal ─────
   app.post(
     "/orders",
-    {
-      config: {
-        rateLimit: {
-          max: 10,
-          timeWindow: "1 minute",
-          // Límite por dispositivo/mesa, no por IP (toda la mesa comparte el Wi-Fi)
-          keyGenerator: deviceOrIpKey,
-        },
-      },
-    },
+    // Límite por dispositivo/mesa, no por IP (toda la mesa comparte el Wi-Fi). Las reglas de negocio
+    // (tamaño, pendientes, volumen por hora, repetidos) están en order-policy.ts
+    { config: { rateLimit: { max: 10, timeWindow: "1 minute", keyGenerator: deviceOrIpKey } } },
     async (req, reply) => {
       const guest = await requireGuest(req);
       const key = IdempotencyKey.safeParse(req.headers["idempotency-key"]);
@@ -57,43 +51,70 @@ export async function orderingRoutes(app: FastifyInstance) {
   app.post("/staff/orders/:id/approve", async (req) => {
     const staff = await requireStaff(req, FLOOR_ROLES);
     const { id } = IdParams.parse(req.params);
-    return prisma.$transaction(async (tx) => {
-      const order = await tx.order.findFirst({ where: { id, ...staffScope(staff) } });
-      if (!order) throw notFound("Pedido");
-      if (order.status !== "PENDING_APPROVAL") throw conflict("ORDER_NOT_PENDING");
-
-      await tx.order.update({ where: { id }, data: { status: "APPROVED", approvedById: staff.sub } });
-      await tx.orderItem.updateMany({ where: { orderId: id }, data: { status: "FIRED" } });
-      await emit(tx, {
-        tenantId: order.tenantId,
-        venueId: order.venueId,
-        type: "order.approved",
-        channels: [channels.staff(order.venueId), channels.kitchen(order.venueId), channels.session(order.sessionId)],
-        payload: { orderId: id },
-      });
-      return tx.order.findUniqueOrThrow({ where: { id }, include: { items: true } });
-    });
+    return prisma.$transaction((tx) =>
+      decidePendingOrder(tx, staff, id, {
+        order: { status: "APPROVED", approvedById: staff.sub },
+        itemStatus: "FIRED",
+        event: "order.approved",
+        toKitchen: true,
+      }),
+    );
   });
 
   app.post("/staff/orders/:id/reject", async (req) => {
     const staff = await requireStaff(req, FLOOR_ROLES);
     const { id } = IdParams.parse(req.params);
     const { reason } = RejectOrderBody.parse(req.body);
-    return prisma.$transaction(async (tx) => {
-      const order = await tx.order.findFirst({ where: { id, ...staffScope(staff) } });
-      if (!order) throw notFound("Pedido");
-      if (order.status !== "PENDING_APPROVAL") throw conflict("ORDER_NOT_PENDING");
-
-      await tx.order.update({ where: { id }, data: { status: "REJECTED", rejectReason: reason } });
-      await tx.orderItem.updateMany({ where: { orderId: id }, data: { status: "REJECTED" } });
-      await emit(tx, {
-        tenantId: order.tenantId,
-        venueId: order.venueId,
-        type: "order.rejected",
-        channels: [channels.staff(order.venueId), channels.session(order.sessionId)],
-        payload: { orderId: id, reason },
-      });
-      return tx.order.findUniqueOrThrow({ where: { id }, include: { items: true } });
-    });
+    return prisma.$transaction((tx) =>
+      decidePendingOrder(tx, staff, id, {
+        order: { status: "REJECTED", rejectReason: reason },
+        itemStatus: "REJECTED",
+        event: "order.rejected",
+        toKitchen: false,
+        reason,
+      }),
+    );
   });
+}
+
+async function whyNotPending(tx: Tx, staff: StaffClaims, id: string) {
+  const order = await tx.order.findFirst({ where: { id, ...staffScope(staff) }, select: { status: true, session: { select: { status: true } } } });
+  if (!order) return notFound("Pedido");
+  if (order.status === "PENDING_APPROVAL") return conflict("SESSION_CLOSED", "La mesa ya se cerró: el pedido no se puede confirmar");
+  return conflict("ORDER_NOT_PENDING", "Otro mozo ya resolvió este pedido");
+}
+
+type Decision = {
+  order: { status: "APPROVED"; approvedById: string } | { status: "REJECTED"; rejectReason: string };
+  itemStatus: "FIRED" | "REJECTED";
+  event: "order.approved" | "order.rejected";
+  toKitchen: boolean;
+  reason?: string;
+};
+
+/**
+ * Aprobar o rechazar un pedido pendiente. Transición reclamada con escritura condicional:
+ * si dos mozos tocan a la vez, uno cambia el estado y el otro recibe 409 (nunca dos comandas a cocina).
+ */
+async function decidePendingOrder(tx: Tx, staff: StaffClaims, id: string, d: Decision) {
+  // Un pedido de una mesa ya cerrada no se aprueba: no figuraría en ningún comprobante
+  const claimed = await tx.order.updateMany({
+    where: { id, ...staffScope(staff), status: "PENDING_APPROVAL", session: { status: { not: "CLOSED" } } },
+    data: d.order,
+  });
+  if (claimed.count === 0) throw await whyNotPending(tx, staff, id);
+  await tx.orderItem.updateMany({ where: { orderId: id }, data: { status: d.itemStatus } });
+  const order = await tx.order.findUniqueOrThrow({ where: { id }, include: { items: true } });
+  await emit(tx, {
+    tenantId: order.tenantId,
+    venueId: order.venueId,
+    type: d.event,
+    channels: [
+      channels.staff(order.venueId),
+      ...(d.toKitchen ? [channels.kitchen(order.venueId)] : []),
+      channels.session(order.sessionId),
+    ],
+    payload: d.reason ? { orderId: id, reason: d.reason } : { orderId: id },
+  });
+  return order;
 }

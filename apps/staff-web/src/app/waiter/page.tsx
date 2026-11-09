@@ -2,6 +2,7 @@
 
 import { useCallback, useState } from "react";
 import { StaffHeader } from "@/components/StaffHeader";
+import { type Receipt, SessionReceipt } from "@/features/waiter/SessionReceipt";
 import { TableCustomers } from "@/features/waiter/TableCustomers";
 import {
   ApiError,
@@ -41,14 +42,24 @@ export default function WaiterPage() {
   });
 
   // Ejecuta una acción y refresca; los errores (p. ej. otro mozo ya la tomó) se muestran arriba
-  const act = async (path: string, body?: unknown, method = "POST") => {
+  const act = async <T,>(path: string, body?: unknown, method = "POST"): Promise<T | null> => {
     setError(null);
+    let result: T | null = null;
     try {
-      await api(path, { method, body });
+      result = await api<T>(path, { method, body });
     } catch (e) {
       setError(e instanceof ApiError ? (e.message ?? e.code) : "Sin conexión");
     }
     await refresh().catch(() => undefined);
+    return result;
+  };
+
+  // Al cerrar una mesa, el comprobante recién emitido queda a la vista (lo que el mozo hizo no desaparece)
+  const [receiptOf, setReceiptOf] = useState<{ sessionId: string; receipt?: Receipt } | null>(null);
+  const closeTable = async (s: TableSession) => {
+    if (!confirm(`¿Cerrar la mesa ${s.table.label}? Se emite el comprobante y lo sin confirmar se anula.`)) return;
+    const closed = await act<{ receipt: Receipt }>(`/staff/sessions/${s.id}/close`);
+    if (closed) setReceiptOf({ sessionId: s.id, receipt: closed.receipt });
   };
 
   if (!user) return null;
@@ -126,7 +137,8 @@ export default function WaiterPage() {
               {s.pinFailures >= 8 && <p className="mt-1 text-sm text-warn">🔒 PIN bloqueado por intentos fallidos: generá uno nuevo</p>}
               <div className="mt-3">
                 <div className="flex flex-wrap gap-2">
-                  <Btn onClick={() => confirm(`¿Cerrar la mesa ${s.table.label}?`) && act(`/staff/sessions/${s.id}/close`)}>Cerrar mesa</Btn>
+                  <Btn onClick={() => setReceiptOf({ sessionId: s.id })}>🧾 Cuenta</Btn>
+                  <Btn onClick={() => void closeTable(s)}>Cerrar mesa</Btn>
                   <Btn onClick={() => act(`/staff/sessions/${s.id}/new-pin`)}>PIN nuevo</Btn>
                   <Btn onClick={() => setCustomersOf(s)}>⭐ Clientes</Btn>
                 </div>
@@ -135,6 +147,7 @@ export default function WaiterPage() {
           ))}
         </Column>
       </div>
+      {receiptOf && <SessionReceipt sessionId={receiptOf.sessionId} receipt={receiptOf.receipt} onClose={() => setReceiptOf(null)} />}
       {customersOf && <TableCustomers sessionId={customersOf.id} tableLabel={customersOf.table.label} onClose={() => setCustomersOf(null)} />}
     </main>
   );

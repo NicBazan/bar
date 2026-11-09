@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { OrdersSheet } from "@/features/ordering/OrdersSheet";
+import { ReceiptSheet } from "@/features/ordering/ReceiptSheet";
 import { useLiveTable } from "@/features/ordering/useLiveTable";
 import { getCustomerToken, linkVisitIfLoggedIn } from "@/lib/customer";
 import { Toasts } from "./Sheet";
@@ -18,6 +19,7 @@ export function TableLiveBar({ tag, currency, venueId }: { tag?: string; currenc
   const [dismissed, setDismissed] = useState(false);
   const [showOrders, setShowOrders] = useState(false);
   const [showWifi, setShowWifi] = useState(false);
+  const [showReceipt, setShowReceipt] = useState(false);
   const s = live.session;
   const isOpen = s?.status === "OPEN" || s?.status === "BILL_REQUESTED";
 
@@ -49,9 +51,17 @@ export function TableLiveBar({ tag, currency, venueId }: { tag?: string; currenc
     return (
       <div className="mb-4 rounded-2xl border border-line bg-surface p-4 text-sm">
         <p className="text-cream">{live.status === "closed" ? "Esta mesa ya se cerró. ¡Gracias por venir!" : "Estás viendo la carta."}</p>
-        <Link href={`/t/${tag}`} className="mt-2 inline-block font-semibold text-brand-dark">
-          {live.status === "closed" ? "Volver a sentarme →" : "Unirme a la mesa para pedir →"}
-        </Link>
+        <div className="mt-2 flex flex-wrap gap-x-4 gap-y-1">
+          {live.status === "closed" && (
+            <button onClick={() => setShowReceipt(true)} className="font-semibold text-brand-dark underline">
+              Ver el comprobante
+            </button>
+          )}
+          <Link href={`/t/${tag}`} className="font-semibold text-brand-dark underline">
+            {live.status === "closed" ? "Volver a sentarme" : "Unirme a la mesa para pedir"}
+          </Link>
+        </div>
+        {showReceipt && <ReceiptSheet tag={tag} onClose={() => setShowReceipt(false)} />}
       </div>
     );
   }
@@ -73,7 +83,7 @@ export function TableLiveBar({ tag, currency, venueId }: { tag?: string; currenc
         <div className="mb-4 rounded-2xl border border-line bg-surface p-3">
           <div className="grid grid-cols-3 gap-2 text-xs font-medium">
             <button onClick={() => live.callService("WAITER")} className="rounded-xl bg-surface-2 py-2.5">🙋 Mozo</button>
-            <button onClick={() => live.callService("BILL")} className="rounded-xl bg-surface-2 py-2.5">🧾 Cuenta</button>
+            <button onClick={() => live.callService("BILL")} className="rounded-xl bg-surface-2 py-2.5">🧾 Pedir cuenta</button>
             <button onClick={() => setShowOrders(true)} className="relative rounded-xl bg-surface-2 py-2.5">
               📋 Pedidos
               {activeOrders > 0 && (
@@ -100,6 +110,11 @@ export function TableLiveBar({ tag, currency, venueId }: { tag?: string; currenc
               )}
             </div>
           )}
+          {s.orders.length > 0 && (
+            <button onClick={() => setShowReceipt(true)} className="mt-2 h-10 w-full rounded-xl border border-line text-xs font-medium text-cream">
+              {s.status === "BILL_REQUESTED" ? "Ver la cuenta (el mozo ya viene)" : "Ver cuánto llevamos"}
+            </button>
+          )}
           <Pin pin={s.pin} compact />
         </div>
       )}
@@ -121,6 +136,7 @@ export function TableLiveBar({ tag, currency, venueId }: { tag?: string; currenc
       {showWifi && s.hub?.wifi && <WifiSheet wifi={s.hub.wifi} onClose={() => setShowWifi(false)} onCopied={() => live.notify("Clave copiada ✅", "success")} />}
 
       {showOrders && <OrdersSheet orders={s.orders} currency={currency} onClose={() => setShowOrders(false)} />}
+      {showReceipt && <ReceiptSheet tag={tag} onClose={() => setShowReceipt(false)} />}
     </>
   );
 }

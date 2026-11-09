@@ -35,6 +35,9 @@ const MATRIX: Record<string, Access> = {
   "POST /v1/customer/unsubscribe": "public", // token firmado del email
 
   "GET /v1/session": "guest",
+  "GET /v1/session/receipt": "guest",
+  "GET /v1/customer/me/visits/:id/receipt": "customer",
+  "GET /v1/staff/sessions/:id/receipt": "redeem", // salón + caja
   "POST /v1/orders": "guest",
   "POST /v1/service-calls": "guest",
   "GET /v1/state": "guest-or-staff",

@@ -1,8 +1,8 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { ApiError, api } from "@/lib/api";
-import { formatMoney, load, remove, save, uuid } from "@/lib/storage";
+import { buildOrderPayload, isDuplicateOrder, orderErrorMessage, submitOrder } from "@/features/ordering/submitOrder";
+import { formatMoney } from "@/lib/storage";
 import { useCartStore } from "@/store/cartStore";
 
 interface FloatingCartProps {
@@ -50,64 +50,29 @@ export function FloatingCart({ currency = "ARS", tag }: FloatingCartProps) {
   const totalItems = getTotalItems();
   const totalPrice = getTotalPrice();
 
-  const handleSendOrder = async () => {
-    if (items.length === 0 || isSubmitting) return;
+  // Alguien de la mesa ya pidió exactamente esto hace unos minutos: se pregunta antes de mandarlo otra vez
+  const [duplicateMsg, setDuplicateMsg] = useState<string | null>(null);
 
+  const onSent = () => {
+    clearCart();
+    window.dispatchEvent(new Event("bar:order-sent"));
+    setOrderNote("");
+    setDuplicateMsg(null);
+    setIsOpen(false);
+    setSuccessToast("Pedido enviado. El mozo lo confirma y pasa a cocina.");
+    setTimeout(() => setSuccessToast(null), 4500);
+  };
+
+  const handleSendOrder = async (confirmDuplicate = false) => {
+    if (items.length === 0 || isSubmitting) return;
     setIsSubmitting(true);
     setErrorMsg(null);
-
     try {
-      // Token de respaldo si está almacenado en memoria local
-      const storedToken = tag ? load<string | null>(`bar.token.${tag}`, null) : null;
-
-      const bodyPayload = {
-        items: items.map((item) => ({
-          dishId: item.dishId,
-          variantId: item.variantId,
-          modifierIds: item.modifierIds,
-          quantity: item.quantity,
-          note: item.note,
-        })),
-        note: orderNote.trim() || undefined,
-      };
-
-      // Idempotencia: si se corta la red y el comensal reintenta el MISMO pedido, se reusa la key
-      // y la API devuelve el pedido ya creado en vez de duplicarlo en cocina.
-      const pendingKey = `bar.pendingOrder.${tag ?? "sin-mesa"}`;
-      const serialized = JSON.stringify(bodyPayload);
-      const pending = load<{ key: string; body: string } | null>(pendingKey, null);
-      const idempotencyKey = pending?.body === serialized ? pending.key : uuid();
-      save(pendingKey, { key: idempotencyKey, body: serialized });
-
-      await api("/orders", {
-        method: "POST",
-        body: bodyPayload,
-        token: storedToken,
-        headers: {
-          "Idempotency-Key": idempotencyKey,
-        },
-      });
-
-      // Éxito: vaciamos carrito, cerramos sheet y mostramos confirmación
-      remove(pendingKey);
-      clearCart();
-      window.dispatchEvent(new Event("bar:order-sent"));
-      setOrderNote("");
-      setIsOpen(false);
-      setSuccessToast("¡Pedido enviado a cocina! El mozo lo confirmará a la brevedad.");
-      setTimeout(() => setSuccessToast(null), 4500);
+      await submitOrder(tag, buildOrderPayload(items, orderNote, confirmDuplicate));
+      onSent();
     } catch (err) {
-      if (err instanceof ApiError) {
-        if (err.status === 401) {
-          setErrorMsg("Sesión vencida. Por favor escaneá el QR nuevamente.");
-        } else if (err.status === 402) {
-          setErrorMsg("El establecimiento no tiene el servicio disponible en este momento.");
-        } else {
-          setErrorMsg(err.message || "Error al registrar el pedido.");
-        }
-      } else {
-        setErrorMsg("Falla de conexión al enviar el pedido. Por favor intentá nuevamente.");
-      }
+      if (isDuplicateOrder(err)) setDuplicateMsg(err.message);
+      else setErrorMsg(orderErrorMessage(err));
     } finally {
       setIsSubmitting(false);
     }
@@ -194,8 +159,28 @@ export function FloatingCart({ currency = "ARS", tag }: FloatingCartProps) {
 
             {/* Mensaje de error si falla el envío */}
             {errorMsg && (
-              <div className="mt-4 rounded-xl border border-warn/40 bg-warn/10 p-3 text-xs text-warn">
+              <div role="alert" className="mt-4 rounded-xl border border-warn/40 bg-warn/10 p-3 text-xs text-warn">
                 {errorMsg}
+              </div>
+            )}
+
+            {/* Pedido repetido: se confirma en un toque o se cancela */}
+            {duplicateMsg && (
+              <div role="alert" className="mt-4 rounded-xl border border-line border-l-4 border-l-amber bg-surface p-3">
+                <p className="text-sm text-cream">{duplicateMsg}</p>
+                <div className="mt-3 grid grid-cols-2 gap-2">
+                  <button
+                    type="button"
+                    disabled={isSubmitting}
+                    onClick={() => void handleSendOrder(true)}
+                    className="h-11 rounded-xl bg-amber text-sm font-semibold text-amber-ink disabled:opacity-50"
+                  >
+                    {isSubmitting ? "Enviando…" : "Sí, pedir otro igual"}
+                  </button>
+                  <button type="button" onClick={() => setDuplicateMsg(null)} className="h-11 rounded-xl border border-line text-sm text-cream">
+                    No, era el mismo
+                  </button>
+                </div>
               </div>
             )}
 
@@ -259,9 +244,9 @@ export function FloatingCart({ currency = "ARS", tag }: FloatingCartProps) {
             <div className="mt-4">
               <label
                 htmlFor="order-note"
-                className="block text-[11px] font-medium text-muted uppercase tracking-wider mb-1.5"
+                className="mb-1.5 block text-xs font-medium text-muted"
               >
-                Observaciones para cocina (opcional)
+                Aclaraciones para la cocina (opcional)
               </label>
               <textarea
                 id="order-note"
@@ -276,7 +261,7 @@ export function FloatingCart({ currency = "ARS", tag }: FloatingCartProps) {
             {/* Resumen Final y Botón de Enviar a Cocina */}
             <div className="mt-5 border-t border-line/60 pt-4">
               <div className="mb-4 flex items-center justify-between">
-                <span className="text-sm font-medium text-muted">Total a abonar</span>
+                <span className="text-sm font-medium text-muted">Total de este pedido</span>
                 <span className="font-display text-2xl font-semibold text-brand-dark">
                   {formatMoney(totalPrice, currency)}
                 </span>
@@ -310,11 +295,11 @@ export function FloatingCart({ currency = "ARS", tag }: FloatingCartProps) {
                         d="M4 12a8 8 0 018-8v8z"
                       ></path>
                     </svg>
-                    Enviando a cocina...
+                    Enviando…
                   </span>
                 ) : (
                   <>
-                    <span>{waitingForWaiter ? "Esperando que el mozo abra la mesa…" : "Confirmar y Enviar a Cocina"}</span>
+                    <span>{waitingForWaiter ? "Esperando que el mozo abra la mesa…" : "Enviar pedido al mozo"}</span>
                     <span>👨‍🍳</span>
                   </>
                 )}

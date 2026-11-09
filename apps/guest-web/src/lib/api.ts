@@ -163,6 +163,23 @@ export type SessionState = {
   hub?: { wifi: { ssid: string; password: string } | null; googleReviewUrl: string | null };
 };
 
+/** Comprobante de consumo (GET /session/receipt): provisorio con la mesa abierta, numerado al cerrarla */
+export type Receipt = {
+  kind: "PROVISIONAL" | "FINAL";
+  number: number | null;
+  title: string;
+  venue: { name: string; address: string | null };
+  table: string;
+  openedAt: string;
+  closedAt: string | null;
+  currency: string;
+  lines: Array<{ quantity: number; description: string; unitCents: number; subtotalCents: number }>;
+  notBilled: Array<{ quantity: number; description: string; reason: string }>;
+  units: number;
+  totalCents: number;
+  legend: string;
+};
+
 export type StateEvents = {
   lastSeq: number;
   events: Array<{ venueSeq: number; type: string; payload: Record<string, unknown> }>;

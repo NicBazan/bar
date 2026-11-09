@@ -37,12 +37,12 @@ async function dishId(name: string) {
   return dish.id as string;
 }
 
-async function order(guest: string, dish: string) {
+async function order(guest: string, dish: string, confirmDuplicate = false) {
   const res = await app.inject({
     method: "POST",
     url: "/v1/orders",
     headers: { ...auth(guest), "idempotency-key": randomUUID() },
-    payload: { items: [{ dishId: dish, quantity: 2 }] },
+    payload: { items: [{ dishId: dish, quantity: 2 }], confirmDuplicate },
   });
   expect(res.statusCode).toBe(201);
   const id = res.json().id as string;
@@ -114,7 +114,8 @@ describe("Mi cuenta: ingreso con código", () => {
 
     // El pedido anterior quedó vinculado y los siguientes de este celular también
     expect((await prisma.order.findUniqueOrThrow({ where: { id: before } })).customerId).toBe(body.customer.id);
-    const after = await order(guest, papas);
+    // Mismo pedido a los pocos minutos: la carta pide confirmarlo (regla anti-duplicado) y el cliente confirma
+    const after = await order(guest, papas, true);
     expect((await prisma.order.findUniqueOrThrow({ where: { id: after } })).customerId).toBe(body.customer.id);
 
     const me = (await app.inject({ url: "/v1/customer/me", headers: auth(customer) })).json();

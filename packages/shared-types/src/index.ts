@@ -23,6 +23,8 @@ export type OrderItemInput = z.infer<typeof OrderItemInput>;
 export const CreateOrderBody = z.object({
   items: z.array(OrderItemInput).min(1).max(30),
   note: z.string().trim().max(300).optional(),
+  // El comensal confirma que quiere repetir un pedido idéntico al de hace unos minutos (409 DUPLICATE_ORDER)
+  confirmDuplicate: z.boolean().optional(),
 });
 export type CreateOrderBody = z.infer<typeof CreateOrderBody>;
 

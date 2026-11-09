@@ -1,4 +1,4 @@
-import { randomInt, timingSafeEqual } from "node:crypto";
+import { timingSafeEqual } from "node:crypto";
 import { JoinSessionBody } from "@bar/shared-types";
 import type { FastifyReply, FastifyRequest } from "fastify";
 import { z } from "zod";
@@ -9,7 +9,7 @@ import { Prisma, prisma } from "../../shared/db/index.js";
 import { HttpError, forbidden, notFound } from "../../shared/errors.js";
 import { channels, emit } from "../../shared/outbox/outbox.js";
 import { assertTenantCanOpenSession, incrementSessionUsage } from "../billing/billing.guard.js";
-import { awardSession } from "../loyalty/service.js";
+import { closeSession, newJoinPin } from "./lifecycle.js";
 import { nfcSunService } from "./nfc-sun.service.js";
 
 export const ACTIVE_SESSION_STATUSES = ["PENDING", "OPEN", "BILL_REQUESTED"] as const;
@@ -130,156 +130,130 @@ export async function resolveTagHandler(req: FastifyRequest) {
   };
 }
 
+type ActiveTag = Awaited<ReturnType<typeof getTableTagWithActiveSession>>;
+type JoinBody = ReturnType<typeof JoinSessionBody.parse>;
+
 /**
  * POST /v1/tags/:code/session
  * Une al comensal a la mesa mediante verificación criptográfica NFC SUN o PIN de sesión (QR).
+ * Controlador fino (GRASP Controller): cada paso es una función con una sola responsabilidad.
  */
 export async function joinTableSession(req: FastifyRequest, reply: FastifyReply) {
   const { code } = TagParams.parse(req.params);
   const query = NfcQuery.parse(req.query);
   const body = JoinSessionBody.parse(req.body);
 
-  // 1. Consulta tableTag en Prisma junto a su sesión activa
   const tag = await getTableTagWithActiveSession(code);
-  const { table } = tag;
   // Bar suspendido por la plataforma: la carta muestra "atención en mesa" (402)
   await assertTenantActive(tag.tenantId);
+  const sunCounter = verifyNfcPresence(tag, query);
+  const physical = sunCounter !== null;
 
-  let isPhysicalPresence = false;
-  let parsedCounter = 0;
-
-  // 2. Toque NFC (NTAG 424 SUN): validar que el chip sea el de ESTA mesa y que la firma sea válida
-  if (query.uid || query.ctr || query.cmac) {
-    const { uid = "", ctr = "", cmac = "" } = query;
-    // El UID grabado en la mesa ata la firma al tag: una URL válida de otra mesa no sirve acá
-    if (!tag.nfcUid || tag.nfcUid.toUpperCase() !== uid.toUpperCase()) {
-      throw forbidden("INVALID_NFC_SIGNATURE", "El tag NFC no corresponde a esta mesa");
-    }
-    const counter = nfcSunService.verify(uid, ctr, cmac, config.nfcMasterKey);
-    if (counter === null) {
-      throw forbidden("INVALID_NFC_SIGNATURE", "Firma criptográfica del tag NFC inválida");
-    }
-    parsedCounter = counter;
-    isPhysicalPresence = true;
-  }
-
-  // 3. Transacción atómica: quemar contador SUN, crear/obtener sesión y registrar dispositivo.
-  //    El PIN se valida adentro: un dispositivo que ya estaba en la mesa vuelve a entrar sin PIN.
-  const result = await joinWithPinAccounting(() =>
+  // Transacción atómica: quemar contador SUN, crear/obtener sesión y registrar dispositivo.
+  // El PIN se valida adentro: un dispositivo que ya estaba en la mesa vuelve a entrar sin PIN.
+  const { session, device } = await joinWithPinAccounting(() =>
     prisma.$transaction(async (tx) => {
-      if (isPhysicalPresence) {
-        // Anti-replay atómico: solo avanza si el contador es mayor que el último aceptado.
-        // Dos requests con la misma URL a la vez: una actualiza, la otra ve count = 0.
-        const burned = await tx.tableTag.updateMany({
-          where: { code: tag.code, sunCounter: { lt: parsedCounter } },
-          data: { sunCounter: parsedCounter },
-        });
-        if (burned.count === 0) {
-          throw forbidden("REPLAY_ATTACK_DETECTED", "Este toque NFC ya fue utilizado. Apoyá el celular de nuevo.");
-        }
-      }
-
-      let session = await tx.tableSession.findFirst({
-        where: { tableId: table.id, status: { in: [...ACTIVE_SESSION_STATUSES] } },
-      });
-
-      // Sesión abandonada (alguien escaneó y se fue, o el mozo se olvidó de cerrar):
-      // se cierra sola para que el próximo cliente de la mesa no se encuentre con un PIN ajeno
-      if (session && (await isAbandoned(tx, session))) {
-        await tx.tableSession.update({ where: { id: session.id }, data: { status: "CLOSED", closedAt: new Date() } });
-        await awardSession(tx, session.id);
-        session = null;
-      }
-
-      if (!session) {
-        // Validación de cuota Freemium antes de abrir la mesa
-        await assertTenantCanOpenSession(tx, tag.tenantId);
-
-        // Primera apertura de la mesa
-        session = await tx.tableSession.create({
-          data: {
-            tenantId: tag.tenantId,
-            venueId: table.venueId,
-            tableId: table.id,
-            status: isPhysicalPresence ? "OPEN" : "PENDING",
-            joinPin: String(randomInt(0, 10000)).padStart(4, "0"),
-          },
-        });
-
-        // La cuota mensual se consume cuando la mesa se ABRE de verdad (NFC acá, o el mozo en
-        // POST /staff/sessions/:id/open). Escaneos de un QR fotografiado que nadie abre no la gastan.
-        if (isPhysicalPresence) await incrementSessionUsage(tx, tag.tenantId);
-
-        await emit(tx, {
-          tenantId: tag.tenantId,
-          venueId: table.venueId,
-          type: "session.requested",
-          channels: [channels.staff(table.venueId)],
-          payload: { sessionId: session.id, tableLabel: table.label },
-        });
-      } else if (!isPhysicalPresence) {
-        // Si no tiene presencia física y el dispositivo no está previamente registrado, valida el PIN
-        const alreadyJoined = await tx.guestDevice.findUnique({
-          where: { sessionId_deviceKey: { sessionId: session.id, deviceKey: body.deviceKey } },
-        });
-
-        if (!alreadyJoined) {
-          if (session.pinFailures >= PIN_MAX_FAILURES) {
-            throw new HttpError(423, "PIN_LOCKED", "Demasiados intentos. Pedile al mozo que te sume a la mesa.");
-          }
-          if (!body.pin) {
-            throw forbidden("PIN_REQUIRED", "Pedile el PIN a quien abrió la mesa");
-          }
-          if (!safeEqual(body.pin, session.joinPin)) {
-            // Se cuenta FUERA de esta transacción (que se revierte al lanzar el error)
-            throw new WrongPinError(session.id);
-          }
-        }
-      }
-
+      if (physical) await burnSunCounter(tx, tag.code, sunCounter);
+      const current = await currentSession(tx, tag);
+      const session = current ?? (await startSession(tx, tag, physical));
+      if (current && !physical) await assertMayJoin(tx, current, body);
       const device = await tx.guestDevice.upsert({
         where: { sessionId_deviceKey: { sessionId: session.id, deviceKey: body.deviceKey } },
-        create: {
-          tenantId: tag.tenantId,
-          sessionId: session.id,
-          deviceKey: body.deviceKey,
-        },
+        create: { tenantId: tag.tenantId, sessionId: session.id, deviceKey: body.deviceKey },
         update: {},
       });
-
       return { session, device };
     }),
   );
 
-  // 5. Firma de token JWT con jose y envío en cookie HttpOnly
-  const token = await signToken({
-    typ: "guest",
-    tid: tag.tenantId,
-    vid: table.venueId,
-    sid: result.session.id,
-    did: result.device.id,
-    phys: isPhysicalPresence,
-  });
-
-  reply.setCookie(GUEST_COOKIE, token, {
-    httpOnly: true,
-    secure: config.isProd,
-    sameSite: "lax",
-    path: "/",
-    maxAge: 12 * 60 * 60,
-  });
-
+  const token = await issueGuestToken(reply, { tag, sessionId: session.id, deviceId: device.id, physical });
   return {
     token,
-    physicalPresence: isPhysicalPresence,
+    physicalPresence: physical,
     session: {
-      id: result.session.id,
-      status: result.session.status,
-      pin: result.session.joinPin,
-      venueId: table.venueId,
-      table: { id: table.id, label: table.label },
+      id: session.id,
+      status: session.status,
+      pin: session.joinPin,
+      venueId: tag.table.venueId,
+      table: { id: tag.table.id, label: tag.table.label },
     },
   };
+}
+
+/** Toque NFC (NTAG 424 SUN): el chip tiene que ser el de ESTA mesa y la firma válida. Devuelve el contador o null si es QR */
+function verifyNfcPresence(tag: ActiveTag, query: NfcQuery): number | null {
+  if (!query.uid && !query.ctr && !query.cmac) return null;
+  const { uid = "", ctr = "", cmac = "" } = query;
+  // El UID grabado en la mesa ata la firma al tag: una URL válida de otra mesa no sirve acá
+  if (!tag.nfcUid || tag.nfcUid.toUpperCase() !== uid.toUpperCase()) {
+    throw forbidden("INVALID_NFC_SIGNATURE", "El tag NFC no corresponde a esta mesa");
+  }
+  const counter = nfcSunService.verify(uid, ctr, cmac, config.nfcMasterKey);
+  if (counter === null) throw forbidden("INVALID_NFC_SIGNATURE", "Firma criptográfica del tag NFC inválida");
+  return counter;
+}
+
+/** Anti-replay atómico: solo avanza si el contador es mayor que el último aceptado (dos requests iguales: una gana) */
+async function burnSunCounter(tx: Prisma.TransactionClient, code: string, counter: number) {
+  const burned = await tx.tableTag.updateMany({ where: { code, sunCounter: { lt: counter } }, data: { sunCounter: counter } });
+  if (burned.count === 0) {
+    throw forbidden("REPLAY_ATTACK_DETECTED", "Este toque NFC ya fue utilizado. Apoyá el celular de nuevo.");
+  }
+}
+
+/**
+ * Sesión activa de la mesa. Si quedó abandonada (alguien escaneó y se fue, o el mozo se olvidó de cerrar),
+ * se cierra con las mismas reglas que un cierre del mozo, para que el próximo cliente no herede un PIN ajeno.
+ */
+async function currentSession(tx: Prisma.TransactionClient, tag: ActiveTag) {
+  const session = await tx.tableSession.findFirst({ where: { tableId: tag.table.id, status: { in: [...ACTIVE_SESSION_STATUSES] } } });
+  if (!session || !(await isAbandoned(tx, session))) return session;
+  await closeSession(tx, session, "ABANDONED");
+  return null;
+}
+
+/** Primera apertura de la mesa: OPEN si hubo toque NFC, PENDING (espera al mozo) si fue por QR */
+async function startSession(tx: Prisma.TransactionClient, tag: ActiveTag, physical: boolean) {
+  await assertTenantCanOpenSession(tx, tag.tenantId);
+  const session = await tx.tableSession.create({
+    data: {
+      tenantId: tag.tenantId,
+      venueId: tag.table.venueId,
+      tableId: tag.table.id,
+      status: physical ? "OPEN" : "PENDING",
+      joinPin: newJoinPin(),
+    },
+  });
+  // La cuota mensual se consume cuando la mesa se ABRE de verdad (NFC acá, o el mozo en
+  // POST /staff/sessions/:id/open). Escaneos de un QR fotografiado que nadie abre no la gastan.
+  if (physical) await incrementSessionUsage(tx, tag.tenantId);
+  await emit(tx, {
+    tenantId: tag.tenantId,
+    venueId: tag.table.venueId,
+    type: "session.requested",
+    channels: [channels.staff(tag.table.venueId)],
+    payload: { sessionId: session.id, tableLabel: tag.table.label },
+  });
+  return session;
+}
+
+/** Sin presencia física: un celular nuevo necesita el PIN; uno que ya estaba en la mesa entra directo */
+async function assertMayJoin(tx: Prisma.TransactionClient, session: { id: string; joinPin: string; pinFailures: number }, body: JoinBody) {
+  const alreadyJoined = await tx.guestDevice.findUnique({ where: { sessionId_deviceKey: { sessionId: session.id, deviceKey: body.deviceKey } } });
+  if (alreadyJoined) return;
+  if (session.pinFailures >= PIN_MAX_FAILURES) {
+    throw new HttpError(423, "PIN_LOCKED", "Demasiados intentos. Pedile al mozo que te sume a la mesa.");
+  }
+  if (!body.pin) throw forbidden("PIN_REQUIRED", "Pedile el PIN a quien abrió la mesa");
+  // El intento fallido se cuenta FUERA de esta transacción (que se revierte al lanzar el error)
+  if (!safeEqual(body.pin, session.joinPin)) throw new WrongPinError(session.id);
+}
+
+/** Token del comensal (JWT) en cookie HttpOnly; también se devuelve para el cliente que use Bearer */
+async function issueGuestToken(reply: FastifyReply, p: { tag: ActiveTag; sessionId: string; deviceId: string; physical: boolean }) {
+  const token = await signToken({ typ: "guest", tid: p.tag.tenantId, vid: p.tag.table.venueId, sid: p.sessionId, did: p.deviceId, phys: p.physical });
+  reply.setCookie(GUEST_COOKIE, token, { httpOnly: true, secure: config.isProd, sameSite: "lax", path: "/", maxAge: 12 * 60 * 60 });
+  return token;
 }
 
 /**

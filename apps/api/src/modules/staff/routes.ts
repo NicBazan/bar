@@ -1,4 +1,3 @@
-import { randomInt } from "node:crypto";
 import { StaffLoginBody } from "@bar/shared-types";
 import type { FastifyInstance } from "fastify";
 import { z } from "zod";
@@ -6,12 +5,11 @@ import { config } from "../../config.js";
 import { FLOOR_ROLES, STAFF_COOKIE, requireStaff, staffScope } from "../../shared/auth/guards.js";
 import { hashPassword, verifyPassword } from "../../shared/auth/password.js";
 import { signToken } from "../../shared/auth/tokens.js";
-import { prisma } from "../../shared/db/index.js";
+import { prisma, type Tx } from "../../shared/db/index.js";
+import { type SessionRef, closeSession, openSession, rotatePin } from "../table-session/lifecycle.js";
+import { receiptOf } from "../table-session/receipt.js";
 import { loginKey } from "../../shared/rate-limit/keys.js";
-import { HttpError, conflict, notFound } from "../../shared/errors.js";
-import { channels, emit } from "../../shared/outbox/outbox.js";
-import { assertTenantCanOpenSession, incrementSessionUsage } from "../billing/billing.guard.js";
-import { awardSession } from "../loyalty/service.js";
+import { HttpError, notFound } from "../../shared/errors.js";
 
 // Hash con el mismo costo que uno real, para igualar tiempos cuando el email no existe
 const DUMMY_HASH = hashPassword("usuario-inexistente-para-igualar-tiempos");
@@ -64,74 +62,32 @@ export async function staffRoutes(app: FastifyInstance) {
     });
   });
 
+  // Acciones del mozo sobre una mesa (Command): cada una es una transición de lifecycle.ts
   app.post("/staff/sessions/:id/:action", async (req) => {
     const staff = await requireStaff(req, FLOOR_ROLES);
     const { id, action } = z.object({ id: z.uuid(), action: z.enum(["open", "close", "new-pin"]) }).parse(req.params);
-
     return prisma.$transaction(async (tx) => {
-      const session = await tx.tableSession.findFirst({ where: { id, ...staffScope(staff) } });
+      const session = await tx.tableSession.findFirst({ where: { id, ...staffScope(staff) }, select: { id: true, tenantId: true, venueId: true } });
       if (!session) throw notFound("Sesión");
-
-      if (action === "open") {
-        if (session.status !== "PENDING") throw conflict("SESSION_NOT_PENDING");
-        // Abrir la mesa consume una sesión del plan (402 si el bar FREE llegó al límite del mes)
-        await assertTenantCanOpenSession(tx, session.tenantId);
-        await incrementSessionUsage(tx, session.tenantId);
-        const updated = await tx.tableSession.update({
-          where: { id },
-          data: { status: "OPEN", approvedById: staff.sub },
-        });
-        await emit(tx, {
-          tenantId: session.tenantId,
-          venueId: session.venueId,
-          type: "session.opened",
-          channels: [channels.staff(session.venueId), channels.session(id)],
-          payload: { sessionId: id },
-        });
-        return updated;
-      }
-
-      if (session.status === "CLOSED") throw conflict("SESSION_ALREADY_CLOSED");
-
-      if (action === "new-pin") {
-        // PIN nuevo y desbloqueo (por intentos fallidos o porque el PIN se filtró)
-        const updated = await tx.tableSession.update({
-          where: { id },
-          data: { joinPin: String(randomInt(0, 10000)).padStart(4, "0"), pinFailures: 0 },
-        });
-        await emit(tx, {
-          tenantId: session.tenantId,
-          venueId: session.venueId,
-          type: "session.pin_changed",
-          channels: [channels.staff(session.venueId), channels.session(id)],
-          payload: { sessionId: id },
-        });
-        return updated;
-      }
-
-      const updated = await tx.tableSession.update({ where: { id }, data: { status: "CLOSED", closedAt: new Date() } });
-      // Pedidos que nadie confirmó no deben quedar flotando: se cancelan con la mesa
-      const stale = await tx.order.findMany({ where: { sessionId: id, status: "PENDING_APPROVAL" }, select: { id: true } });
-      if (stale.length > 0) {
-        const ids = stale.map((o) => o.id);
-        await tx.order.updateMany({ where: { id: { in: ids } }, data: { status: "CANCELLED" } });
-        await tx.orderItem.updateMany({ where: { orderId: { in: ids } }, data: { status: "VOIDED", voidReason: "Mesa cerrada" } });
-      }
-      // Fidelización: sellos o puntos para los clientes identificados en esta visita
-      await awardSession(tx, id);
-      // Llamados abiertos se resuelven al cerrar la mesa
-      await tx.serviceCall.updateMany({
-        where: { sessionId: id, status: { not: "RESOLVED" } },
-        data: { status: "RESOLVED", resolvedAt: new Date() },
-      });
-      await emit(tx, {
-        tenantId: session.tenantId,
-        venueId: session.venueId,
-        type: "session.closed",
-        channels: [channels.staff(session.venueId), channels.session(id)],
-        payload: { sessionId: id },
-      });
-      return updated;
+      return SESSION_ACTIONS[action](tx, session, staff.sub);
     });
   });
+
+  // Comprobante de la mesa para el mozo o la caja: provisorio mientras está abierta, final al cerrarla
+  app.get("/staff/sessions/:id/receipt", async (req) => {
+    const staff = await requireStaff(req, [...FLOOR_ROLES, "CASHIER"]);
+    const { id } = z.object({ id: z.uuid() }).parse(req.params);
+    const session = await prisma.tableSession.findFirst({ where: { id, ...staffScope(staff) }, select: { id: true } });
+    if (!session) throw notFound("Sesión");
+    return receiptOf(session.id);
+  });
 }
+
+const SESSION_ACTIONS = {
+  open: (tx: Tx, s: SessionRef, staffId: string) => openSession(tx, s, staffId),
+  "new-pin": (tx: Tx, s: SessionRef) => rotatePin(tx, s),
+  close: async (tx: Tx, s: SessionRef) => {
+    const { receipt } = await closeSession(tx, s, "STAFF");
+    return { ...(await tx.tableSession.findUniqueOrThrow({ where: { id: s.id } })), receipt };
+  },
+} satisfies Record<string, (tx: Tx, s: SessionRef, staffId: string) => Promise<unknown>>;

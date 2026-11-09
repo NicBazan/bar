@@ -10,6 +10,7 @@ import { HttpError, notFound } from "../../shared/errors.js";
 import { customerCodeKey } from "../../shared/rate-limit/keys.js";
 import { getVenueMenu } from "../catalog/service.js";
 import { awardSession } from "../loyalty/service.js";
+import { receiptOf } from "../table-session/receipt.js";
 
 /** El código de ingreso vence a los 10 minutos y admite 5 intentos */
 export const CODE_TTL_MS = 10 * 60 * 1000;
@@ -258,6 +259,15 @@ export async function customerRoutes(app: FastifyInstance) {
       if (COUNTED.includes(o.status as "APPROVED")) v.totalCents += o.totalCents;
     }
     return [...visits.values()];
+  });
+
+  // Comprobante de una visita, para releerlo cuando quiera: solo de mesas donde el cliente pidió algo
+  app.get("/customer/me/visits/:id/receipt", async (req) => {
+    const me = await requireCustomer(req);
+    const { id } = z.object({ id: z.uuid() }).parse(req.params);
+    const mine = await prisma.order.count({ where: { sessionId: id, customerId: me.sub, tenantId: me.tid } });
+    if (mine === 0) throw notFound("Visita");
+    return receiptOf(id);
   });
 
   /**
