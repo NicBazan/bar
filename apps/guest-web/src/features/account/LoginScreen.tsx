@@ -57,13 +57,13 @@ export function LoginScreen({ venueId, venueName, logoUrl, tag, onDone }: {
   };
 
   return (
-    <main className="mx-auto flex min-h-dvh max-w-md flex-col bg-paper px-5 pt-10 pb-8 text-night md:my-12 md:min-h-0 md:rounded-2xl md:border md:border-line md:bg-white md:px-10 md:py-10">
+    <main className="mx-auto flex min-h-dvh max-w-md flex-col bg-paper px-5 pt-10 pb-8 text-night md:my-12 md:min-h-0 md:rounded-2xl md:border md:border-line md:bg-surface md:px-10 md:py-10">
       <div className="flex items-center gap-3">
         <span className="grid h-12 w-12 place-items-center overflow-hidden rounded-2xl border border-line bg-surface text-xl">
           {logoUrl ? <img src={logoUrl} alt="" className="h-full w-full object-contain p-1" /> : "🍸"}
         </span>
         <div>
-          <p className="text-xs text-night/60">Mi cuenta en</p>
+          <p className="text-xs text-muted">Mi cuenta en</p>
           <p className="font-semibold">{venueName}</p>
         </div>
       </div>
@@ -93,7 +93,7 @@ export function LoginScreen({ venueId, venueName, logoUrl, tag, onDone }: {
             value={email}
             onChange={(e) => setEmail(e.target.value)}
             placeholder="vos@email.com"
-            className="h-12 w-full rounded-2xl border border-night/10 bg-white px-4 text-base outline-none focus:border-brand"
+            className="h-12 w-full rounded-2xl border border-line bg-surface px-4 text-base outline-none focus:border-brand"
           />
           <button disabled={busy || !email} className="h-12 w-full rounded-2xl bg-brand font-semibold text-amber-ink active:bg-brand-dark disabled:opacity-50">
             {busy ? "Enviando…" : "Mandame el código"}
@@ -121,7 +121,7 @@ export function LoginScreen({ venueId, venueName, logoUrl, tag, onDone }: {
             value={code}
             onChange={(e) => setCode(e.target.value.replace(/\D/g, "").slice(0, 6))}
             placeholder="••••••"
-            className="h-14 w-full rounded-2xl border border-night/10 bg-white text-center font-mono text-2xl tracking-[0.5em] outline-none focus:border-brand"
+            className="h-14 w-full rounded-2xl border border-line bg-surface text-center font-mono text-2xl tracking-[0.5em] outline-none focus:border-brand"
           />
           <input
             aria-label="Tu nombre"
@@ -130,7 +130,7 @@ export function LoginScreen({ venueId, venueName, logoUrl, tag, onDone }: {
             autoComplete="given-name"
             onChange={(e) => setName(e.target.value)}
             placeholder="¿Cómo te llamamos? (opcional)"
-            className="h-12 w-full rounded-2xl border border-night/10 bg-white px-4 text-base outline-none focus:border-brand"
+            className="h-12 w-full rounded-2xl border border-line bg-surface px-4 text-base outline-none focus:border-brand"
           />
           <label className="flex min-h-11 items-start gap-3 text-xs text-night/70">
             <input type="checkbox" checked={accept} onChange={(e) => setAccept(e.target.checked)} className="mt-0.5 h-5 w-5 accent-brand" />
@@ -145,7 +145,7 @@ export function LoginScreen({ venueId, venueName, logoUrl, tag, onDone }: {
           <button disabled={busy || code.length !== 6} className="h-12 w-full rounded-2xl bg-brand font-semibold text-amber-ink active:bg-brand-dark disabled:opacity-50">
             {busy ? "Verificando…" : "Entrar"}
           </button>
-          <button type="button" onClick={() => { setStep("email"); setCode(""); setError(null); }} className="h-11 w-full text-sm text-night/60">
+          <button type="button" onClick={() => { setStep("email"); setCode(""); setError(null); }} className="h-11 w-full text-sm text-muted">
             Usar otro email o pedir otro código
           </button>
         </form>
@@ -153,7 +153,7 @@ export function LoginScreen({ venueId, venueName, logoUrl, tag, onDone }: {
 
       {error && <p role="alert" className="mt-3 rounded-2xl bg-brand/10 px-4 py-3 text-sm text-brand-dark">{error}</p>}
 
-      <Link href={tag ? `/v/${venueId}/menu?tag=${tag}` : `/v/${venueId}/menu`} className="mt-auto pt-8 text-center text-sm text-night/60">
+      <Link href={tag ? `/v/${venueId}/menu?tag=${tag}` : `/v/${venueId}/menu`} className="mt-auto pt-8 text-center text-sm text-muted">
         ← Volver a la carta
       </Link>
     </main>

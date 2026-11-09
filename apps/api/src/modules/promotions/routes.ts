@@ -2,11 +2,11 @@ import type { FastifyInstance } from "fastify";
 import { z } from "zod";
 import { config } from "../../config.js";
 import { requireCustomer } from "../../shared/auth/guards.js";
-import { signUnsubToken, verifyUnsubToken } from "../../shared/auth/tokens.js";
+import { verifyUnsubToken } from "../../shared/auth/tokens.js";
 import { Prisma, prisma, type Tx } from "../../shared/db/index.js";
-import { sendEmail } from "../../shared/email/index.js";
 import { HttpError, notFound } from "../../shared/errors.js";
-import { isAllowedPushEndpoint, sendPush, vapid } from "../../shared/push.js";
+import { deliverToCustomer } from "../../shared/notify/deliver.js";
+import { isAllowedPushEndpoint, vapid } from "../../shared/push.js";
 import { audit, requireAdmin } from "../admin/context.js";
 
 /** Tope de campañas por bar (mails y push a clientes): 1 por semana */
@@ -68,7 +68,6 @@ async function audience(db: Tx | typeof prisma, tenantId: string, segment: "ALL"
   });
 }
 
-const escapeHtml = (s: string) => s.replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c]!);
 
 export async function promotionRoutes(app: FastifyInstance) {
   // Baja "one-click" de los clientes de correo (RFC 8058): POST con cuerpo de formulario.
@@ -245,36 +244,22 @@ export async function promotionRoutes(app: FastifyInstance) {
       return { campaign, recipients: await audience(tx, ctx.tenantId, body.segment), venue };
     });
 
-    const url = `${config.publicGuestUrl}/v/${venue.id}/cuenta?tab=promos`;
+    const message = {
+      tenantId: ctx.tenantId,
+      venueName: venue.name,
+      title: body.title,
+      body: body.body,
+      url: `${config.publicGuestUrl}/v/${venue.id}/cuenta?tab=promos`,
+      linkLabel: "Ver en Mi cuenta",
+    };
     let pushSent = 0;
     let emailSent = 0;
     const gone: string[] = [];
-
     for (const c of recipients) {
-      for (const s of c.pushSubs) {
-        const r = await sendPush(s, { title: `${venue.name}: ${body.title}`, body: body.body, url, tid: ctx.tenantId });
-        if (r === "sent") pushSent++;
-        if (r === "gone") gone.push(s.id);
-      }
-      if (c.marketingOptInAt) {
-        const unsub = `${config.publicGuestUrl}/baja?t=${await signUnsubToken(c.id, ctx.tenantId)}`;
-        const oneClick = `${config.publicGuestUrl}/v1/customer/unsubscribe?t=${await signUnsubToken(c.id, ctx.tenantId)}`;
-        try {
-          await sendEmail({
-            to: c.email,
-            subject: `${venue.name}: ${body.title}`,
-            text: `${c.name ? `Hola ${c.name}:\n\n` : ""}${body.body}\n\nVer en Mi cuenta: ${url}\n\nNo quiero recibir más promos de ${venue.name}: ${unsub}`,
-            html:
-              `<p>${c.name ? `Hola ${escapeHtml(c.name)}:` : ""}</p><p>${escapeHtml(body.body)}</p>` +
-              `<p><a href="${escapeHtml(url)}">Ver en Mi cuenta</a></p>` +
-              `<p style="font-size:12px;color:#666"><a href="${escapeHtml(unsub)}">Darme de baja de las promos de ${escapeHtml(venue.name)}</a></p>`,
-            headers: { "List-Unsubscribe": `<${oneClick}>`, "List-Unsubscribe-Post": "List-Unsubscribe=One-Click" },
-          });
-          emailSent++;
-        } catch (e) {
-          req.log.warn({ err: e }, "campaign email failed");
-        }
-      }
+      const r = await deliverToCustomer(c, message, (e) => req.log.warn({ err: e }, "campaign email failed"));
+      pushSent += r.pushSent;
+      emailSent += r.emailSent ? 1 : 0;
+      gone.push(...r.goneSubs);
     }
 
     if (gone.length) await prisma.pushSubscription.deleteMany({ where: { id: { in: gone } } });

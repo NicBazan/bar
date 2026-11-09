@@ -85,7 +85,7 @@ function Stat({ label, value, sub, onClick }: { label: string; value: string; su
   const Tag = onClick ? "button" : "div";
   return (
     <Tag onClick={onClick} className="rounded-2xl border border-line bg-surface p-4 text-left">
-      <p className="text-xs font-semibold tracking-wide text-muted uppercase">{label}</p>
+      <p className="text-xs font-semibold text-muted">{label}</p>
       <p className="mt-1 font-display text-3xl">{value}</p>
       <p className="text-xs text-muted">{sub}</p>
     </Tag>

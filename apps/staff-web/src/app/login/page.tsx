@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { ThemeToggle } from "@/components/ThemeToggle";
 import { ApiError, type StaffUser, api, setAuth } from "@/lib/api";
 
 const HOME_BY_ROLE: Record<StaffUser["role"], string> = {
@@ -34,10 +35,11 @@ export default function LoginPage() {
     }
   };
 
-  const input = "h-12 w-full rounded-2xl border border-line bg-white px-4 text-base outline-none transition focus:border-amber";
+  const input = "h-12 w-full rounded-2xl border border-line bg-surface px-4 text-base outline-none transition focus:border-amber";
 
   return (
-    <main className="grid min-h-dvh place-items-center px-4 py-8">
+    <main className="relative grid min-h-dvh place-items-center px-4 py-8">
+      <ThemeToggle className="absolute top-4 right-4" />
       <div className="grid w-full max-w-md overflow-hidden rounded-lg border border-line bg-surface md:max-w-4xl md:grid-cols-2">
         <section className="flex flex-col justify-between gap-8 border-b border-line border-l-4 border-l-amber bg-paper p-8 text-cream md:border-r md:border-b-0 md:p-10">
           <div className="flex items-center gap-3">

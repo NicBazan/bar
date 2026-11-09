@@ -21,6 +21,7 @@
   --color-brand-dark: #c2410c; /* acento como texto sobre claro (5,2:1) */
   --color-night: #16181d;
   --color-paper: #f4f5f6;
+  --color-on-state: #ffffff; /* texto sobre ok/warn */
   --font-display: var(--font-sans);
   --font-sans: var(--font-plex), system-ui, sans-serif;
 
@@ -36,12 +37,52 @@
   --shadow-2xl: 0 0 #0000;
 }
 
+/*
+ * Tema oscuro (paleta oscura de «Naranja señal», 09-diseno-visual/tokens.css): grafito + acento más claro.
+ * Sigue al sistema salvo que el usuario elija: <html data-theme="light"> o <html data-theme="dark">
+ * (lo pone ThemeToggle y un script en el <head> antes de pintar). Los componentes no cambian: solo los tokens.
+ */
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    color-scheme: dark;
+    --color-paper: #101216;
+    --color-surface: #1a1d23;
+    --color-surface-2: #22262d;
+    --color-line: #2a2e36;
+    --color-ink: #e6e8eb;
+    --color-cream: #e6e8eb;
+    --color-muted: #a3a9b3;
+    --color-amber: #ff7a2f;
+    --color-brand: #ff7a2f;
+    --color-brand-dark: #ff8f4f;
+    --color-ok: #4cc38a;
+    --color-warn: #ff6b5e;
+    --color-on-state: #101216;
+  }
+}
+:root[data-theme="dark"] {
+  color-scheme: dark;
+  --color-paper: #101216;
+  --color-surface: #1a1d23;
+  --color-surface-2: #22262d;
+  --color-line: #2a2e36;
+  --color-ink: #e6e8eb;
+  --color-cream: #e6e8eb;
+  --color-muted: #a3a9b3;
+  --color-amber: #ff7a2f;
+  --color-brand: #ff7a2f;
+  --color-brand-dark: #ff8f4f;
+  --color-ok: #4cc38a;
+  --color-warn: #ff6b5e;
+  --color-on-state: #101216;
+}
+
 html,
 body {
   max-width: 100%;
   overflow-x: clip; /* lección de taller: evita scroll horizontal en mobile */
   background: var(--color-paper);
-  color: var(--color-night);
+  color: var(--color-cream);
   -webkit-tap-highlight-color: transparent;
 }
 

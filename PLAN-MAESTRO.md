@@ -3,6 +3,8 @@
 **Plataforma de servicio en mesa para bares y restaurantes.** El cliente escanea un QR o toca un NFC, ve la carta (con 3D y realidad aumentada), pide y llama al mozo sin instalar nada. El local opera el salón, la cocina y la fidelización desde un solo panel.
 
 > Documento de estrategia y hoja de ruta. Última revisión: **8 de noviembre de 2026**.
+> **Plan de crecimiento (09/11):** avisos automáticos, chatbot con Gestion-bots, panel de plataforma ZainSoft, temas y nube por etapas en [docs/PLAN-CRECIMIENTO.md](docs/PLAN-CRECIMIENTO.md).
+>
 > Referencias: [Arquitectura](docs/ARQUITECTURA.md) · [Seguridad](docs/SEGURIDAD.md) · [Desarrollo local](docs/DESARROLLO-LOCAL.md) · [Deploy](DEPLOY.md) · [Diagnóstico técnico](docs/DIAGNOSTICO-2026-11.md) · Repo: https://github.com/NicBazan/bar
 
 ---

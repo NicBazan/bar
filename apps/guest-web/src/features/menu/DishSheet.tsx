@@ -101,7 +101,7 @@ export function DishSheet({ dish, currency, canAdd, onClose, onAdd }: {
 
       {dish.variants.length > 0 && (
         <fieldset className="mt-5">
-          <legend className="mb-2 text-sm font-semibold uppercase tracking-wide text-muted">Tamaño</legend>
+          <legend className="mb-2 text-sm font-semibold text-muted">Tamaño</legend>
           <div className="grid gap-2">
             {dish.variants.map((v) => (
               <label key={v.id} className={`flex cursor-pointer items-center justify-between rounded-2xl border px-4 py-3 ${variantId === v.id ? "border-amber bg-amber/10" : "border-line"}`}>
@@ -118,7 +118,7 @@ export function DishSheet({ dish, currency, canAdd, onClose, onAdd }: {
 
       {dish.modifierGroups.map((g) => (
         <fieldset key={g.id} className="mt-5">
-          <legend className="mb-2 text-sm font-semibold uppercase tracking-wide text-muted">
+          <legend className="mb-2 text-sm font-semibold text-muted">
             {g.name}{" "}
             <span className="font-normal normal-case">
               {g.minSelect > 0 ? "· obligatorio" : `· hasta ${g.maxSelect}`}
@@ -142,7 +142,7 @@ export function DishSheet({ dish, currency, canAdd, onClose, onAdd }: {
       ))}
 
       <label className="mt-5 block">
-        <span className="mb-2 block text-sm font-semibold uppercase tracking-wide text-muted">Aclaraciones</span>
+        <span className="mb-2 block text-sm font-semibold text-muted">Aclaraciones</span>
         <input
           value={note}
           onChange={(e) => setNote(e.target.value)}

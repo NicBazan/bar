@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { JoinTableButton } from "@/components/JoinTableButton";
+import { ThemeToggle } from "@/components/ThemeToggle";
 import { ApiError, api, type TagInfo } from "@/lib/api";
 
 interface TableWelcomePageProps {
@@ -60,6 +61,7 @@ export default async function TableWelcomePage({ params, searchParams }: TableWe
 
   return (
     <main className="relative mx-auto flex min-h-dvh max-w-md flex-col justify-between overflow-hidden px-6 py-12 text-center">
+      <ThemeToggle className="absolute top-4 right-4" />
       {/* Cabecera / Identidad */}
       <header className="flex flex-col items-center pt-8">
         <div className="mb-6 flex h-20 w-20 items-center justify-center rounded-3xl border border-line/60 bg-surface text-4xl">

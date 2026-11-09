@@ -4,6 +4,7 @@ import { DishCard, type MenuLayout } from "@/components/DishCard";
 import { FloatingCart } from "@/components/FloatingCart";
 import { MenuCategoryNav } from "@/components/MenuCategoryNav";
 import { TableLiveBar } from "@/components/TableLiveBar";
+import { ThemeToggle } from "@/components/ThemeToggle";
 import { ApiError, api, type Menu } from "@/lib/api";
 import type { Promo } from "@/lib/customer";
 
@@ -91,6 +92,8 @@ export default async function VenueMenuPage({ params, searchParams }: MenuPagePr
             <span className="text-xs font-medium tracking-wide text-muted">Mesa Conectada</span>
           </div>
 
+          <div className="flex items-center gap-2">
+          <ThemeToggle />
           <Link
             href={`/v/${venueId}/cuenta${tag ? `?tag=${tag}` : ""}`}
             className="flex h-11 items-center gap-2 rounded-full border border-line bg-surface pr-4 pl-1.5 text-xs font-semibold text-cream"
@@ -98,6 +101,7 @@ export default async function VenueMenuPage({ params, searchParams }: MenuPagePr
             <span aria-hidden className="grid h-8 w-8 place-items-center rounded-full bg-surface-2">👤</span>
             Mi cuenta
           </Link>
+          </div>
         </div>
 
         <div className="mt-3 flex items-center gap-3">

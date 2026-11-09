@@ -51,4 +51,8 @@ export const config = {
     from: process.env.EMAIL_FROM ?? "Bar <no-reply@example.com>",
   },
   serviceCallCooldownSec: 60,
+  // Avisos automáticos: secreto del cron externo (vacío = la ruta /internal/automations/run no existe)
+  cronSecret: process.env.CRON_SECRET ?? "",
+  // Cada cuántos minutos corre el motor dentro de la API (0 = no corre; en Vercel lo dispara Vercel Cron)
+  automationsEveryMin: Number(process.env.AUTOMATIONS_EVERY_MIN ?? 30),
 };

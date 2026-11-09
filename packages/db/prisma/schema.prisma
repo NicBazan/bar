@@ -32,6 +32,7 @@ model Tenant {
   customers    Customer[]
   promotions   Promotion[]
   campaigns    Campaign[]
+  automations  AutomationRule[]
 }
 
 enum SubscriptionPlan {
@@ -463,6 +464,7 @@ model Customer {
   orders        Order[]
   loyaltyEvents LoyaltyEvent[]
   pushSubs      PushSubscription[]
+  automationDeliveries AutomationDelivery[]
 
   @@unique([tenantId, email])
 }
@@ -659,4 +661,49 @@ model AuditLog {
   createdAt DateTime @default(now())
 
   @@index([tenantId, entity, entityId])
+}
+
+// ───────────── Avisos automáticos ─────────────
+
+enum AutomationKind {
+  WINBACK // "Te extrañamos": no viene hace N días
+  THANK_YOU // "Gracias por venir": al día siguiente de la visita
+}
+
+// Una regla por tipo y por bar: el dueño la prende, elige los días (WINBACK) y escribe el mensaje
+model AutomationRule {
+  id        String         @id @default(uuid()) @db.Uuid
+  tenantId  String         @db.Uuid
+  kind      AutomationKind
+  enabled   Boolean        @default(false)
+  days      Int            @default(30) // WINBACK: días sin venir
+  title     String
+  body      String
+  updatedAt DateTime       @updatedAt
+
+  tenant     Tenant               @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  deliveries AutomationDelivery[]
+
+  @@unique([tenantId, kind])
+}
+
+// Registro de cada aviso automático: el UNIQUE garantiza que un motivo (ausencia o visita) se avisa una sola vez
+model AutomationDelivery {
+  id         String   @id @default(uuid()) @db.Uuid
+  tenantId   String   @db.Uuid
+  ruleId     String   @db.Uuid
+  customerId String   @db.Uuid
+  reasonKey  String // WINBACK: fecha de la última visita · THANK_YOU: id de la mesa
+  pushSent   Int      @default(0)
+  emailSent  Boolean  @default(false)
+  // Atribución: el cliente volvió a pedir dentro de los 14 días siguientes
+  returnedAt DateTime?
+  createdAt  DateTime @default(now())
+
+  rule     AutomationRule @relation(fields: [ruleId], references: [id], onDelete: Cascade)
+  customer Customer       @relation(fields: [customerId], references: [id], onDelete: Cascade)
+
+  @@unique([ruleId, customerId, reasonKey])
+  @@index([customerId, createdAt])
+  @@index([tenantId, createdAt])
 }

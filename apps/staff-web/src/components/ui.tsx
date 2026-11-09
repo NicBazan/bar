@@ -46,7 +46,7 @@ export function Btn({
 export function Field({ label, hint, children }: { label: string; hint?: string; children: ReactNode }) {
   return (
     <label className="block">
-      <span className="mb-1 block text-xs font-semibold tracking-wide text-muted uppercase">{label}</span>
+      <span className="mb-1 block text-xs font-semibold text-muted">{label}</span>
       {children}
       {hint && <span className="mt-1 block text-xs text-muted">{hint}</span>}
     </label>
@@ -152,7 +152,7 @@ export function useToasts() {
   const view = (
     <div className="pointer-events-none fixed inset-x-0 top-3 z-[60] flex flex-col items-center gap-2 px-4" aria-live="polite">
       {toasts.map((t) => (
-        <div key={t.id} className={`rounded-2xl px-4 py-2.5 text-sm font-medium shadow-lg ${t.tone === "ok" ? "bg-ok text-white" : "bg-warn text-white"}`}>
+        <div key={t.id} className={`rounded-2xl px-4 py-2.5 text-sm font-medium shadow-lg ${t.tone === "ok" ? "bg-ok text-on-state" : "bg-warn text-on-state"}`}>
           {t.text}
         </div>
       ))}

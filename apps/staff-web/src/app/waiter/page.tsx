@@ -193,10 +193,10 @@ function OrderCard({ order, onApprove, onReject }: { order: Order; onApprove: ()
 }
 
 function Column({ title, count, accent, children }: { title: string; count: number; accent?: "warn" | "amber" | "ok"; children: React.ReactNode }) {
-  const badge = accent === "warn" ? "bg-warn text-white" : accent === "amber" ? "bg-amber text-amber-ink" : accent === "ok" ? "bg-ok text-white" : "bg-surface-2 text-cream";
+  const badge = accent === "warn" ? "bg-warn text-on-state" : accent === "amber" ? "bg-amber text-amber-ink" : accent === "ok" ? "bg-ok text-on-state" : "bg-surface-2 text-cream";
   return (
     <section className="min-w-0">
-      <h2 className="mb-3 flex items-center gap-2 text-sm font-semibold uppercase tracking-wide text-muted">
+      <h2 className="mb-3 flex items-center gap-2 text-sm font-semibold text-muted">
         {title}
         <span className={`rounded-full px-2 py-0.5 text-xs ${count > 0 ? badge : "bg-surface-2 text-muted"}`}>{count}</span>
       </h2>
@@ -212,7 +212,7 @@ function Card({ highlight, children }: { highlight?: boolean; children: React.Re
 }
 
 function Btn({ primary, danger, disabled, onClick, children }: { primary?: boolean; danger?: boolean; disabled?: boolean; onClick: () => void; children: React.ReactNode }) {
-  const cls = primary ? "bg-amber text-amber-ink font-semibold" : danger ? "bg-warn text-white font-semibold" : "bg-surface-2 text-cream";
+  const cls = primary ? "bg-amber text-amber-ink font-semibold" : danger ? "bg-warn text-on-state font-semibold" : "bg-surface-2 text-cream";
   return (
     <button disabled={disabled} onClick={onClick} className={`rounded-full px-4 py-2 text-sm disabled:opacity-40 ${cls}`}>
       {children}

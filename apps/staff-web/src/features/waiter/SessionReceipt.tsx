@@ -46,7 +46,11 @@ export function SessionReceipt({ sessionId, receipt: given, onClose }: { session
     >
       {error && <p role="alert" className="text-sm text-warn">{error}</p>}
       {!receipt && !error && <p className="text-sm text-muted">Cargando…</p>}
-      {receipt && <ReceiptBody receipt={receipt} />}
+      {receipt && (
+        <div className="print-area">
+          <ReceiptBody receipt={receipt} />
+        </div>
+      )}
     </Modal>
   );
 }

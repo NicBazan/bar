@@ -33,6 +33,9 @@ const MATRIX: Record<string, Access> = {
   "POST /v1/customer/auth/verify": "public",
   "POST /v1/customer/push/unsubscribe": "public", // por endpoint + bar: el endpoint es el secreto
   "POST /v1/customer/unsubscribe": "public", // token firmado del email
+  // Cron: sin secreto configurado responde 404; con secreto, solo con el header correcto (test en avisos-automaticos)
+  "GET /v1/internal/automations/run": "public",
+  "POST /v1/internal/automations/run": "public",
 
   "GET /v1/session": "guest",
   "GET /v1/session/receipt": "guest",
@@ -103,6 +106,9 @@ const MATRIX: Record<string, Access> = {
   "PATCH /v1/admin/promotions/:id": "admin",
   "DELETE /v1/admin/promotions/:id": "admin",
   "GET /v1/admin/campaigns": "admin",
+  "GET /v1/admin/automations": "admin",
+  "PUT /v1/admin/automations/:kind": "admin",
+  "POST /v1/superadmin/automations/run": "superadmin",
   "POST /v1/admin/campaigns": "admin",
 
   "GET /v1/superadmin/stats": "superadmin",

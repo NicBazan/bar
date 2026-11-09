@@ -19,6 +19,7 @@ import {
 import { type NotificationPrefs, type PushSupport, disablePush, enablePush, loadNotificationPrefs, pushSupport } from "@/lib/push";
 import { formatMoney } from "@/lib/storage";
 import { useCartStore } from "@/store/cartStore";
+import { ThemeToggle } from "@/components/ThemeToggle";
 import { LoginScreen } from "./LoginScreen";
 
 export type Tab = "home" | "history" | "promos" | "profile";
@@ -203,10 +204,13 @@ function HomeTab({ venueId, venueName, currency, tag, me, visits, loyalty, go, o
     <>
       <header className="flex items-center justify-between">
         <div>
-          <p className="text-sm text-night/60">Hola de nuevo,</p>
+          <p className="text-sm text-muted">Hola de nuevo,</p>
           <h1 className="text-2xl font-semibold">{firstName ?? "¡bienvenido!"}</h1>
         </div>
-        <Avatar name={me?.name ?? null} email={me?.email} />
+        <div className="flex items-center gap-2">
+          <ThemeToggle />
+          <Avatar name={me?.name ?? null} email={me?.email} />
+        </div>
       </header>
 
       {/* PC: tarjeta, accesos y próximo premio a la izquierda; actividad a la derecha */}
@@ -215,7 +219,7 @@ function HomeTab({ venueId, venueName, currency, tag, me, visits, loyalty, go, o
       <section className="mt-5 rounded-2xl border border-line border-l-4 border-l-amber bg-surface p-6 text-cream" aria-label={card ? "Tu tarjeta de fidelización" : "Tus visitas"}>
         <div className="flex items-center justify-between text-xs text-muted">
           <span>{venueName}</span>
-          <span className="rounded-full bg-white/10 px-2.5 py-1">{card ? (card.mode === "STAMPS" ? "Tarjeta de sellos" : "Puntos") : "Mi cuenta"}</span>
+          <span className="rounded-full bg-surface-2 px-2.5 py-1">{card ? (card.mode === "STAMPS" ? "Tarjeta de sellos" : "Puntos") : "Mi cuenta"}</span>
         </div>
         <p className="mt-4 text-sm text-muted">{card ? `Tus ${unitLabel(card.mode, 2)}` : "Tus visitas"}</p>
         <p className="text-5xl font-semibold tracking-tight">{card ? Math.max(0, card.balance) : (me?.stats.visits ?? "–")}</p>
@@ -260,13 +264,13 @@ function HomeTab({ venueId, venueName, currency, tag, me, visits, loyalty, go, o
         {visits === null ? (
           <p className="mt-3 text-sm text-night/50">Cargando…</p>
         ) : visits.length === 0 ? (
-          <div className="mt-3 rounded-3xl bg-white p-5 text-sm text-night/60 border border-line">
+          <div className="mt-3 rounded-3xl bg-surface p-5 text-sm text-muted border border-line">
             Todavía no hay visitas. La próxima vez que pidas desde la mesa con tu cuenta, aparece acá.
           </div>
         ) : (
           <ul className="mt-2 space-y-2">
             {visits.slice(0, 5).map((v) => (
-              <li key={v.sessionId} className="flex items-center gap-3 rounded-3xl bg-white p-4 border border-line">
+              <li key={v.sessionId} className="flex items-center gap-3 rounded-3xl bg-surface p-4 border border-line">
                 <span aria-hidden className="grid h-11 w-11 shrink-0 place-items-center rounded-full bg-paper text-lg">🍽</span>
                 <div className="min-w-0 flex-1">
                   <p className="truncate font-medium">{v.venue.name} · Mesa {v.tableLabel}</p>
@@ -308,7 +312,7 @@ function NextReward({ card, currency }: { card: Card; currency: string }) {
   const next = card.next!;
   const have = Math.max(0, Math.min(card.balance, next.cost));
   return (
-    <section className="mt-5 rounded-3xl bg-white p-5 border border-line" aria-label="Próximo premio">
+    <section className="mt-5 rounded-3xl bg-surface p-5 border border-line" aria-label="Próximo premio">
       <div className="flex items-start justify-between gap-3">
         <div>
           <p className="text-xs text-night/50">Próximo premio</p>
@@ -321,7 +325,7 @@ function NextReward({ card, currency }: { card: Card; currency: string }) {
       <div className="mt-3 h-3 overflow-hidden rounded-full bg-paper" role="progressbar" aria-valuemin={0} aria-valuemax={next.cost} aria-valuenow={have}>
         <div className="h-full rounded-full bg-brand transition-all" style={{ width: `${(have / next.cost) * 100}%` }} />
       </div>
-      <p className="mt-2 text-xs text-night/60">
+      <p className="mt-2 text-xs text-muted">
         {next.remaining === 0
           ? "¡Ya lo tenés! Pedile al mozo que te lo canjee."
           : card.mode === "STAMPS"
@@ -339,14 +343,14 @@ function RewardsSheet({ loyalty, onClose }: { loyalty: Card; onClose: () => void
       <div className="animate-sheet relative w-full max-w-md rounded-t-2xl bg-paper p-5 md:rounded-2xl pb-[max(1.25rem,env(safe-area-inset-bottom))]">
         <div className="flex items-center justify-between">
           <h2 className="text-xl font-semibold">Premios</h2>
-          <button onClick={onClose} className="h-11 rounded-full px-4 text-sm text-night/60">Cerrar</button>
+          <button onClick={onClose} className="h-11 rounded-full px-4 text-sm text-muted">Cerrar</button>
         </div>
-        <p className="text-sm text-night/60">
+        <p className="text-sm text-muted">
           Tenés <b className="text-night">{plural(loyalty.balance, unitLabel(loyalty.mode, 1), unitLabel(loyalty.mode, 2))}</b>. Para canjear, pedíselo al mozo en la mesa.
         </p>
         <ul className="mt-4 space-y-2">
           {loyalty.rewards.map((r) => (
-            <li key={r.id} className="flex items-center gap-3 rounded-3xl bg-white p-4 border border-line">
+            <li key={r.id} className="flex items-center gap-3 rounded-3xl bg-surface p-4 border border-line">
               <span aria-hidden className={`grid h-11 w-11 place-items-center rounded-full text-lg ${r.canRedeem ? "bg-amber text-amber-ink" : "bg-paper text-night/40"}`}>★</span>
               <div className="flex-1">
                 <p className="font-medium">{r.name}</p>
@@ -396,7 +400,7 @@ function HistoryTab({ venueId, tag, visits, notify }: Props & { visits: Visit[] 
   return (
     <>
       <h1 className="text-2xl font-semibold">Historial</h1>
-      <p className="mt-1 text-sm text-night/60">Tus visitas y lo que pediste.</p>
+      <p className="mt-1 text-sm text-muted">Tus visitas y lo que pediste.</p>
       {!tag && (
         <p className="mt-3 rounded-2xl bg-brand/10 px-4 py-3 text-xs text-brand-dark">
           Para "Pedir lo mismo" entrá desde el QR de tu mesa.
@@ -405,13 +409,13 @@ function HistoryTab({ venueId, tag, visits, notify }: Props & { visits: Visit[] 
       {visits === null ? (
         <p className="mt-4 text-sm text-night/50">Cargando…</p>
       ) : visits.length === 0 ? (
-        <p className="mt-4 rounded-3xl bg-white p-5 text-sm text-night/60 border border-line">Todavía no hay visitas guardadas.</p>
+        <p className="mt-4 rounded-3xl bg-surface p-5 text-sm text-muted border border-line">Todavía no hay visitas guardadas.</p>
       ) : (
         <ul className="mt-4 space-y-3">
           {visits.map((v) => {
             const expanded = open === v.sessionId;
             return (
-              <li key={v.sessionId} className="rounded-3xl bg-white border border-line">
+              <li key={v.sessionId} className="rounded-3xl bg-surface border border-line">
                 <button onClick={() => setOpen(expanded ? null : v.sessionId)} aria-expanded={expanded} className="flex min-h-16 w-full items-center gap-3 p-4 text-left">
                   <div className="min-w-0 flex-1">
                     <p className="font-medium">{fmtDate(v.date)}</p>
@@ -430,7 +434,7 @@ function HistoryTab({ venueId, tag, visits, notify }: Props & { visits: Visit[] 
                               <span className={o.status === "REJECTED" || o.status === "CANCELLED" ? "text-night/40 line-through" : ""}>
                                 {it.quantity}× {it.nameSnapshot}{it.variantName ? ` (${it.variantName})` : ""}
                               </span>
-                              <span className="text-night/60">{formatMoney(it.unitPriceCents * it.quantity, v.venue.currency)}</span>
+                              <span className="text-muted">{formatMoney(it.unitPriceCents * it.quantity, v.venue.currency)}</span>
                             </li>
                           ))}
                         </ul>
@@ -466,17 +470,17 @@ function PromosTab({ venueId, venueName }: Props) {
   return (
     <>
       <h1 className="text-2xl font-semibold">Promos</h1>
-      <p className="mt-1 text-sm text-night/60">Lo que hay hoy en {venueName}.</p>
+      <p className="mt-1 text-sm text-muted">Lo que hay hoy en {venueName}.</p>
       {promos === null ? (
         <p className="mt-4 text-sm text-night/50">Cargando…</p>
       ) : promos.length === 0 ? (
-        <p className="mt-4 rounded-3xl bg-white p-5 text-sm text-night/60 border border-line">
+        <p className="mt-4 rounded-3xl bg-surface p-5 text-sm text-muted border border-line">
           Cuando {venueName} publique promociones, las vas a ver acá.
         </p>
       ) : (
         <ul className="mt-4 space-y-3 md:grid md:grid-cols-2 md:gap-4 md:space-y-0">
           {promos.map((p, i) => (
-            <li key={p.id} className={`rounded-3xl p-5 ${i === 0 ? "border border-line border-l-4 border-l-amber bg-white" : "border border-line bg-white"}`}>
+            <li key={p.id} className={`rounded-3xl p-5 ${i === 0 ? "border border-line border-l-4 border-l-amber bg-surface" : "border border-line bg-surface"}`}>
               <span className={`inline-block rounded-full px-2.5 py-1 text-xs font-semibold ${i === 0 ? "bg-amber text-amber-ink" : "bg-brand/10 text-brand-dark"}`}>
                 Promo
               </span>
@@ -547,8 +551,8 @@ function NotificationsSection({ venueId, venueName, notify }: Props & { notify: 
   };
 
   return (
-    <section className="mt-4 overflow-hidden rounded-3xl bg-white border border-line" aria-label="Avisos">
-      <h2 className="px-5 pt-4 text-sm font-semibold text-night/60">Avisos de {venueName}</h2>
+    <section className="mt-4 overflow-hidden rounded-3xl bg-surface border border-line" aria-label="Avisos">
+      <h2 className="px-5 pt-4 text-sm font-semibold text-muted">Avisos de {venueName}</h2>
       <p className="px-5 pt-1 text-xs text-night/50">Máximo 1 por semana. Te das de baja en un toque desde cada aviso.</p>
       <PrefRow label="Promos por email" checked={prefs.emailOptIn} disabled={busy} onChange={() => void toggleEmail()} />
       <PrefRow
@@ -629,11 +633,11 @@ function ProfileTab({ me, onSaved, onLogout, notify, ...props }: Props & {
         <Avatar name={me?.name ?? null} email={me?.email} />
         <div className="min-w-0">
           <h1 className="truncate text-xl font-semibold">{me?.name || "Tu perfil"}</h1>
-          <p className="truncate text-sm text-night/60">{me?.email}</p>
+          <p className="truncate text-sm text-muted">{me?.email}</p>
         </div>
       </header>
 
-      <section className="mt-6 rounded-3xl bg-white p-5 border border-line">
+      <section className="mt-6 rounded-3xl bg-surface p-5 border border-line">
         <label htmlFor="name" className="text-sm font-medium">Nombre</label>
         <div className="mt-2 flex gap-2">
           <input
@@ -641,7 +645,7 @@ function ProfileTab({ me, onSaved, onLogout, notify, ...props }: Props & {
             value={name}
             maxLength={60}
             onChange={(e) => setName(e.target.value)}
-            className="h-12 min-w-0 flex-1 rounded-2xl border border-night/10 px-4 text-base outline-none focus:border-brand"
+            className="h-12 min-w-0 flex-1 rounded-2xl border border-line px-4 text-base outline-none focus:border-brand"
           />
           <button onClick={() => void saveName()} disabled={!name.trim()} className="h-12 rounded-2xl bg-brand px-5 text-sm font-semibold text-amber-ink active:bg-brand-dark disabled:opacity-50">
             Guardar
@@ -651,8 +655,8 @@ function ProfileTab({ me, onSaved, onLogout, notify, ...props }: Props & {
 
       <NotificationsSection {...props} notify={notify} />
 
-      <section className="mt-4 overflow-hidden rounded-3xl bg-white border border-line">
-        <h2 className="px-5 pt-4 text-sm font-semibold text-night/60">Tus datos</h2>
+      <section className="mt-4 overflow-hidden rounded-3xl bg-surface border border-line">
+        <h2 className="px-5 pt-4 text-sm font-semibold text-muted">Tus datos</h2>
         <button onClick={() => void exportData()} className="flex min-h-14 w-full items-center justify-between px-5 text-left">
           <span>Descargar mis datos</span><span aria-hidden className="text-night/40">↓</span>
         </button>
@@ -664,14 +668,14 @@ function ProfileTab({ me, onSaved, onLogout, notify, ...props }: Props & {
         </button>
       </section>
 
-      <section className="mt-4 rounded-3xl bg-white p-5 border border-line">
+      <section className="mt-4 rounded-3xl bg-surface p-5 border border-line">
         {confirmDelete ? (
           <>
             <p className="text-sm">
               Se borran tu cuenta, tus puntos y tus preferencias. Tus pedidos quedan en el bar sin tu nombre. No se puede deshacer.
             </p>
             <div className="mt-3 grid grid-cols-2 gap-2">
-              <button onClick={() => setConfirmDelete(false)} className="h-12 rounded-2xl border border-night/10 text-sm">Cancelar</button>
+              <button onClick={() => setConfirmDelete(false)} className="h-12 rounded-2xl border border-line text-sm">Cancelar</button>
               <button onClick={() => void deleteAccount()} className="h-12 rounded-2xl bg-warn text-sm font-semibold text-white">Sí, borrar</button>
             </div>
           </>

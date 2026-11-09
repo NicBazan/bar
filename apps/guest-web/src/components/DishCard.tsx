@@ -115,7 +115,7 @@ export function DishCard({
           disabled={!available}
           aria-label={`${addLabel}: ${name}`}
           className={`grid h-11 w-11 shrink-0 place-items-center rounded-full text-lg font-bold transition active:scale-95 disabled:opacity-40 ${
-            added ? "bg-ok text-white" : "bg-amber text-amber-ink"
+            added ? "bg-ok text-on-state" : "bg-amber text-amber-ink"
           }`}
         >
           {added ? "✓" : "+"}
@@ -154,7 +154,7 @@ export function DishCard({
               type="button"
               onClick={handleAdd}
               disabled={!available}
-              className={`h-12 rounded-2xl px-5 text-sm font-semibold transition active:scale-95 disabled:opacity-40 ${added ? "bg-ok text-white" : "bg-amber text-amber-ink"}`}
+              className={`h-12 rounded-2xl px-5 text-sm font-semibold transition active:scale-95 disabled:opacity-40 ${added ? "bg-ok text-on-state" : "bg-amber text-amber-ink"}`}
             >
               {!available ? "Agotado" : added ? "✓ ¡Agregado!" : `+ ${addLabel}`}
             </button>
@@ -239,7 +239,7 @@ export function DishCard({
         {/* Footer: Precio y Botón de Agregar a Zustand */}
         <div className="mt-5 flex items-center justify-between gap-3 border-t border-line/40 pt-3">
           <div>
-            <span className="text-[10px] tracking-wider text-muted uppercase">Precio</span>
+            <span className="text-[11px] text-muted">Precio</span>
             <div className="font-display text-lg font-semibold text-brand-dark">
               {price}
             </div>
@@ -251,7 +251,7 @@ export function DishCard({
             disabled={!available}
             className={`flex items-center gap-2 rounded-2xl px-4 py-2.5 text-xs font-semibold transition-all duration-200 active:scale-95 disabled:cursor-not-allowed disabled:opacity-40 ${
               added
-                ? "bg-ok text-white shadow-md shadow-ok/20 scale-105"
+                ? "bg-ok text-on-state shadow-md shadow-ok/20 scale-105"
                 : "border border-line bg-surface-2 text-cream hover:border-amber hover:bg-surface hover:text-brand-dark"
             }`}
           >

@@ -38,9 +38,9 @@ export default function SuperAdminPage() {
   if (!user) return null;
 
   return (
-    <main>
+    <main data-brand="zainsoft" className="min-h-dvh bg-paper text-cream">
       {view}
-      <StaffHeader user={user} title="Plataforma" />
+      <StaffHeader user={user} title="Plataforma" brand="zainsoft" />
       <div className="grid gap-4 p-4">
         {stats && (
           <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
@@ -75,7 +75,7 @@ export default function SuperAdminPage() {
           ) : (
             <Card className="overflow-x-auto p-0">
               <table className="w-full min-w-[760px] text-sm">
-                <thead className="text-left text-xs tracking-wide text-muted uppercase">
+                <thead className="text-left text-xs text-muted">
                   <tr className="border-b border-line">
                     <th className="p-3">Bar</th>
                     <th className="p-3">Dueño</th>
@@ -122,7 +122,7 @@ export default function SuperAdminPage() {
 function Stat({ label, value, sub }: { label: string; value: string; sub: string }) {
   return (
     <div className="rounded-2xl border border-line bg-surface p-4">
-      <p className="text-xs font-semibold tracking-wide text-muted uppercase">{label}</p>
+      <p className="text-xs font-semibold text-muted">{label}</p>
       <p className="mt-1 font-display text-2xl">{value}</p>
       <p className="text-xs text-muted">{sub}</p>
     </div>
@@ -342,7 +342,7 @@ function AuditList() {
     <Card className="overflow-x-auto p-0">
       {view}
       <table className="w-full min-w-[640px] text-sm">
-        <thead className="text-left text-xs tracking-wide text-muted uppercase">
+        <thead className="text-left text-xs text-muted">
           <tr className="border-b border-line">
             <th className="p-3">Fecha</th>
             <th className="p-3">Bar</th>

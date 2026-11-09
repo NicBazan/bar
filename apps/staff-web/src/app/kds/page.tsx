@@ -134,7 +134,7 @@ export default function KdsPage() {
 
       {waiting.length > 0 && (
         <section className="px-4 pb-6">
-          <h2 className="mb-2 text-sm font-semibold uppercase tracking-wide text-muted">Listos, esperando al mozo</h2>
+          <h2 className="mb-2 text-sm font-semibold text-muted">Listos, esperando al mozo</h2>
           <div className="flex flex-wrap gap-2">
             {waiting.map(({ order, items: its }) => (
               <span key={order.id} className="rounded-full bg-ok/15 px-3 py-1 text-sm text-ok">
@@ -158,7 +158,7 @@ function Chip({ on, onClick, children }: { on: boolean; onClick: () => void; chi
 
 function SmallBtn({ primary, onClick, children }: { primary?: boolean; onClick: () => void; children: React.ReactNode }) {
   return (
-    <button onClick={onClick} className={`shrink-0 rounded-full px-3 py-1.5 text-sm font-semibold ${primary ? "bg-ok text-white" : "bg-surface-2 text-cream"}`}>
+    <button onClick={onClick} className={`shrink-0 rounded-full px-3 py-1.5 text-sm font-semibold ${primary ? "bg-ok text-on-state" : "bg-surface-2 text-cream"}`}>
       {children}
     </button>
   );

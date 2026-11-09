@@ -22,6 +22,7 @@
   --color-brand-dark: #c2410c; /* acento como texto/enlace sobre claro (5,2:1) */
   --color-night: #16181d;
   --color-paper: #f4f5f6; /* lienzo de la app */
+  --color-on-state: #ffffff; /* texto sobre ok/warn */
   --font-display: var(--font-sans);
   --font-sans: var(--font-plex), system-ui, sans-serif;
 
@@ -39,12 +40,52 @@
   --shadow-2xl: 0 0 #0000;
 }
 
+/*
+ * Tema oscuro (paleta oscura de «Naranja señal», 09-diseno-visual/tokens.css): grafito + acento más claro.
+ * Sigue al sistema salvo que el usuario elija: <html data-theme="light"> o <html data-theme="dark">
+ * (lo pone ThemeToggle y un script en el <head> antes de pintar). Los componentes no cambian: solo los tokens.
+ */
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    color-scheme: dark;
+    --color-paper: #101216;
+    --color-surface: #1a1d23;
+    --color-surface-2: #22262d;
+    --color-line: #2a2e36;
+    --color-ink: #e6e8eb;
+    --color-cream: #e6e8eb;
+    --color-muted: #a3a9b3;
+    --color-amber: #ff7a2f;
+    --color-brand: #ff7a2f;
+    --color-brand-dark: #ff8f4f;
+    --color-ok: #4cc38a;
+    --color-warn: #ff6b5e;
+    --color-on-state: #101216;
+  }
+}
+:root[data-theme="dark"] {
+  color-scheme: dark;
+  --color-paper: #101216;
+  --color-surface: #1a1d23;
+  --color-surface-2: #22262d;
+  --color-line: #2a2e36;
+  --color-ink: #e6e8eb;
+  --color-cream: #e6e8eb;
+  --color-muted: #a3a9b3;
+  --color-amber: #ff7a2f;
+  --color-brand: #ff7a2f;
+  --color-brand-dark: #ff8f4f;
+  --color-ok: #4cc38a;
+  --color-warn: #ff6b5e;
+  --color-on-state: #101216;
+}
+
 html,
 body {
   max-width: 100%;
   overflow-x: clip; /* lección de taller: evita scroll horizontal en mobile */
   background: var(--color-paper);
-  color: var(--color-night);
+  color: var(--color-cream);
   -webkit-tap-highlight-color: transparent;
 }
 
@@ -74,6 +115,7 @@ body {
   body * { visibility: hidden; }
   .print-area, .print-area * { visibility: visible; }
   .print-area { display: block !important; position: absolute; inset: 0; background: #fff; }
+  .print-area * { color: #000 !important; border-color: #ccc !important; } /* también si la pantalla está en oscuro */
 }
 
 /* Checklist de UI/UX Pro Max: foco visible con teclado, cursor de mano y menos movimiento si se pide */
@@ -92,3 +134,45 @@ body {
     scroll-behavior: auto !important;
   }
 }
+
+/*
+ * Marca ZainSoft: solo en el panel de la plataforma (super admin = nosotros).
+ * Acento y papel de ZainSoft (#F05A28 / #FAF8F5, del sitio zainsoft); el resto del sistema no cambia.
+ * Texto sobre el acento: tinta oscura (#0F1115 sobre #F05A28 = 5,6:1). Acento como texto: #C8431A (4,6:1).
+ */
+[data-brand="zainsoft"] {
+  --color-amber: #f05a28;
+  --color-brand: #f05a28;
+  --color-brand-dark: #c8431a;
+  --color-amber-ink: #0f1115;
+  --color-paper: #faf8f5;
+  --color-cream: #0f1115;
+  --color-ink: #0f1115;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) [data-brand="zainsoft"] {
+    --color-amber: #ff7a45;
+    --color-brand: #ff7a45;
+    --color-brand-dark: #ff9466;
+    --color-paper: #0f1115;
+    --color-cream: #e6e8eb;
+    --color-ink: #e6e8eb;
+  }
+}
+:root[data-theme="dark"] [data-brand="zainsoft"] {
+  --color-amber: #ff7a45;
+  --color-brand: #ff7a45;
+  --color-brand-dark: #ff9466;
+  --color-paper: #0f1115;
+  --color-cream: #e6e8eb;
+  --color-ink: #e6e8eb;
+}
+
+/* Logo con versión clara y oscura: se muestra la que corresponde al tema */
+.logo-on-dark { display: none; }
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) .logo-on-light { display: none; }
+  :root:not([data-theme="light"]) .logo-on-dark { display: inline-block; }
+}
+:root[data-theme="dark"] .logo-on-light { display: none; }
+:root[data-theme="dark"] .logo-on-dark { display: inline-block; }

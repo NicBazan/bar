@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { Badge, Btn, Card, Empty, Field, Modal, Toggle, inputCls, useToasts } from "@/components/ui";
 import { type AdminCampaigns, type AdminPromotion, api } from "@/lib/api";
+import { Automations } from "./Automations";
 
 const day = (iso: string | null) => (iso ? new Date(iso).toLocaleDateString("es-AR") : "—");
 const toInput = (iso: string | null) => (iso ? iso.slice(0, 10) : "");
@@ -75,6 +76,7 @@ export function Promotions() {
   return (
     <div className="grid max-w-3xl gap-4">
       {view}
+      <Automations />
       <Card>
         <div className="mb-3 flex items-center justify-between gap-2">
           <div>

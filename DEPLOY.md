@@ -53,7 +53,10 @@ Cada comando imprime una URL `https://xxxx.trycloudflare.com`. Abrila en el celu
 | `CORS_ORIGINS` | los dominios de Vercel separados por coma (solo si algún cliente llama a la API directo) |
 | `PUBLIC_GUEST_URL` | la URL de la carta en Vercel (ej. `https://cartabar.vercel.app`): con ella el admin arma los QR |
 | `TRUST_PROXY` | `2` (Vercel + Render). **Nunca** `true`: permitiría inventarse la IP y saltear los límites |
-| `CLOUDINARY_URL` | De Cloudinary (Settings → API Keys). Las fotos y los 3D del admin van ahí, así Render no necesita disco y alcanza el plan free |
+| `CLOUDINARY_URL` | De Cloudinary (Settings → API Keys). Las fotos y los 3D del admin van ahí, así Render no necesita disco y alcanza el plan free. **Obligatoria en producción** (o `UPLOADS_DIR` con un disco persistente): sin ninguna de las dos, la API no arranca |
+| `AUTOMATIONS_EVERY_MIN` | Cada cuántos minutos corre el motor de avisos automáticos dentro de la API (por defecto `30`; `0` lo apaga) |
+| `CRON_SECRET` | Solo si la API corre en Vercel: secreto largo que usa Vercel Cron para llamar a `/v1/internal/automations/run` (y poner `AUTOMATIONS_EVERY_MIN=0`). Sin él, esa ruta no existe |
+| `COOKIE_SECURE` | No hace falta en la nube (por defecto `true` en producción). El MVP local la pone en `false` porque se usa por HTTP |
 
 3. Probar: `https://bar-api.onrender.com/health` → `{"ok":true}`.
 4. Crear el super admin de la plataforma (una vez, desde tu PC, con la `DATABASE_URL` de Neon):
