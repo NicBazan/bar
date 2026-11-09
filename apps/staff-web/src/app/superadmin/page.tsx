@@ -40,10 +40,10 @@ export default function SuperAdminPage() {
   return (
     <main data-brand="zainsoft" className="min-h-dvh bg-paper text-cream">
       {view}
-      <StaffHeader user={user} title="Plataforma" brand="zainsoft" />
-      <div className="grid gap-4 p-4">
+      <StaffHeader user={user} title="Plataforma" brand="zainsoft" contained />
+      <div className="mx-auto grid max-w-6xl gap-4 p-4 md:p-6">
         {stats && (
-          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
+          <div className="grid grid-cols-2 gap-3 lg:grid-cols-5">
             <Stat label="Bares" value={String(stats.tenants)} sub={`${stats.suspended} suspendido(s)`} />
             <Stat label="Planes" value={`${stats.plans.PRO ?? 0} PRO`} sub={`${stats.plans.FREE ?? 0} FREE · ${stats.plans.CANCELED ?? 0} cancelados`} />
             <Stat label="Mesas abiertas 24 h" value={String(stats.sessions.last24h)} sub={`${stats.sessions.last30d} en 30 días`} />

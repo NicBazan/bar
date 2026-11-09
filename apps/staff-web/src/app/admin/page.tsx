@@ -47,8 +47,9 @@ export default function AdminPage() {
 
   return (
     <main>
-      <StaffHeader user={user} title="Admin" />
-      <nav className="no-scrollbar sticky top-[61px] z-10 flex gap-1 overflow-x-auto border-b border-line bg-paper/95 px-4 py-2 backdrop-blur print:hidden">
+      <StaffHeader user={user} title="Admin" contained />
+      <nav className="sticky top-[61px] z-10 border-b border-line bg-paper/95 backdrop-blur print:hidden">
+        <div className="no-scrollbar mx-auto flex max-w-6xl gap-1 overflow-x-auto px-4 py-2 md:px-6">
         {TABS.map(([id, label]) => (
           <button
             key={id}
@@ -58,8 +59,9 @@ export default function AdminPage() {
             {label}
           </button>
         ))}
+        </div>
       </nav>
-      <div className="p-4">
+      <div className="mx-auto max-w-6xl p-4 md:p-6">
         {tab === "inicio" && <Overview onGo={go} />}
         {tab === "carta" && <MenuEditor />}
         {tab === "mesas" && <TablesQr />}

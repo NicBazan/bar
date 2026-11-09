@@ -3,11 +3,13 @@
 import { type StaffUser, api, clearAuth } from "@/lib/api";
 import { ThemeToggle } from "./ThemeToggle";
 
-export function StaffHeader({ user, title, online, audioOn, onStart, children, brand }: {
+export function StaffHeader({ user, title, online, audioOn, onStart, children, brand, contained }: {
   user: StaffUser;
   title: string;
   // Panel de la plataforma: muestra el logo de ZainSoft (el resto de los paneles son del bar)
   brand?: "zainsoft";
+  // Pantallas de lectura (admin, plataforma): contenido centrado con ancho máximo. Salón y cocina usan todo el ancho
+  contained?: boolean;
   // En salón y cocina: indicador "en vivo" y botón para habilitar el sonido
   online?: boolean;
   audioOn?: boolean;
@@ -23,7 +25,8 @@ export function StaffHeader({ user, title, online, audioOn, onStart, children, b
   const canSwitch = user.role === "OWNER" || user.role === "MANAGER";
 
   return (
-    <header className="sticky top-0 z-20 flex flex-wrap items-center gap-3 border-b border-line bg-paper/95 px-4 py-3 backdrop-blur">
+    <header className="sticky top-0 z-20 border-b border-line bg-paper/95 backdrop-blur">
+      <div className={`flex flex-wrap items-center gap-3 px-4 py-3 ${contained ? "mx-auto max-w-6xl md:px-6" : ""}`}>
       {brand === "zainsoft" && (
         <span className="flex items-center" aria-label="ZainSoft">
           <img src="/zainsoft/logo.png" alt="ZainSoft" className="logo-on-light h-9 w-auto" />
@@ -52,8 +55,9 @@ export function StaffHeader({ user, title, online, audioOn, onStart, children, b
           </button>
         )}
         <ThemeToggle />
-        <span className="text-sm text-muted">{user.name}</span>
+        <span className="hidden text-sm text-muted sm:inline">{user.name}</span>
         <button onClick={logout} className="rounded-full border border-line px-3 py-1 text-sm text-muted">Salir</button>
+      </div>
       </div>
     </header>
   );

@@ -87,7 +87,7 @@ export function TablesQr() {
       {view}
       <Card>
         <div className="flex flex-wrap items-end gap-3">
-          <div className="min-w-64 flex-1">
+          <div className="min-w-0 flex-1 basis-64">
             <Field
               label="Dirección de la carta (para los QR)"
               hint="La que abre el celular del cliente: tu dominio, el túnel HTTPS o la IP de la red local (http://192.168.x.x:3000)."
@@ -173,35 +173,39 @@ function TableCard({
         <div className="grid h-28 w-28 shrink-0 place-items-center overflow-hidden rounded-xl bg-white">
           {qr ? <img src={qr} alt={`QR de la mesa ${table.label}`} className="h-full w-full" /> : <span className="text-xs text-ink/50">sin QR</span>}
         </div>
-        <div className="flex min-w-0 flex-1 flex-col gap-1.5">
+        <div className="flex min-w-0 flex-1 flex-col gap-2">
           {url && (
             <button onClick={() => onCopy(url)} className="truncate rounded-lg bg-surface-2 px-2 py-1 text-left font-mono text-[11px] text-muted" title="Copiar link">
               {url}
             </button>
           )}
           {qr && (
-            <a href={qr} download={`QR-mesa-${table.label}.png`} className="inline-flex h-8 items-center justify-center rounded-xl border border-line bg-surface-2 px-3 text-xs">
-              ⬇ Descargar PNG
+            <a href={qr} download={`QR-mesa-${table.label}.png`} className="inline-flex h-8 items-center justify-center rounded-xl bg-amber px-3 text-xs font-semibold text-amber-ink">
+              Descargar QR
             </a>
-          )}
-          <Btn size="sm" onClick={onRegenerate}>QR nuevo</Btn>
-          {table.qr && others.length > 0 && (
-            <select
-              aria-label={`Mover el QR de la mesa ${table.label}`}
-              className="h-8 rounded-xl border border-line bg-surface-2 px-2 text-xs"
-              value=""
-              onChange={(e) => e.target.value && onMove(e.target.value)}
-            >
-              <option value="">Mover este QR a…</option>
-              {others.map((o) => (
-                <option key={o.id} value={o.id}>Mesa {o.label}</option>
-              ))}
-            </select>
           )}
           <div className="flex gap-1.5">
             <Btn size="sm" onClick={onEdit}>Editar</Btn>
             <Btn size="sm" onClick={onNfc}>NFC</Btn>
           </div>
+          {/* Acciones menos frecuentes en un solo menú, para que la tarjeta no se vea cargada */}
+          <select
+            aria-label={`Más opciones del QR de la mesa ${table.label}`}
+            className="h-8 rounded-xl border border-line bg-surface px-2 text-xs text-muted"
+            value=""
+            onChange={(e) => {
+              const v = e.target.value;
+              if (v === "regenerate") onRegenerate();
+              else if (v) onMove(v);
+            }}
+          >
+            <option value="">Más opciones…</option>
+            <option value="regenerate">Generar un QR nuevo (anula el impreso)</option>
+            {table.qr &&
+              others.map((o) => (
+                <option key={o.id} value={o.id}>Mover este QR a la mesa {o.label}</option>
+              ))}
+          </select>
         </div>
       </div>
     </Card>

@@ -36,7 +36,7 @@ export function Btn({
       title={title}
       disabled={disabled}
       onClick={onClick}
-      className={`inline-flex items-center justify-center gap-1.5 rounded-xl transition active:scale-95 disabled:opacity-40 ${sizes} ${styles}`}
+      className={`inline-flex shrink-0 items-center justify-center gap-1.5 whitespace-nowrap rounded-xl transition active:scale-95 disabled:opacity-40 ${sizes} ${styles}`}
     >
       {children}
     </button>
@@ -82,7 +82,8 @@ export function Badge({ children, tone = "muted" }: { children: ReactNode; tone?
 }
 
 export function Card({ children, className = "" }: { children: ReactNode; className?: string }) {
-  return <section className={`rounded-2xl border border-line bg-surface p-4 ${className}`}>{children}</section>;
+  // min-w-0: dentro de una grilla, la tarjeta no se estira al ancho de su contenido (desbordaba en el celular)
+  return <section className={`min-w-0 rounded-2xl border border-line bg-surface p-4 md:p-5 ${className}`}>{children}</section>;
 }
 
 export function Modal({

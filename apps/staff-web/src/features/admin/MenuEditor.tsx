@@ -126,10 +126,10 @@ export function MenuEditor() {
                       </p>
                     </button>
                     {d.active && (
-                      <div className="flex items-center gap-4">
+                      <div className="flex w-full flex-wrap items-center gap-2 sm:w-auto sm:gap-3">
                         <label className="flex items-center gap-2 text-sm">
                           <Toggle checked={d.available} onChange={(v) => setAvailability(d, { available: v })} label={`${d.name} disponible`} />
-                          <span className={d.available ? "text-ok" : "text-warn"}>{d.available ? "Disponible" : "Agotado"}</span>
+                          <span className={`hidden sm:inline ${d.available ? "text-ok" : "text-warn"}`}>{d.available ? "Disponible" : "Agotado"}</span>
                         </label>
                         <Btn size="sm" kind="ghost" onClick={() => setAvailability(d, { hidden: !d.hidden })}>{d.hidden ? "Mostrar" : "Ocultar"}</Btn>
                         <Btn size="sm" title="Subir foto o modelo 3D" onClick={() => setEditing({ dish: d, categoryId: cat.id, tab: "medios" })}>{d.assets.GLB_LOD0 ? "3D ✓" : "Subir 3D"}</Btn>

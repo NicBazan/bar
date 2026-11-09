@@ -74,7 +74,7 @@ export function Promotions() {
   const aud = msg ? camp.audience[msg.segment] : null;
 
   return (
-    <div className="grid max-w-3xl gap-4">
+    <div className="mx-auto grid max-w-4xl gap-4">
       {view}
       <Automations />
       <Card>

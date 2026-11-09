@@ -70,7 +70,7 @@ export function LoginScreen({ venueId, venueName, logoUrl, tag, onDone }: {
 
       <section className="mt-8 rounded-2xl border border-line border-l-4 border-l-amber bg-surface p-6 text-cream">
         <p className="text-sm text-muted">Sumá tus visitas</p>
-        <h1 className="mt-1 text-2xl leading-tight font-semibold">Guardá tus puntos, tu historial y pedí lo mismo de siempre en un toque.</h1>
+        <h1 className="mt-1 font-display text-2xl leading-tight font-medium">Guardá tus puntos, tu historial y pedí lo mismo de siempre en un toque.</h1>
         <p className="mt-3 text-xs text-muted">Sin contraseña ni app: te mandamos un código por email.</p>
       </section>
 

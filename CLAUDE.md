@@ -46,31 +46,29 @@
 
 ## 4. Diseño visual
 
-Dos superficies, dos criterios:
-
-- **Paneles (`staff-web`: login, salón, cocina, admin, super admin)** → sistema «Naranja señal» de la base (`09-diseno-visual/`).
-- **Carta y Mi cuenta (`guest-web`)** → misma paleta clara y las mismas reglas de calidad; radios algo más amables (10–18 px) porque es de cara al cliente. Si el bar sube su logo, la identidad del bar se respeta.
+Paleta **ZainSoft en pastel** (decidido por el usuario el 09/11) en la carta, Mi cuenta y todos los paneles. Títulos en **Fraunces** (serif suave, `font-display`) y texto en **Outfit** (`font-sans`), autoalojadas con next/font. Tema **Automático / Claro / Oscuro** en todas las pantallas (`ThemeToggle`, el cambio se revela con un círculo desde el botón).
 
 Tokens (en `globals.css` de cada app, nombres heredados — no renombrar sin migrar todos los usos):
 
-| Token | Valor | Uso |
-|---|---|---|
-| `paper` | `#F4F5F6` | fondo de página |
-| `surface` | `#FFFFFF` | tarjetas, hojas |
-| `surface-2` | `#EEF0F2` | chips, botones secundarios |
-| `line` | `#E3E5E8` | bordes de 1 px |
-| `cream` (= tinta) | `#16181D` | texto principal |
-| `muted` | `#5B616B` | texto secundario |
-| `amber` / `brand` | `#E8590C` | **único acento**: relleno de botón primario, barra de 4 px |
-| `amber-ink` | `#16181D` | texto sobre el acento (el blanco no pasa AA) |
-| `brand-dark` | `#C2410C` | acento como **texto** o enlace (5,2:1) |
-| `ok` / `warn` | `#1F7A4D` / `#B42318` | solo estados; texto blanco encima |
+| Token | Claro | Oscuro | Uso |
+|---|---|---|---|
+| `paper` | `#FAF6F1` | `#1B1917` | fondo de página |
+| `surface` | `#FFFFFF` | `#24211E` | tarjetas, hojas |
+| `surface-2` | `#F4EEE7` | `#2E2A26` | chips, inputs, botones secundarios |
+| `line` | `#ECE4DA` | `#3A352F` | bordes de 1 px |
+| `cream` (= tinta) | `#2B2622` | `#F1EBE4` | texto principal |
+| `muted` | `#6E655D` | `#B4AAA0` | texto secundario (5,0:1 sobre chips) |
+| `amber` / `brand` | `#F6B49A` | `#F4A988` | **único acento** (coral pastel): botón primario, barra de 4 px |
+| `amber-ink` | `#5A2410` | `#3A1A0C` | texto sobre el acento (7,0:1) |
+| `brand-dark` | `#B53D17` | `#F7B79C` | acento como **texto** o enlace |
+| `ok` / `warn` + `on-state` | `#2F7A55` / `#B4413A` | `#7FD1A4` / `#F28B82` | solo estados |
 
-- IBM Plex Sans (300–700). Sin sombras (los tokens `shadow-*` valen 0), sin degradados, sin brillos de fondo, sin superficies oscuras.
-- Firma: `border-l-4 border-l-amber` en lo actual o destacado. Un acento por zona.
-- Prohibido: Inter/Roboto, degradados, crema cálido, mayúsculas espaciadas sobre títulos, `text-amber` como color de texto, `bg-night` como superficie.
+- Sin sombras ni degradados. Radios amables (12–20 px). Firma: `border-l-4 border-l-amber` en lo destacado. Un acento por zona.
+- Prohibido: mayúsculas espaciadas en rótulos, `text-amber` como texto, colores fijos (`bg-white`, `text-white`) donde corresponde un token.
+- Layout: pantallas de lectura (admin, plataforma) centradas con `max-w-6xl` (`StaffHeader contained`); salón y cocina a todo el ancho. Las tarjetas llevan `min-w-0` (sin eso desbordan en el celular dentro de una grilla). Métricas en 2 columnas en el celular.
+- El super admin muestra el logo de ZainSoft (`/zainsoft/logo.png` y `logo-dark.png` según el tema).
 - Cada pantalla: estados vacío/cargando/error, foco visible, muestra `data.error`, deshabilita el botón al enviar.
-- Verificación: captura en escritorio y móvil (375 px) antes de cerrar.
+- Verificación: captura en escritorio y móvil (375 px) y chequeo de desborde horizontal antes de cerrar.
 
 ## 5. Cierre de cada bloque
 

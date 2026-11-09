@@ -19,7 +19,7 @@ export function Overview({ onGo }: { onGo: (tab: "carta" | "mesas" | "equipo" | 
   return (
     <div className="grid gap-4">
       {view}
-      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+      <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
         <Stat label="Ventas últimas 24 h" value={formatMoney(o.last24h.salesCents)} sub={`${o.last24h.orders} pedido(s) confirmados`} />
         <Stat label="Mesas activas ahora" value={String(o.activeSessions)} sub={`de ${o.counts.tables} mesas`} />
         <Stat label="Platos en la carta" value={String(o.counts.dishes)} sub="activos" onClick={() => onGo("carta")} />

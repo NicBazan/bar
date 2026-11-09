@@ -205,7 +205,7 @@ function HomeTab({ venueId, venueName, currency, tag, me, visits, loyalty, go, o
       <header className="flex items-center justify-between">
         <div>
           <p className="text-sm text-muted">Hola de nuevo,</p>
-          <h1 className="text-2xl font-semibold">{firstName ?? "¡bienvenido!"}</h1>
+          <h1 className="font-display text-3xl font-medium">{firstName ?? "¡bienvenido!"}</h1>
         </div>
         <div className="flex items-center gap-2">
           <ThemeToggle />
@@ -399,7 +399,7 @@ function HistoryTab({ venueId, tag, visits, notify }: Props & { visits: Visit[] 
 
   return (
     <>
-      <h1 className="text-2xl font-semibold">Historial</h1>
+      <h1 className="font-display text-3xl font-medium">Historial</h1>
       <p className="mt-1 text-sm text-muted">Tus visitas y lo que pediste.</p>
       {!tag && (
         <p className="mt-3 rounded-2xl bg-brand/10 px-4 py-3 text-xs text-brand-dark">
@@ -469,7 +469,7 @@ function PromosTab({ venueId, venueName }: Props) {
 
   return (
     <>
-      <h1 className="text-2xl font-semibold">Promos</h1>
+      <h1 className="font-display text-3xl font-medium">Promos</h1>
       <p className="mt-1 text-sm text-muted">Lo que hay hoy en {venueName}.</p>
       {promos === null ? (
         <p className="mt-4 text-sm text-night/50">Cargando…</p>
@@ -632,7 +632,7 @@ function ProfileTab({ me, onSaved, onLogout, notify, ...props }: Props & {
       <header className="flex items-center gap-3">
         <Avatar name={me?.name ?? null} email={me?.email} />
         <div className="min-w-0">
-          <h1 className="truncate text-xl font-semibold">{me?.name || "Tu perfil"}</h1>
+          <h1 className="truncate font-display text-2xl font-medium">{me?.name || "Tu perfil"}</h1>
           <p className="truncate text-sm text-muted">{me?.email}</p>
         </div>
       </header>

@@ -82,15 +82,17 @@ export default async function VenueMenuPage({ params, searchParams }: MenuPagePr
 
   return (
     <main className="relative mx-auto min-h-dvh max-w-md px-4 pb-28 md:max-w-3xl md:px-8 lg:max-w-6xl">
-      {/* Glow ambiental superior */}
-
       {/* Header del Local y Mesa */}
-      <header className="pt-8 pb-4">
+      <header className="pt-6 pb-4 md:pt-10 md:pb-6">
         <div className="flex items-center justify-between gap-3">
-          <div className="flex items-center gap-2">
-            <span className="flex h-2.5 w-2.5 rounded-full bg-ok animate-pulse"></span>
-            <span className="text-xs font-medium tracking-wide text-muted">Mesa Conectada</span>
-          </div>
+          {tag ? (
+            <div className="flex items-center gap-2">
+              <span className="flex h-2 w-2 rounded-full bg-ok"></span>
+              <span className="text-xs font-medium text-muted">Mesa conectada</span>
+            </div>
+          ) : (
+            <span className="text-xs text-muted">Carta</span>
+          )}
 
           <div className="flex items-center gap-2">
           <ThemeToggle />
@@ -108,7 +110,7 @@ export default async function VenueMenuPage({ params, searchParams }: MenuPagePr
           {menu.venue.logoUrl && (
             <img src={menu.venue.logoUrl} alt="" className="h-12 w-12 shrink-0 rounded-2xl border border-line bg-surface object-contain p-1" />
           )}
-          <h1 className="font-display text-3xl font-medium tracking-tight text-cream">{menu.venue.name}</h1>
+          <h1 className="font-display text-3xl font-medium tracking-tight text-cream md:text-4xl">{menu.venue.name}</h1>
         </div>
         {(menu.venue.address || menu.venue.instagramUrl) && (
           <p className="mt-1 flex flex-wrap gap-x-3 text-xs text-muted">
@@ -125,11 +127,12 @@ export default async function VenueMenuPage({ params, searchParams }: MenuPagePr
         </p>
       </header>
 
+      <div className="mb-4 grid gap-3 md:grid-cols-2">
       {/* Promo vigente del local (las carga el dueño en Admin → Promos) */}
       {promos[0] && (
         <Link
           href={`/v/${venueId}/cuenta?tab=promos${tag ? `&tag=${tag}` : ""}`}
-          className="mb-4 flex items-center gap-3 rounded-2xl border border-line border-l-4 border-l-amber bg-surface p-4 text-cream active:bg-surface-2"
+          className="flex items-center gap-3 rounded-2xl border border-line border-l-4 border-l-amber bg-surface p-4 text-cream transition hover:bg-surface-2/60 active:bg-surface-2"
         >
           <span aria-hidden className="grid h-11 w-11 shrink-0 place-items-center rounded-full bg-amber text-lg font-bold text-amber-ink">%</span>
           <span className="min-w-0 flex-1">
@@ -143,15 +146,16 @@ export default async function VenueMenuPage({ params, searchParams }: MenuPagePr
       {/* Gamificación: algo para hacer mientras llega la comida */}
       <Link
         href={`/v/${venueId}/play/sudoku${tag ? `?tag=${tag}` : ""}`}
-        className="group relative mb-4 flex items-center gap-3 overflow-hidden rounded-2xl border border-line border-l-4 border-l-amber bg-surface p-4 shadow-amber/5 transition active:scale-[0.98]"
+        className="group relative flex items-center gap-3 overflow-hidden rounded-2xl border border-line bg-surface p-4 transition hover:bg-surface-2/60 active:scale-[0.98]"
       >
         <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-amber/15 text-2xl transition-transform group-hover:rotate-6">🕹️</span>
         <span className="min-w-0 flex-1">
           <span className="block text-sm font-semibold text-cream">¿Esperando tu comida? Jugá un Sudoku</span>
           <span className="block text-xs text-muted">Tres niveles · tu partida se guarda si volvés a la carta</span>
         </span>
-        <span className="text-brand-dark transition-transform group-hover:translate-x-1">→</span>
+        <span className="text-sm font-semibold text-brand-dark">Jugar</span>
       </Link>
+      </div>
 
       {/* Estado en vivo de la mesa: PIN, esperando al mozo, pedidos, llamar al mozo / cuenta */}
       <TableLiveBar tag={tag} currency={menu.venue.currency} venueId={venueId} />
@@ -167,7 +171,7 @@ export default async function VenueMenuPage({ params, searchParams }: MenuPagePr
               <h2 className="font-display text-2xl font-normal tracking-tight text-cream">
                 {cat.name}
               </h2>
-              <span className="text-xs text-muted/70">{cat.dishes.length} platos</span>
+              <span className="text-xs text-muted">{cat.dishes.length} {cat.dishes.length === 1 ? "plato" : "platos"}</span>
             </div>
 
             <div className={

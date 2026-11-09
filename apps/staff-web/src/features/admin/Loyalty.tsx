@@ -53,7 +53,7 @@ export function Loyalty() {
   };
 
   return (
-    <div className="grid max-w-4xl gap-4">
+    <div className="mx-auto grid max-w-4xl gap-4">
       {view}
       <div className="flex flex-wrap items-end justify-between gap-3">
         <div>
@@ -66,7 +66,7 @@ export function Loyalty() {
         </label>
       </div>
 
-      <div className="grid gap-3 sm:grid-cols-4">
+      <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
         <Metric label="Clientes registrados" value={p.stats.customers} />
         <Metric label="Activos en 30 días" value={p.stats.last30d.members} />
         <Metric label={`${unit[0]!.toUpperCase()}${unit.slice(1)} entregados (30 días)`} value={p.stats.last30d.earned} />

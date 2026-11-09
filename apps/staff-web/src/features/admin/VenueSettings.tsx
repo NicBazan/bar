@@ -46,7 +46,7 @@ export function VenueSettings() {
     );
 
   return (
-    <div className="grid max-w-2xl gap-4">
+    <div className="mx-auto grid max-w-3xl gap-4">
       {view}
       <Card>
         <h3 className="mb-3 font-display text-xl">El local</h3>
