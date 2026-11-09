@@ -25,7 +25,7 @@ export default function LoginPage() {
     setError(null);
     try {
       const res = await api<{ token: string; user: StaffUser }>("/staff/login", { method: "POST", body: { email, password } });
-      setAuth(res.token, res.user);
+      setAuth(res.user); // la sesión queda en la cookie HttpOnly que puso la API
       window.location.href = HOME_BY_ROLE[res.user.role];
     } catch (err) {
       setError(err instanceof ApiError && err.status === 401 ? "Email o contraseña incorrectos" : err instanceof ApiError && err.status === 429 ? "Demasiados intentos, esperá un minuto" : "No se pudo conectar con el servidor");

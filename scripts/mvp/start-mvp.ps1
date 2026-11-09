@@ -149,6 +149,7 @@ if (-not $NoTunnel -and $cloudflared) {
 $guestPublic = if ($cartaTunnel) { $cartaTunnel } elseif ($lanIp) { "http://${lanIp}:3000" } else { "http://localhost:3000" }
 $env:NODE_ENV = "production"
 $env:HOST = "127.0.0.1"            # la API solo la ven los front de esta PC
+$env:COOKIE_SECURE = "false"       # el celular entra por http://192.168.x.x: una cookie Secure se descartaría
 $env:PORT = "4000"
 $env:PUBLIC_GUEST_URL = $guestPublic
 $env:UPLOADS_DIR = Join-Path $Root "apps\api\uploads"

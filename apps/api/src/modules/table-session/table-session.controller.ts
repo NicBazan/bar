@@ -252,7 +252,7 @@ async function assertMayJoin(tx: Prisma.TransactionClient, session: { id: string
 /** Token del comensal (JWT) en cookie HttpOnly; también se devuelve para el cliente que use Bearer */
 async function issueGuestToken(reply: FastifyReply, p: { tag: ActiveTag; sessionId: string; deviceId: string; physical: boolean }) {
   const token = await signToken({ typ: "guest", tid: p.tag.tenantId, vid: p.tag.table.venueId, sid: p.sessionId, did: p.deviceId, phys: p.physical });
-  reply.setCookie(GUEST_COOKIE, token, { httpOnly: true, secure: config.isProd, sameSite: "lax", path: "/", maxAge: 12 * 60 * 60 });
+  reply.setCookie(GUEST_COOKIE, token, { httpOnly: true, secure: config.cookieSecure, sameSite: "lax", path: "/", maxAge: 12 * 60 * 60 });
   return token;
 }
 

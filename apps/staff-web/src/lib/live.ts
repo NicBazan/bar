@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { type StaffRole, type StaffUser, type StateEvents, api, getAuth } from "./api";
+import { STAFF_USER_KEY, type StaffRole, type StaffUser, type StateEvents, api, getAuth } from "./api";
 
 /** Protege la pantalla: sin sesión o con rol no permitido, redirige al login */
 export function useStaffAuth(roles: StaffRole[]) {
@@ -14,9 +14,9 @@ export function useStaffAuth(roles: StaffRole[]) {
     }
     setUser(auth.user);
     // La sesión se comparte entre pestañas: si en otra se entra con otro usuario (o se sale),
-    // esta pestaña se recarga para no seguir mostrando "Mozo" con el token de "Cocina"
+    // esta pestaña se recarga para no seguir mostrando "Mozo" con la sesión de "Cocina"
     const onStorage = (e: StorageEvent) => {
-      if (e.key === null || e.key === "bar.staff.token") window.location.reload();
+      if (e.key === null || e.key === STAFF_USER_KEY) window.location.reload();
     };
     window.addEventListener("storage", onStorage);
     return () => window.removeEventListener("storage", onStorage);

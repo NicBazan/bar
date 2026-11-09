@@ -107,6 +107,8 @@ model StaffUser {
   role         StaffRole
   active       Boolean   @default(true)
   createdAt    DateTime  @default(now())
+  // Sesiones emitidas antes de esta fecha dejan de valer (reseteo de contraseña, baja, "cerrar todas")
+  tokensValidAfter DateTime?
 
   tenant Tenant @relation(fields: [tenantId], references: [id])
   venue  Venue? @relation(fields: [venueId], references: [id])

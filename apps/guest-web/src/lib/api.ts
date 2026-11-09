@@ -173,6 +173,7 @@ export type Receipt = {
   openedAt: string;
   closedAt: string | null;
   currency: string;
+  timezone?: string; // comprobantes viejos no la tienen
   lines: Array<{ quantity: number; description: string; unitCents: number; subtotalCents: number }>;
   notBilled: Array<{ quantity: number; description: string; reason: string }>;
   units: number;

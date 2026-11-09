@@ -2,7 +2,7 @@ import { StaffLoginBody } from "@bar/shared-types";
 import type { FastifyInstance } from "fastify";
 import { z } from "zod";
 import { config } from "../../config.js";
-import { FLOOR_ROLES, STAFF_COOKIE, requireStaff, staffScope } from "../../shared/auth/guards.js";
+import { FLOOR_ROLES, STAFF_COOKIE, invalidateStaffStatus, requireStaff, staffScope } from "../../shared/auth/guards.js";
 import { hashPassword, verifyPassword } from "../../shared/auth/password.js";
 import { signToken } from "../../shared/auth/tokens.js";
 import { prisma, type Tx } from "../../shared/db/index.js";
@@ -37,7 +37,7 @@ export async function staffRoutes(app: FastifyInstance) {
       const token = await signToken({ typ: "staff", sub: user.id, tid: user.tenantId, vid: user.venueId, role: user.role });
       reply.setCookie(STAFF_COOKIE, token, {
         httpOnly: true,
-        secure: config.isProd,
+        secure: config.cookieSecure,
         sameSite: "strict",
         path: "/",
         maxAge: 12 * 60 * 60,
@@ -48,7 +48,16 @@ export async function staffRoutes(app: FastifyInstance) {
 
   // Una cookie HttpOnly solo la puede borrar el servidor (lección de taller)
   app.post("/staff/logout", async (_req, reply) => {
-    reply.clearCookie(STAFF_COOKIE, { httpOnly: true, secure: config.isProd, sameSite: "strict", path: "/" });
+    reply.clearCookie(STAFF_COOKIE, { httpOnly: true, secure: config.cookieSecure, sameSite: "strict", path: "/" });
+    return { ok: true };
+  });
+
+  // "Cerrar todas mis sesiones" (perdí el celular, alguien vio mi contraseña): invalida los tokens ya emitidos
+  app.post("/staff/logout-all", async (req, reply) => {
+    const staff = await requireStaff(req);
+    await prisma.staffUser.update({ where: { id: staff.sub }, data: { tokensValidAfter: new Date() } });
+    invalidateStaffStatus(staff.sub);
+    reply.clearCookie(STAFF_COOKIE, { httpOnly: true, secure: config.cookieSecure, sameSite: "strict", path: "/" });
     return { ok: true };
   });
 

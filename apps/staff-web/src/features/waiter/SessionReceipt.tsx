@@ -13,13 +13,14 @@ export type Receipt = {
   table: string;
   openedAt: string;
   closedAt: string | null;
+  timezone?: string;
   lines: Array<{ quantity: number; description: string; unitCents: number; subtotalCents: number }>;
   notBilled: Array<{ quantity: number; description: string; reason: string }>;
   totalCents: number;
   legend: string;
 };
 
-const dateTime = (iso: string) => new Date(iso).toLocaleString("es-AR", { dateStyle: "short", timeStyle: "short" });
+const dateTime = (iso: string, timeZone?: string) => new Date(iso).toLocaleString("es-AR", { dateStyle: "short", timeStyle: "short", timeZone });
 
 /**
  * Cuenta de una mesa para el mozo o la caja. Si llega `receipt` (recién cerrada) se muestra ese;
@@ -57,8 +58,8 @@ function ReceiptBody({ receipt }: { receipt: Receipt }) {
         <p className="font-semibold">{receipt.venue.name}</p>
         {receipt.venue.address && <p className="text-xs text-muted">{receipt.venue.address}</p>}
         <p className="text-xs text-muted">
-          Mesa {receipt.table} · abierta {dateTime(receipt.openedAt)}
-          {receipt.closedAt && ` · cerrada ${dateTime(receipt.closedAt)}`}
+          Mesa {receipt.table} · abierta {dateTime(receipt.openedAt, receipt.timezone)}
+          {receipt.closedAt && ` · cerrada ${dateTime(receipt.closedAt, receipt.timezone)}`}
         </p>
       </div>
       <table className="w-full">

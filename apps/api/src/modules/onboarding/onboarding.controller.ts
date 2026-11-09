@@ -199,7 +199,7 @@ async function sendProvisioned(reply: FastifyReply, result: Provisioned) {
 
   reply.setCookie(STAFF_COOKIE, token, {
     httpOnly: true,
-    secure: config.isProd,
+    secure: config.cookieSecure,
     sameSite: "strict",
     path: "/",
     maxAge: 12 * 60 * 60,

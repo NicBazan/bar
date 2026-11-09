@@ -36,6 +36,8 @@ export type Receipt = {
   openedAt: string;
   closedAt: string | null;
   currency: string;
+  // Zona horaria del local: las horas se muestran como en el local, no como en el celular de un turista
+  timezone: string;
   lines: ReceiptLine[];
   notBilled: NotBilledLine[];
   units: number;
@@ -44,7 +46,7 @@ export type Receipt = {
 };
 
 export type ReceiptSource = {
-  venue: { name: string; address: string | null; currency: string };
+  venue: { name: string; address: string | null; currency: string; timezone: string };
   tableLabel: string;
   openedAt: Date;
   closedAt: Date | null;
@@ -106,6 +108,7 @@ export function buildReceipt(source: ReceiptSource, number: number | null): Rece
     openedAt: source.openedAt.toISOString(),
     closedAt: source.closedAt?.toISOString() ?? null,
     currency: source.venue.currency,
+    timezone: source.venue.timezone,
     lines,
     notBilled: notBilledLines(source),
     units: lines.reduce((s, l) => s + l.quantity, 0),
@@ -118,7 +121,7 @@ async function loadSource(db: Tx | typeof prisma, sessionId: string): Promise<Re
   const s = await db.tableSession.findUniqueOrThrow({
     where: { id: sessionId },
     include: {
-      venue: { select: { name: true, address: true, currency: true } },
+      venue: { select: { name: true, address: true, currency: true, timezone: true } },
       table: { select: { label: true } },
       orders: { orderBy: { createdAt: "asc" }, select: { status: true, rejectReason: true, items: true } },
     },

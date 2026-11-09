@@ -67,6 +67,7 @@ type StaffStatus = {
   venueId: string | null;
   suspended: boolean;
   isPlatform: boolean;
+  tokensValidAfter: Date | null;
 };
 
 const STATUS_TTL_MS = 10_000;
@@ -82,6 +83,7 @@ async function loadStaffStatus(userId: string): Promise<StaffStatus | null> {
       role: true,
       tenantId: true,
       venueId: true,
+      tokensValidAfter: true,
       tenant: { select: { suspendedAt: true, isPlatform: true } },
     },
   });
@@ -93,6 +95,7 @@ async function loadStaffStatus(userId: string): Promise<StaffStatus | null> {
         venueId: user.venueId,
         suspended: Boolean(user.tenant.suspendedAt),
         isPlatform: user.tenant.isPlatform,
+        tokensValidAfter: user.tokensValidAfter,
       }
     : null;
   statusCache.set(userId, { at: Date.now(), status });
@@ -117,6 +120,11 @@ export async function requireStaff(req: FastifyRequest, roles?: StaffRole[]): Pr
 
   const status = await loadStaffStatus(claims.sub);
   if (!status || !status.active || status.tenantId !== claims.tid) throw new HttpError(401, "STAFF_INACTIVE");
+  // Token emitido antes de un reseteo de contraseña, una baja o "cerrar todas las sesiones": ya no vale.
+  // Se compara en milisegundos (`iatMs`); un token sin esa marca es anterior a esta regla y también cae.
+  if (status.tokensValidAfter && (claims.iatMs ?? 0) <= status.tokensValidAfter.getTime()) {
+    throw new HttpError(401, "SESSION_REVOKED", "Tu sesión se cerró. Volvé a ingresar.");
+  }
   if (status.suspended) throw new HttpError(403, "TENANT_SUSPENDED", "Este local está suspendido");
 
   // Rol y sucursal vigentes en la base (no los del token)

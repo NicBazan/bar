@@ -121,6 +121,8 @@ export async function adminTeamRoutes(app: FastifyInstance) {
           role: body.role,
           active: body.active,
           ...(body.password ? { passwordHash: hashPassword(body.password) } : {}),
+          // Contraseña nueva o baja: las sesiones abiertas en otros dispositivos dejan de valer
+          ...(body.password || body.active === false ? { tokensValidAfter: new Date() } : {}),
         },
         select: { id: true, name: true, email: true, role: true, active: true, createdAt: true },
       });

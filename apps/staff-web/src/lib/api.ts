@@ -1,9 +1,11 @@
 import { optimizeUploadFile } from "./image-compress";
 
-// Cliente HTTP del staff. Token Bearer guardado en localStorage del dispositivo del local.
-// Por defecto "" → llama a /v1/* en el mismo dominio y next.config.ts lo reenvía a la API
+// Cliente HTTP del staff. La sesión vive SOLO en la cookie HttpOnly `bar_staff` que pone la API:
+// el JavaScript de la página nunca ve el token (un XSS no se lo puede llevar). En localStorage queda
+// únicamente el nombre y el rol para pintar la pantalla, que no sirven para autenticarse.
+// "" → llama a /v1/* en el mismo dominio y next.config.ts lo reenvía a la API (la cookie es de primera parte)
 const API_URL = (process.env.NEXT_PUBLIC_API_URL ?? "").replace(/\/+$/, "");
-const TOKEN_KEY = "bar.staff.token";
+const LEGACY_TOKEN_KEY = "bar.staff.token"; // versiones anteriores guardaban el token: se borra al cargar
 const USER_KEY = "bar.staff.user";
 
 export type StaffRole = "SUPER_ADMIN" | "OWNER" | "MANAGER" | "WAITER" | "KITCHEN" | "CASHIER";
@@ -19,24 +21,25 @@ export class ApiError extends Error {
   }
 }
 
-export function getAuth(): { token: string; user: StaffUser } | null {
+export const STAFF_USER_KEY = USER_KEY;
+
+export function getAuth(): { user: StaffUser } | null {
   try {
-    const token = localStorage.getItem(TOKEN_KEY);
+    localStorage.removeItem(LEGACY_TOKEN_KEY);
     const user = localStorage.getItem(USER_KEY);
-    return token && user ? { token, user: JSON.parse(user) as StaffUser } : null;
+    return user ? { user: JSON.parse(user) as StaffUser } : null;
   } catch {
     return null;
   }
 }
 
-export function setAuth(token: string, user: StaffUser) {
-  localStorage.setItem(TOKEN_KEY, token);
+export function setAuth(user: StaffUser) {
   localStorage.setItem(USER_KEY, JSON.stringify(user));
 }
 
 export function clearAuth() {
   try {
-    localStorage.removeItem(TOKEN_KEY);
+    localStorage.removeItem(LEGACY_TOKEN_KEY);
     localStorage.removeItem(USER_KEY);
   } catch {
     /* noop */
@@ -47,12 +50,11 @@ export async function api<T>(path: string, opts: { method?: string; body?: unkno
   const headers: Record<string, string> = {};
   // Con FormData el navegador pone el Content-Type multipart con su boundary
   if (opts.body !== undefined && !opts.form) headers["content-type"] = "application/json";
-  const token = getAuth()?.token;
-  if (token) headers.authorization = `Bearer ${token}`;
 
   const res = await fetch(`${API_URL}/v1${path}`, {
     method: opts.method ?? "GET",
     headers,
+    credentials: "same-origin", // la cookie HttpOnly de la sesión viaja sola
     body: opts.form ?? (opts.body !== undefined ? JSON.stringify(opts.body) : undefined),
     cache: "no-store",
   });

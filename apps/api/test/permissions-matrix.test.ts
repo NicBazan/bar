@@ -56,6 +56,7 @@ const MATRIX: Record<string, Access> = {
   "POST /v1/customer/push/subscribe": "customer",
 
   "GET /v1/staff/orders": "staff",
+  "POST /v1/staff/logout-all": "staff",
   "GET /v1/staff/service-calls": "staff",
   "GET /v1/staff/kitchen/items": "staff",
   "PATCH /v1/staff/order-items/:id/status": "staff", // el rol se valida por estado destino

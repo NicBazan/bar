@@ -222,7 +222,7 @@ export async function superAdminRoutes(app: FastifyInstance) {
     if (user.tenant.isPlatform) throw forbidden("ROLE_NOT_ALLOWED", "Las cuentas de la plataforma no se resetean desde acá");
     const temp = generateTempPassword();
     await prisma.$transaction(async (tx) => {
-      await tx.staffUser.update({ where: { id }, data: { passwordHash: hashPassword(temp), active: true } });
+      await tx.staffUser.update({ where: { id }, data: { passwordHash: hashPassword(temp), active: true, tokensValidAfter: new Date() } });
       await log(tx, admin, user.tenantId, "password_reset", { userId: id, email: user.email });
     });
     invalidateStaffStatus(id);

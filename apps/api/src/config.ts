@@ -10,6 +10,12 @@ function required(name: string, devDefault: string): string {
   return devDefault;
 }
 
+// Fotos y 3D: en producción tiene que haber Cloudinary o un disco declarado a propósito (UPLOADS_DIR).
+// Sin eso, los archivos se escriben en el disco efímero del contenedor y desaparecen en el próximo deploy.
+if (isProd && !process.env.CLOUDINARY_URL && !process.env.UPLOADS_DIR) {
+  throw new Error("Falta CLOUDINARY_URL (o UPLOADS_DIR apuntando a un disco persistente) para guardar fotos y 3D");
+}
+
 export const config = {
   isProd,
   port: Number(process.env.PORT ?? 4000),
@@ -30,6 +36,9 @@ export const config = {
   publicGuestUrl: (process.env.PUBLIC_GUEST_URL ?? "http://localhost:3000").replace(/\/+$/, ""),
   // Fotos y 3D en Cloudinary (recomendado en producción). Sin la variable, se guardan en UPLOADS_DIR
   cloudinary: parseCloudinaryUrl(process.env.CLOUDINARY_URL),
+  // Cookies con `Secure` (solo viajan por HTTPS). En producción sí; el MVP local corre en modo producción
+  // pero por HTTP en la red de la casa, y ahí `COOKIE_SECURE=false` (si no, el navegador las descarta)
+  cookieSecure: process.env.COOKIE_SECURE ? process.env.COOKIE_SECURE === "true" : isProd,
   guestTokenTtl: "12h",
   staffTokenTtl: "12h",
   // "Mi cuenta": el celular queda reconocido por 90 días (se revoca al borrar la cuenta)

@@ -18,6 +18,9 @@ export type StaffClaims = {
   tid: string;
   vid: string | null;
   role: StaffRole;
+  // Momento de emisión en milisegundos (`iat` de JWT es en segundos: un token emitido en el mismo segundo
+  // que una revocación la sobreviviría). Lo usa requireStaff contra StaffUser.tokensValidAfter
+  iatMs?: number;
 };
 
 /** Cliente identificado por email ("Mi cuenta"): una cuenta por bar, por eso lleva el tenant */
@@ -37,7 +40,7 @@ const TTL: Record<Claims["typ"], string> = {
 
 export async function signToken(claims: Claims): Promise<string> {
   const { typ, ...rest } = claims;
-  return new SignJWT({ typ, ...rest })
+  return new SignJWT({ typ, ...rest, ...(typ === "staff" ? { iatMs: Date.now() } : {}) })
     .setProtectedHeader({ alg: "HS256" })
     .setIssuedAt()
     .setExpirationTime(TTL[typ])

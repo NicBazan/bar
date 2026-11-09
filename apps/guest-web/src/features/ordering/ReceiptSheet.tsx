@@ -5,8 +5,8 @@ import { Sheet } from "@/components/Sheet";
 import { type Receipt, api } from "@/lib/api";
 import { formatMoney, load } from "@/lib/storage";
 
-const dateTime = (iso: string) =>
-  new Date(iso).toLocaleString("es-AR", { day: "2-digit", month: "2-digit", year: "numeric", hour: "2-digit", minute: "2-digit" });
+const dateTime = (iso: string, timeZone?: string) =>
+  new Date(iso).toLocaleString("es-AR", { day: "2-digit", month: "2-digit", year: "numeric", hour: "2-digit", minute: "2-digit", timeZone });
 
 /** Cuenta de la mesa en una hoja inferior: se pide a la API al abrirla (el total lo calcula el servidor) */
 export function ReceiptSheet({ tag, onClose }: { tag?: string; onClose: () => void }) {
@@ -51,8 +51,8 @@ export function ReceiptView({ receipt }: { receipt: Receipt }) {
         <p className="font-semibold">{receipt.venue.name}</p>
         {receipt.venue.address && <p className="text-xs text-muted">{receipt.venue.address}</p>}
         <p className="mt-2 text-xs text-muted">
-          Mesa {receipt.table} · desde {dateTime(receipt.openedAt)}
-          {receipt.closedAt && ` · cerrada ${dateTime(receipt.closedAt)}`}
+          Mesa {receipt.table} · desde {dateTime(receipt.openedAt, receipt.timezone)}
+          {receipt.closedAt && ` · cerrada ${dateTime(receipt.closedAt, receipt.timezone)}`}
         </p>
         {receipt.kind === "PROVISIONAL" && (
           <p className="mt-2 text-xs text-cream">Es la cuenta hasta ahora. Al cerrar la mesa, el mozo emite el comprobante numerado.</p>
