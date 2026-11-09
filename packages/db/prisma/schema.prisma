@@ -161,6 +161,9 @@ model TableTag {
   tableId    String   @db.Uuid
   type       TagType  @default(QR)
   sunCounter Int      @default(0) // último contador SUN aceptado (anti-replay)
+  // QR dinámico: cuántas veces se escaneó y cuándo fue la última (el dueño ve si el QR se usa)
+  scanCount  Int       @default(0)
+  lastScanAt DateTime?
   // UID del chip NTAG 424 grabado en esta mesa: una firma válida de otro chip no abre esta mesa
   nfcUid     String?  @unique
   active     Boolean  @default(true)

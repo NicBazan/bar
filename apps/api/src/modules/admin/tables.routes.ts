@@ -1,4 +1,5 @@
 import type { FastifyInstance } from "fastify";
+import { z } from "zod";
 import { config } from "../../config.js";
 import { prisma } from "../../shared/db/index.js";
 import { generateTagCode } from "../../shared/codes.js";
@@ -48,7 +49,7 @@ export async function adminTablesRoutes(app: FastifyInstance) {
           areaId: t.areaId,
           active: t.active,
           status: t.sessions[0]?.status ?? "FREE",
-          qr: qr ? { code: qr.code, url: guestUrl(qr.code) } : null,
+          qr: qr ? { code: qr.code, url: guestUrl(qr.code), scans: qr.scanCount, lastScanAt: qr.lastScanAt } : null,
           nfc: nfc ? { code: nfc.code, uid: nfc.nfcUid, urlTemplate: `${guestUrl(nfc.code)}?uid={UID}&ctr={CTR}&cmac={CMAC}` } : null,
         };
       }),
@@ -96,6 +97,29 @@ export async function adminTablesRoutes(app: FastifyInstance) {
       await audit(tx, ctx, "table.qr_regenerated", "DiningTable", id);
     });
     return { code, url: guestUrl(code) };
+  });
+
+  // QR dinámico: el QR impreso de esta mesa pasa a llevar a otra mesa, sin reimprimir.
+  // Si la otra mesa tenía QR, se intercambian (los dos impresos siguen sirviendo). Con mesas abiertas no se mueve.
+  app.post("/admin/tables/:id/move-qr", async (req) => {
+    const ctx = await requireAdmin(req);
+    const { id } = IdParams.parse(req.params);
+    const { toTableId } = z.object({ toTableId: z.uuid() }).parse(req.body);
+    if (toTableId === id) throw conflict("SAME_TABLE", "Elegí otra mesa");
+    await Promise.all([ownTable(ctx, id), ownTable(ctx, toTableId)]);
+    return prisma.$transaction(async (tx) => {
+      const busy = await tx.tableSession.count({ where: { tableId: { in: [id, toTableId] }, status: { not: "CLOSED" } } });
+      if (busy > 0) throw conflict("TABLE_BUSY", "Una de las dos mesas está abierta: cerrala antes de mover el QR");
+      const [from, to] = await Promise.all([
+        tx.tableTag.findFirst({ where: { tableId: id, type: "QR", active: true } }),
+        tx.tableTag.findFirst({ where: { tableId: toTableId, type: "QR", active: true } }),
+      ]);
+      if (!from) throw notFound("QR de la mesa");
+      await tx.tableTag.update({ where: { code: from.code }, data: { tableId: toTableId } });
+      if (to) await tx.tableTag.update({ where: { code: to.code }, data: { tableId: id } });
+      await audit(tx, ctx, "table.qr_moved", "DiningTable", id, { toTableId, swapped: Boolean(to) });
+      return { moved: from.code, swapped: to?.code ?? null };
+    });
   });
 
   // Vincula el chip NTAG 424 DNA de la mesa (su UID) o lo desvincula con uid = null

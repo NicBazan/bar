@@ -51,6 +51,8 @@ export const config = {
     from: process.env.EMAIL_FROM ?? "Bar <no-reply@example.com>",
   },
   serviceCallCooldownSec: 60,
+  // Tope de un modelo 3D (.glb/.usdz) en MB. 10 entra en el plan gratis de Cloudinary; en Vercel usar 4
+  maxModelMb: Number(process.env.MAX_MODEL_MB ?? 10),
   // Avisos automáticos: secreto del cron externo (vacío = la ruta /internal/automations/run no existe)
   cronSecret: process.env.CRON_SECRET ?? "",
   // Cada cuántos minutos corre el motor dentro de la API (0 = no corre; en Vercel lo dispara Vercel Cron)

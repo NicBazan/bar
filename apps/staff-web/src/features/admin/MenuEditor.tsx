@@ -9,7 +9,7 @@ export function MenuEditor() {
   const { run, view } = useToasts();
   const [menu, setMenu] = useState<AdminMenu | null>(null);
   const [showArchived, setShowArchived] = useState(false);
-  const [editing, setEditing] = useState<{ dish: AdminDish | null; categoryId: string } | null>(null);
+  const [editing, setEditing] = useState<{ dish: AdminDish | null; categoryId: string; tab?: "medios" } | null>(null);
   const [catModal, setCatModal] = useState<{ id?: string; name: string; stationKey: string } | null>(null);
   const [stationModal, setStationModal] = useState(false);
   const [query, setQuery] = useState("");
@@ -132,6 +132,7 @@ export function MenuEditor() {
                           <span className={d.available ? "text-ok" : "text-warn"}>{d.available ? "Disponible" : "Agotado"}</span>
                         </label>
                         <Btn size="sm" kind="ghost" onClick={() => setAvailability(d, { hidden: !d.hidden })}>{d.hidden ? "Mostrar" : "Ocultar"}</Btn>
+                        <Btn size="sm" title="Subir foto o modelo 3D" onClick={() => setEditing({ dish: d, categoryId: cat.id, tab: "medios" })}>{d.assets.GLB_LOD0 ? "3D ✓" : "Subir 3D"}</Btn>
                         <Btn size="sm" onClick={() => setEditing({ dish: d, categoryId: cat.id })}>Editar</Btn>
                       </div>
                     )}
@@ -146,6 +147,7 @@ export function MenuEditor() {
       {editing && (
         <DishEditor
           key={editing.dish?.id ?? "nuevo"}
+          initialTab={editing.tab}
           dish={editing.dish && (menu.categories.flatMap((c) => c.dishes).find((d) => d.id === editing.dish!.id) ?? editing.dish)}
           categoryId={editing.categoryId}
           menu={menu}

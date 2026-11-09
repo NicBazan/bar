@@ -123,6 +123,10 @@ export async function getTableTagWithActiveSession(code: string) {
 export async function resolveTagHandler(req: FastifyRequest) {
   const { code } = TagParams.parse(req.params);
   const tag = await getTableTagWithActiveSession(code);
+  // QR dinámico: el dueño ve cuánto se usa cada QR (no bloquea la respuesta si falla)
+  void prisma.tableTag
+    .update({ where: { code }, data: { scanCount: { increment: 1 }, lastScanAt: new Date() } })
+    .catch(() => undefined);
 
   return {
     venue: tag.table.venue,

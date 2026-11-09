@@ -31,16 +31,20 @@ export async function loyaltyRoutes(app: FastifyInstance) {
   app.get("/admin/loyalty", async (req) => {
     const ctx = await requireAdmin(req);
     const program = await getProgram(prisma, ctx.tenantId);
-    const [customers, redeemed] = await Promise.all([
+    const since = new Date(Date.now() - 30 * 24 * 3600_000);
+    const [customers, redeemed, earned30d, redeemed30d, members30d] = await Promise.all([
       prisma.customer.count({ where: { tenantId: ctx.tenantId } }),
       prisma.loyaltyEvent.count({ where: { tenantId: ctx.tenantId, kind: "REDEEM" } }),
+      prisma.loyaltyEvent.aggregate({ _sum: { amount: true }, where: { tenantId: ctx.tenantId, kind: "EARN", createdAt: { gte: since } } }),
+      prisma.loyaltyEvent.count({ where: { tenantId: ctx.tenantId, kind: "REDEEM", createdAt: { gte: since } } }),
+      prisma.loyaltyEvent.groupBy({ by: ["customerId"], where: { tenantId: ctx.tenantId, createdAt: { gte: since } } }).then((g) => g.length),
     ]);
     return {
       active: program?.active ?? false,
       mode: program?.mode ?? "STAMPS",
       centsPerPoint: program?.centsPerPoint ?? 100000,
       rewards: (program?.rewards ?? []).map((r) => ({ id: r.id, name: r.name, cost: r.cost, active: r.active })),
-      stats: { customers, redeemed },
+      stats: { customers, redeemed, last30d: { members: members30d, earned: earned30d._sum.amount ?? 0, redeemed: redeemed30d } },
     };
   });
 

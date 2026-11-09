@@ -4,7 +4,7 @@ import { useState } from "react";
 import { Badge, Btn, Field, Modal, inputCls, useToasts } from "@/components/ui";
 import { type AdminDish, type AdminMenu, api, formatMoney, parseMoney, upload } from "@/lib/api";
 
-type Tab = "datos" | "tamanos" | "opciones" | "medios";
+export type Tab = "datos" | "tamanos" | "opciones" | "medios";
 
 const centsToInput = (c: number) => String(c / 100).replace(".", ",");
 const csv = (xs: string[]) => xs.join(", ");
@@ -19,12 +19,14 @@ const fromCsv = (s: string) =>
  * Cada pestaña guarda por separado (los tamaños y opciones se reemplazan enteros).
  */
 export function DishEditor({
+  initialTab = "datos",
   dish,
   categoryId,
   menu,
   onClose,
   onSaved,
 }: {
+  initialTab?: Tab;
   dish: AdminDish | null;
   categoryId: string;
   menu: AdminMenu;
@@ -32,7 +34,7 @@ export function DishEditor({
   onSaved: () => Promise<void>;
 }) {
   const { run, view } = useToasts();
-  const [tab, setTab] = useState<Tab>("datos");
+  const [tab, setTab] = useState<Tab>(dish ? initialTab : "datos");
   const [busy, setBusy] = useState(false);
 
   // ── Datos ──
@@ -292,7 +294,7 @@ export function DishEditor({
           />
           <MediaRow
             title="Modelo 3D (.glb)"
-            hint="Para el visor 3D y la Realidad Aumentada en Android. Hasta 25 MB; ideal menos de 1,5 MB."
+            hint="Para el visor 3D y la Realidad Aumentada en Android. Hasta 10 MB; ideal menos de 1,5 MB para que cargue rápido con datos móviles."
             accept=".glb,model/gltf-binary"
             current={dish.assets.GLB_LOD0}
             busy={busy}

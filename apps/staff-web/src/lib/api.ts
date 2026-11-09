@@ -173,7 +173,7 @@ export type AdminTable = {
   areaId: string | null;
   active: boolean;
   status: "FREE" | "PENDING" | "OPEN" | "BILL_REQUESTED";
-  qr: { code: string; url: string } | null;
+  qr: { code: string; url: string; scans: number; lastScanAt: string | null } | null;
   nfc: { code: string; uid: string | null; urlTemplate: string } | null;
 };
 
@@ -211,7 +211,7 @@ export type AdminLoyalty = {
   mode: "STAMPS" | "POINTS";
   centsPerPoint: number;
   rewards: Array<{ id?: string; name: string; cost: number; active: boolean }>;
-  stats: { customers: number; redeemed: number };
+  stats: { customers: number; redeemed: number; last30d: { members: number; earned: number; redeemed: number } };
 };
 
 export type AdminPromotion = {

@@ -237,3 +237,23 @@ describe("Hora pico: varias mesas cierran a la vez", () => {
     expect(s.receiptNumber).not.toBeNull();
   });
 });
+
+describe("QR dinámico: el dueño reorganiza el salón sin reimprimir", () => {
+  it("mueve el QR de la mesa 5 a la 6 (se intercambian) y cada escaneo queda contado", async () => {
+    const tag5 = await prisma.tableTag.findFirstOrThrow({ where: { type: "QR", active: true, table: { label: "5", venue: { tenant: { slug: "bar-demo" } } } }, include: { table: true } });
+    const tag6 = await prisma.tableTag.findFirstOrThrow({ where: { type: "QR", active: true, table: { label: "6", venue: { tenant: { slug: "bar-demo" } } } }, include: { table: true } });
+    await prisma.tableSession.updateMany({ where: { tableId: { in: [tag5.tableId, tag6.tableId] }, status: { not: "CLOSED" } }, data: { status: "CLOSED", closedAt: new Date() } });
+
+    const res = await staffPost(duenio, `/v1/admin/tables/${tag5.tableId}/move-qr`, { toTableId: tag6.tableId });
+    expect(res.statusCode).toBe(200);
+    expect((await app.inject({ url: `/v1/tags/${tag5.code}` })).json().table.label).toBe("6");
+    expect((await app.inject({ url: `/v1/tags/${tag6.code}` })).json().table.label).toBe("5");
+    await new Promise((r) => setTimeout(r, 100)); // el conteo se guarda sin frenar la respuesta
+    expect((await prisma.tableTag.findUniqueOrThrow({ where: { code: tag5.code } })).scanCount).toBeGreaterThan(tag5.scanCount);
+
+    // El mozo no puede reorganizar mesas
+    expect((await staffPost(mozo, `/v1/admin/tables/${tag5.tableId}/move-qr`, { toTableId: tag6.tableId })).statusCode).toBe(403);
+    // Volver a dejarlo como estaba (otros tests usan las mesas 5 y 6)
+    expect((await staffPost(duenio, `/v1/admin/tables/${tag6.tableId}/move-qr`, { toTableId: tag5.tableId })).statusCode).toBe(200);
+  });
+});

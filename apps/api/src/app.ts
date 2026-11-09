@@ -63,7 +63,7 @@ export async function buildApp(opts: { logger?: boolean; onRoute?: (route: { met
   // Ver shared/rate-limit/keys.ts. TODO(escala): store en Redis para compartirlo entre instancias.
   await app.register(rateLimit, { max: 300, timeWindow: "1 minute", keyGenerator: deviceOrIpKey });
   // Subidas del admin: 1 archivo por request, hasta 4 MB (límite seguro para Vercel Serverless)
-  await app.register(multipart, { limits: { fileSize: 4 * 1024 * 1024, files: 1, fields: 5 } });
+  await app.register(multipart, { limits: { fileSize: Math.max(4, config.maxModelMb) * 1024 * 1024, files: 1, fields: 5 } }); // fotos 4 MB, 3D hasta MAX_MODEL_MB
 
   app.addHook("onSend", async (req, reply) => {
     reply.header("X-Content-Type-Options", "nosniff");

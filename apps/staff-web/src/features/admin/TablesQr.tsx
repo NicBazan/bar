@@ -73,6 +73,13 @@ export function TablesQr() {
     if (await run(() => api(`/admin/tables/${t.id}/regenerate-qr`, { method: "POST" }), "QR nuevo generado")) await load();
   };
 
+  // QR dinámico: el QR impreso pasa a otra mesa (si la otra tenía, se intercambian). Sin reimprimir nada
+  const moveQr = async (from: AdminTable, toId: string) => {
+    const to = data?.tables.find((x) => x.id === toId);
+    if (!to || !confirm(`El QR impreso de la mesa ${from.label} va a llevar a la mesa ${to.label}${to.qr ? " (y el de la mesa " + to.label + " a la " + from.label + ")" : ""}. ¿Seguimos?`)) return;
+    if (await run(() => api(`/admin/tables/${from.id}/move-qr`, { method: "POST", body: { toTableId: toId } }), "QR movido: no hace falta reimprimir")) await load();
+  };
+
   if (!data) return <Empty>Cargando mesas…</Empty>;
 
   return (
@@ -108,6 +115,8 @@ export function TablesQr() {
             onRegenerate={() => regenerate(t)}
             onEdit={() => setEditing(t)}
             onNfc={() => setNfcFor(t)}
+            others={data.tables.filter((x) => x.id !== t.id && x.active)}
+            onMove={(toId) => moveQr(t, toId)}
           />
         ))}
       </div>
@@ -135,8 +144,12 @@ function TableCard({
   onRegenerate,
   onEdit,
   onNfc,
+  others,
+  onMove,
 }: {
   table: AdminTable;
+  others: AdminTable[];
+  onMove: (toTableId: string) => void;
   url: string | null;
   onCopy: (u: string) => void;
   onRegenerate: () => void;
@@ -154,6 +167,7 @@ function TableCard({
       </div>
       <p className="text-xs text-muted">
         {table.seats} lugares {table.nfc?.uid ? "· 📡 NFC vinculado" : ""}
+        {table.qr && ` · escaneado ${table.qr.scans} ${table.qr.scans === 1 ? "vez" : "veces"}${table.qr.lastScanAt ? `, el último ${new Date(table.qr.lastScanAt).toLocaleDateString("es-AR")}` : ""}`}
       </p>
       <div className="mt-3 flex gap-3">
         <div className="grid h-28 w-28 shrink-0 place-items-center overflow-hidden rounded-xl bg-white">
@@ -171,6 +185,19 @@ function TableCard({
             </a>
           )}
           <Btn size="sm" onClick={onRegenerate}>QR nuevo</Btn>
+          {table.qr && others.length > 0 && (
+            <select
+              aria-label={`Mover el QR de la mesa ${table.label}`}
+              className="h-8 rounded-xl border border-line bg-surface-2 px-2 text-xs"
+              value=""
+              onChange={(e) => e.target.value && onMove(e.target.value)}
+            >
+              <option value="">Mover este QR a…</option>
+              {others.map((o) => (
+                <option key={o.id} value={o.id}>Mesa {o.label}</option>
+              ))}
+            </select>
+          )}
           <div className="flex gap-1.5">
             <Btn size="sm" onClick={onEdit}>Editar</Btn>
             <Btn size="sm" onClick={onNfc}>NFC</Btn>

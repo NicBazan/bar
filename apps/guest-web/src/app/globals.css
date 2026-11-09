@@ -1,29 +1,32 @@
 @import "tailwindcss";
 
 /*
- * Carta del cliente: misma paleta que el panel («Naranja señal», base de conocimientos), pero de cara
- * al público: radios algo más suaves. Claro y minimalista: grises fríos, tarjetas blancas, UN acento
- * naranja. Sin sombras ni degradados. Texto sobre el naranja = oscuro (blanco no pasa AA: L-075).
+ * Paleta ZainSoft en pastel (09/11): papel crema muy suave, tarjetas blancas, UN acento coral pastel
+ * (el naranja de ZainSoft, aclarado). Títulos en Fraunces y texto en Outfit. Sin sombras: la jerarquía
+ * la dan el fondo, el borde y el radio. Contrastes medidos (WCAG AA en todo el texto):
+ *   tinta/papel 13,9 · apagado/chips 5,0 · tinta-coral sobre coral 7,0 · coral como texto/blanco 5,8
+ *   oscuro: tinta/papel 14,8 · apagado 7,0 · tinta-coral sobre coral 8,2
  * Los nombres viejos (surface, cream, amber…) se mantienen para no tocar cada componente.
  */
 @theme {
-  --color-ink: #16181d; /* tinta */
+  --color-paper: #faf6f1; /* lienzo: crema muy suave */
   --color-surface: #ffffff; /* tarjetas */
-  --color-surface-2: #eef0f2; /* chips, inputs, botones secundarios */
-  --color-line: #e3e5e8; /* bordes de 1 px */
-  --color-cream: #16181d; /* texto principal */
-  --color-muted: #5b616b; /* texto secundario (6,2:1) */
-  --color-amber: #e8590c; /* acento (relleno) */
-  --color-amber-ink: #16181d; /* texto SOBRE el acento */
-  --color-ok: #1f7a4d;
-  --color-warn: #b42318;
-  --color-brand: #e8590c;
-  --color-brand-dark: #c2410c; /* acento como texto sobre claro (5,2:1) */
-  --color-night: #16181d;
-  --color-paper: #f4f5f6;
+  --color-surface-2: #f4eee7; /* chips, inputs, botones secundarios */
+  --color-line: #ece4da; /* bordes de 1 px */
+  --color-ink: #2b2622; /* tinta cálida (no negro puro) */
+  --color-cream: #2b2622; /* texto principal */
+  --color-muted: #6e655d; /* texto secundario */
+  --color-amber: #f6b49a; /* acento ZainSoft en pastel (relleno) */
+  --color-amber-ink: #5a2410; /* texto SOBRE el coral pastel */
+  --color-brand: #f6b49a;
+  --color-brand-dark: #b53d17; /* coral como texto o enlace */
+  --color-ok: #2f7a55;
+  --color-warn: #b4413a;
   --color-on-state: #ffffff; /* texto sobre ok/warn */
-  --font-display: var(--font-sans);
-  --font-sans: var(--font-plex), system-ui, sans-serif;
+  --color-mint: #e3f3e8; /* fondo pastel de "cobrado / listo" */
+  --color-night: #2b2622;
+  --font-display: var(--font-serif), Georgia, serif; /* títulos: serif suave */
+  --font-sans: var(--font-body), system-ui, sans-serif; /* texto: sans redondeada */
 
   --radius-xl: 10px;
   --radius-2xl: 14px;
@@ -45,36 +48,40 @@
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme="light"]) {
     color-scheme: dark;
-    --color-paper: #101216;
-    --color-surface: #1a1d23;
-    --color-surface-2: #22262d;
-    --color-line: #2a2e36;
-    --color-ink: #e6e8eb;
-    --color-cream: #e6e8eb;
-    --color-muted: #a3a9b3;
-    --color-amber: #ff7a2f;
-    --color-brand: #ff7a2f;
-    --color-brand-dark: #ff8f4f;
-    --color-ok: #4cc38a;
-    --color-warn: #ff6b5e;
-    --color-on-state: #101216;
+    --color-paper: #1b1917;
+    --color-surface: #24211e;
+    --color-surface-2: #2e2a26;
+    --color-line: #3a352f;
+    --color-ink: #f1ebe4;
+    --color-cream: #f1ebe4;
+    --color-muted: #b4aaa0;
+    --color-amber: #f4a988;
+    --color-amber-ink: #3a1a0c;
+    --color-brand: #f4a988;
+    --color-brand-dark: #f7b79c;
+    --color-ok: #7fd1a4;
+    --color-warn: #f28b82;
+    --color-on-state: #1b1917;
+    --color-mint: #23382c;
   }
 }
 :root[data-theme="dark"] {
   color-scheme: dark;
-  --color-paper: #101216;
-  --color-surface: #1a1d23;
-  --color-surface-2: #22262d;
-  --color-line: #2a2e36;
-  --color-ink: #e6e8eb;
-  --color-cream: #e6e8eb;
-  --color-muted: #a3a9b3;
-  --color-amber: #ff7a2f;
-  --color-brand: #ff7a2f;
-  --color-brand-dark: #ff8f4f;
-  --color-ok: #4cc38a;
-  --color-warn: #ff6b5e;
-  --color-on-state: #101216;
+  --color-paper: #1b1917;
+  --color-surface: #24211e;
+  --color-surface-2: #2e2a26;
+  --color-line: #3a352f;
+  --color-ink: #f1ebe4;
+  --color-cream: #f1ebe4;
+  --color-muted: #b4aaa0;
+  --color-amber: #f4a988;
+  --color-amber-ink: #3a1a0c;
+  --color-brand: #f4a988;
+  --color-brand-dark: #f7b79c;
+  --color-ok: #7fd1a4;
+  --color-warn: #f28b82;
+  --color-on-state: #1b1917;
+  --color-mint: #23382c;
 }
 
 html,

@@ -90,6 +90,7 @@ const MATRIX: Record<string, Access> = {
   "POST /v1/admin/tables": "admin",
   "PATCH /v1/admin/tables/:id": "admin",
   "POST /v1/admin/tables/:id/regenerate-qr": "admin",
+  "POST /v1/admin/tables/:id/move-qr": "admin",
   "PUT /v1/admin/tables/:id/nfc": "admin",
   "POST /v1/admin/areas": "admin",
   "GET /v1/admin/staff": "admin",

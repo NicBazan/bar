@@ -29,8 +29,9 @@ const TYPES = {
   jpg: { mime: "image/jpeg", max: 4 * 1024 * 1024 },
   png: { mime: "image/png", max: 4 * 1024 * 1024 },
   webp: { mime: "image/webp", max: 4 * 1024 * 1024 },
-  glb: { mime: "model/gltf-binary", max: 4 * 1024 * 1024 },
-  usdz: { mime: "model/vnd.usdz+zip", max: 4 * 1024 * 1024 },
+  // Modelos 3D: tope configurable (MAX_MODEL_MB). En Vercel serverless el cuerpo no puede pasar de ~4 MB
+  glb: { mime: "model/gltf-binary", max: config.maxModelMb * 1024 * 1024 },
+  usdz: { mime: "model/vnd.usdz+zip", max: config.maxModelMb * 1024 * 1024 },
 } as const;
 type Ext = keyof typeof TYPES;
 
