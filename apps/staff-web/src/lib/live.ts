@@ -9,7 +9,8 @@ export function useStaffAuth(roles: StaffRole[]) {
   useEffect(() => {
     const auth = getAuth();
     if (!auth || !roles.includes(auth.user.role)) {
-      window.location.href = "/login";
+      // Con sesión de otro rol se avisa en el login por qué no pudo entrar (y adónde quería ir)
+      window.location.href = auth ? `/login?rol=${encodeURIComponent(auth.user.name)}` : "/login";
       return;
     }
     setUser(auth.user);

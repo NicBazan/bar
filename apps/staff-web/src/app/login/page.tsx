@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { ApiError, type StaffUser, api, setAuth } from "@/lib/api";
 
@@ -18,6 +18,9 @@ export default function LoginPage() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
+  // Llegó acá desde una pantalla de otro rol (ej.: abrió /superadmin con la sesión del dueño)
+  const [wrongRole, setWrongRole] = useState<string | null>(null);
+  useEffect(() => setWrongRole(new URLSearchParams(window.location.search).get("rol")), []);
   const [busy, setBusy] = useState(false);
 
   const submit = async (e: React.FormEvent) => {
@@ -60,6 +63,11 @@ export default function LoginPage() {
         <form onSubmit={submit} className="p-8 md:p-10">
           <p className="text-sm text-muted">Bienvenido</p>
           <h2 className="mb-6 text-2xl font-semibold">Ingresar</h2>
+          {wrongRole && (
+            <p role="status" className="mb-4 rounded-2xl border border-line border-l-4 border-l-amber bg-surface px-4 py-3 text-sm">
+              Estabas con la sesión de <strong>{wrongRole}</strong>, que no tiene acceso a esa pantalla. Ingresá con el usuario que corresponde.
+            </p>
+          )}
           <label className="mb-4 block">
             <span className="mb-1.5 block text-sm font-medium">Email</span>
             <input type="email" required autoComplete="username" value={email} onChange={(e) => setEmail(e.target.value)} className={input} />
