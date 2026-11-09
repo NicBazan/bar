@@ -24,8 +24,6 @@ jobs:
           --health-cmd "pg_isready -U bar -d bar"
           --health-interval 5s
           --health-retries 10
-    env:
-      DATABASE_URL: postgresql://bar:bar_dev_password@localhost:5433/bar?schema=public
     steps:
       - uses: actions/checkout@v4
       - uses: pnpm/action-setup@v4
@@ -36,9 +34,6 @@ jobs:
       - run: pnpm install --frozen-lockfile
       - name: Tipos
         run: pnpm typecheck
-      - name: Migraciones y datos de prueba
-        run: |
-          pnpm db:deploy
-          pnpm db:seed
+      # El globalSetup de vitest crea la base bar_test, aplica las migraciones y carga el seed
       - name: Tests de la API
         run: pnpm --filter @bar/api test

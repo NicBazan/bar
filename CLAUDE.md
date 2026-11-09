@@ -35,7 +35,7 @@
 
 ## 3. Pruebas
 
-- `corepack pnpm --filter @bar/api test` (vitest, necesita Docker arriba). Tipos: `npx tsc --noEmit -p .` en cada app.
+- `corepack pnpm --filter @bar/api test` (vitest, necesita Docker arriba). Usa su propia base `bar_test` (nunca la de desarrollo). Ruta nueva → clasificarla en `test/permissions-matrix.test.ts`. Tipos: `npx tsc --noEmit -p .` en cada app.
 - Todo bug lleva un test `REGRESIÓN: ...` que lo reproduce primero.
 - Lo que depende del motor (concurrencia, transacciones, restricciones) se prueba contra Postgres real, nunca contra la base del desarrollador con datos.
 - Probar el payload exacto que manda cada pantalla antes de endurecer una validación.

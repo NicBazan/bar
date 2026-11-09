@@ -7,7 +7,7 @@ Revisión del estado de `bar` contra las reglas de la base de conocimiento (`REG
 | Chequeo | Resultado |
 |---|---|
 | Tipos (`pnpm typecheck`, 7 paquetes) | ✅ sin errores |
-| Tests de la API (`vitest`, 9 archivos) | ✅ 71 de 71 |
+| Tests de la API (`vitest`, 10 archivos) | ✅ 74 de 74, contra la base propia `bar_test` |
 | Tests de las webs (carta y paneles) | ❌ no hay |
 | Integración continua | 🆕 `.github/workflows/ci.yml` (tipos + tests contra Postgres descartable) |
 | Diseño claro y minimalista | ✅ capturas de bienvenida, carta, login, admin, salón y cocina (Mi cuenta y super admin migrados por código, sin captura) |
@@ -26,8 +26,8 @@ Revisión del estado de `bar` contra las reglas de la base de conocimiento (`REG
 
 ### Alta
 
-1. **Los tests usan la base de desarrollo con el seed** (`vitest.config.ts` apunta a `localhost:5433/bar`). La base de conocimiento lo prohíbe: un test puede borrar o ensuciar los datos con los que estás probando, y el resultado depende de lo que haya en la base. *Arreglo:* base `bar_test` separada, creada y migrada en el `globalSetup` de vitest. En CI ya es descartable.
-2. **No hay test de matriz de permisos (L-025).** Cada ruta tiene su guardia, pero ningún test falla si mañana se agrega una ruta sin clasificar o con el rol equivocado. *Arreglo:* test que recorra `app.printRoutes()` y exija que cada ruta esté en una tabla `{ ruta → roles }`, y que pruebe cada rol contra cada ruta.
+1. ✅ **Resuelto (8/11):** los tests usan `bar_test`, creada y migrada en el `globalSetup`. *Antes:* **los tests usaban la base de desarrollo con el seed** (`vitest.config.ts` apunta a `localhost:5433/bar`). La base de conocimiento lo prohíbe: un test puede borrar o ensuciar los datos con los que estás probando, y el resultado depende de lo que haya en la base. *Arreglo:* base `bar_test` separada, creada y migrada en el `globalSetup` de vitest. En CI ya es descartable.
+2. ✅ **Resuelto (8/11):** `test/permissions-matrix.test.ts`. *Antes:* **no había test de matriz de permisos (L-025).** Cada ruta tiene su guardia, pero ningún test falla si mañana se agrega una ruta sin clasificar o con el rol equivocado. *Arreglo:* test que recorra `app.printRoutes()` y exija que cada ruta esté en una tabla `{ ruta → roles }`, y que pruebe cada rol contra cada ruta.
 3. **El token del staff también vive en `localStorage`.** Ya hay cookie `HttpOnly`, pero el login devuelve el token en el cuerpo y el panel lo guarda y lo manda como Bearer. Un XSS en el panel podría robarlo. *Arreglo:* que el panel use solo la cookie (los rewrites `/v1/*` la hacen same-origin) y dejar Bearer únicamente para apps nativas.
 
 ### Media

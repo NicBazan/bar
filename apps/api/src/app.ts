@@ -30,13 +30,21 @@ export function isAllowedOrigin(origin: string | undefined): boolean {
   return config.allowLanOrigins && LAN_ORIGIN.test(origin);
 }
 
-export async function buildApp(opts: { logger?: boolean } = {}) {
+export async function buildApp(opts: { logger?: boolean; onRoute?: (route: { method: string; url: string }) => void } = {}) {
   const hops = config.trustProxy;
   const app = Fastify({
     logger: opts.logger === false ? false : { level: "info" },
     // N saltos de proxy confiables (ej. Vercel + Render = 2), o ninguno
     trustProxy: typeof hops === "number" ? (_addr: string, i: number) => i < hops : hops,
   });
+
+  // Inventario de rutas (lo usa el test de matriz de permisos para detectar rutas sin clasificar)
+  const { onRoute } = opts;
+  if (onRoute) {
+    app.addHook("onRoute", (r) => {
+      for (const method of [r.method].flat()) onRoute({ method, url: r.url });
+    });
+  }
 
   // BigInt (venueSeq) → number en JSON
   app.setReplySerializer((payload) =>

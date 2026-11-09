@@ -22,7 +22,7 @@ corepack pnpm db:seed                           # SOLO si querés resetear el de
 corepack pnpm --filter @bar/api dev             # API        http://localhost:4000
 corepack pnpm --filter @bar/guest-web dev       # Carta      http://localhost:3000/t/{code}
 corepack pnpm --filter @bar/staff-web dev       # Panel      http://localhost:3001/login
-corepack pnpm --filter @bar/api test            # 71 tests
+corepack pnpm --filter @bar/api test            # 74 tests (base propia bar_test)
 node scripts/mvp/smoke.mjs                      # prueba de humo contra el MVP arrancado
 ```
 No mezclar: si el MVP está andando, los puertos 3000/3001/4000 están ocupados (primero `DETENER-MVP.cmd`).

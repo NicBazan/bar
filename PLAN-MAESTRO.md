@@ -9,7 +9,7 @@
 
 ## 1. Resumen ejecutivo
 
-- **Producto:** el MVP está completo y funciona de punta a punta en local. Incluye carta digital con 3D/AR, pedidos con aprobación del mozo, KDS por estación, cuenta del cliente con fidelización, promociones y avisos, admin del bar y super admin multi-local. Tiene 71 tests de API en verde, CI y una auditoría de seguridad hecha.
+- **Producto:** el MVP está completo y funciona de punta a punta en local. Incluye carta digital con 3D/AR, pedidos con aprobación del mozo, KDS por estación, cuenta del cliente con fidelización, promociones y avisos, admin del bar y super admin multi-local. Tiene 74 tests de API en verde, CI y una auditoría de seguridad hecha.
 - **Lo que falta para vender:** no está en la nube, no cobra y no tiene ningún local real usándolo. Ninguna de las tres cosas es un problema técnico grande.
 - **Decisión de esta revisión:** se dejan de lado las líneas caras y de retorno incierto (App Clip, fotogrametría propia, IA de facturas, infraestructura de escala). El foco pasa a **nube → piloto con bares reales → cobro**.
 
@@ -63,7 +63,7 @@
 | Admin del bar: carta, agotados, fotos y 3D, mesas y QR, NFC, equipo, local, fidelización, promociones, avisos | Listo |
 | Super admin: bares, planes, cuota, suspensión, altas, auditoría | Listo |
 | Diseño: sistema claro y minimalista, IBM Plex Sans, un solo acento, AA | Listo |
-| Calidad: 71 tests de API, tipos en 7 paquetes, CI en GitHub Actions | Listo |
+| Calidad: 74 tests de API (incluida la matriz de permisos), tipos en 7 paquetes, CI en GitHub Actions | Listo |
 | Seguridad: auditoría de 24 puntos, NFC SUN, rate limit, CSP, secretos que fallan cerrado | Listo, con pendientes en el Hito 2 |
 | Nube, dominio y HTTPS fijo | **Pendiente (Hito 1)** |
 | Cobro de suscripciones | **Pendiente (Hito 4)** |
@@ -105,8 +105,8 @@ Cada hito tiene un criterio de salida medible. No se empieza el siguiente sin cu
 - **Salida:** links HTTPS fijos, prueba de humo verde contra producción y una demo que abre desde cualquier celular.
 
 ### Hito 2. Base profesional (en paralelo, 2 semanas)
-- Base de datos de test separada de la de desarrollo. *(en curso)*
-- Test de matriz de permisos: ninguna ruta sin clasificar. *(en curso)*
+- ~~Base de datos de test separada de la de desarrollo~~ (hecho: `bar_test`, recreada en cada corrida).
+- ~~Test de matriz de permisos~~ (hecho: 85 rutas clasificadas; una ruta nueva sin clasificar rompe el CI).
 - Panel del staff solo con cookie `HttpOnly` (sin token en `localStorage`).
 - Prueba e2e del camino crítico con Playwright en el CI.
 - Monitoreo de errores (Sentry, plan gratuito) y backups verificados de Neon.
