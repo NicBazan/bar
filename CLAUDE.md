@@ -32,6 +32,10 @@
 - Sesión revocable: el usuario activo, su rol y el tenant no suspendido se leen de la base en cada petición.
 - No confiar en `X-Forwarded-For` salvo con `TRUST_PROXY`. Rate limit por dispositivo/email.
 - Secretos: falla cerrado en producción (`config.ts`), aleatorios en desarrollo.
+- **Estructura (GRASP/GoF):** funciones de hasta ~40 líneas y una responsabilidad. Controlador fino que coordina; el cálculo va en funciones puras (Pure Fabrication) y cada decisión en quien tiene los datos (Information Expert). Reglas que crecen → Strategy (`ordering/order-policy.ts`); acciones por nombre → Command (`SESSION_ACTIONS`). Medir con el script de `docs/AUDITORIA-2026-11-08.md`.
+- **Estado de una mesa:** solo `table-session/lifecycle.ts` lo cambia (abrir, PIN nuevo, cerrar). Cerrar siempre emite el comprobante numerado.
+- **Pedidos:** toda regla anti-abuso o anti-duplicado va en `order-policy.ts`, se evalúa con la sesión bloqueada (`FOR UPDATE`) y lleva su test en `escenarios-mesa.e2e.test.ts`.
+- **Comprobante:** lo histórico se copia. El comprobante final no se recalcula nunca; el número sale de `UPDATE ... RETURNING` + `UNIQUE`.
 
 ## 3. Pruebas
 

@@ -125,7 +125,10 @@ bar/
 | GET | `/media/:tenant/:file` | público | Fotos y modelos 3D subidos (nombres generados por el servidor) |
 | POST | `/tags/:code/session[?uid&ctr&cmac]` | comensal | Une el dispositivo a la mesa. QR: el primero crea la sesión `PENDING` y los demás necesitan el PIN (8 fallos → bloqueo); un dispositivo que ya estaba entra sin PIN. NFC SUN válido: abre la mesa directo |
 | GET | `/session` | comensal | Estado de la mesa, pedidos, llamados y hub (Wi-Fi solo con la mesa abierta, link de reseñas) |
-| POST | `/orders` | comensal | Pedido con `Idempotency-Key`; precios y estación los calcula el servidor |
+| POST | `/orders` | comensal | Pedido con `Idempotency-Key`; precios y estación los calcula el servidor. Reglas: 40 unidades por pedido, 3 sin confirmar, 120 unidades por hora y pedido repetido en 3 min → 409 `DUPLICATE_ORDER` (reenviar con `confirmDuplicate`) |
+| GET | `/session/receipt` | comensal | Cuenta provisoria o comprobante final (también con la mesa cerrada) |
+| GET | `/staff/sessions/:id/receipt` | mozo / caja | Lo mismo, desde el panel |
+| GET | `/customer/me/visits/:id/receipt` | cliente | Comprobante de una visita propia |
 | POST | `/service-calls` | comensal | `WAITER` / `BILL`, deduplicado y con cooldown de 60 s |
 | GET | `/state?since=seq` | comensal / staff | Catch-up de eventos del outbox |
 | POST | `/onboarding/register` | público | Alta self-service de un bar (tope global de 30 por hora) |

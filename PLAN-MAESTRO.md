@@ -9,7 +9,7 @@
 
 ## 1. Resumen ejecutivo
 
-- **Producto:** el MVP está completo y funciona de punta a punta en local. Incluye carta digital con 3D/AR, pedidos con aprobación del mozo, KDS por estación, cuenta del cliente con fidelización, promociones y avisos, admin del bar y super admin multi-local. Tiene 74 tests de API en verde, CI y una auditoría de seguridad hecha.
+- **Producto:** el MVP está completo y funciona de punta a punta en local. Incluye carta digital con 3D/AR, pedidos con aprobación del mozo, KDS por estación, cuenta del cliente con fidelización, promociones y avisos, admin del bar y super admin multi-local. Tiene 87 tests de API en verde, CI y una auditoría de seguridad hecha.
 - **Lo que falta para vender:** no está en la nube, no cobra y no tiene ningún local real usándolo. Ninguna de las tres cosas es un problema técnico grande.
 - **Decisión de esta revisión:** se dejan de lado las líneas caras y de retorno incierto (App Clip, fotogrametría propia, IA de facturas, infraestructura de escala). El foco pasa a **nube → piloto con bares reales → cobro**.
 
@@ -63,7 +63,7 @@
 | Admin del bar: carta, agotados, fotos y 3D, mesas y QR, NFC, equipo, local, fidelización, promociones, avisos | Listo |
 | Super admin: bares, planes, cuota, suspensión, altas, auditoría | Listo |
 | Diseño: sistema claro y minimalista, IBM Plex Sans, un solo acento, AA | Listo |
-| Calidad: 74 tests de API (incluida la matriz de permisos), tipos en 7 paquetes, CI en GitHub Actions | Listo |
+| Calidad: 87 tests de API (matriz de permisos y escenarios con personas), tipos en 7 paquetes, CI en GitHub Actions | Listo |
 | Seguridad: auditoría de 24 puntos, NFC SUN, rate limit, CSP, secretos que fallan cerrado | Listo, con pendientes en el Hito 2 |
 | Nube, dominio y HTTPS fijo | **Pendiente (Hito 1)** |
 | Cobro de suscripciones | **Pendiente (Hito 4)** |
